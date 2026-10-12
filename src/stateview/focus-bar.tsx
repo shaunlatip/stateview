@@ -36,7 +36,7 @@ type FocusBarProps<T extends Inputs> = {
  * so the app keeps its full width. Takes the scheme opposite the content
  * behind it, so it stays distinct from any app. Out of the way until it's
  * needed: it shows on any review action or when the pointer nears the bottom
- * of the window, and tucks away again after a few idle seconds.
+ * of the window, and tucks away again after six idle seconds.
  */
 export function FocusBar<T extends Inputs>({
   frame,
@@ -73,24 +73,12 @@ export function FocusBar<T extends Inputs>({
         "group/bar pointer-events-none fixed inset-x-gui-s bottom-gui-s z-40 mx-auto max-w-2xl translate-y-full opacity-0 transition duration-gui ease-gui focus-within:pointer-events-auto focus-within:translate-y-0 focus-within:opacity-100 data-shown:pointer-events-auto data-shown:translate-y-0 data-shown:opacity-100 motion-reduce:translate-y-0",
         // A keyboard action shows it at once: animating something pressed this often makes it feel slow.
         instant && "transition-none",
-        // Room for the development-only Agentation button in the corner.
-        process.env.NODE_ENV === "development" && "max-sm:right-18",
+        // On phones in development, sit above the Agentation button in the corner rather than narrowing beside it.
+        process.env.NODE_ENV === "development" && "max-sm:bottom-18",
         scheme === "dark" && "dark",
       )}
     >
-      <div className="group/pill relative">
-        {/*
-         * Where this state sits in the review: a header that grows out of the bar
-         * in its own fill when the pointer rests on it (or focus is inside), and is
-         * gone the moment it leaves. Screen readers get it from the live region below.
-         */}
-        <p
-          aria-hidden
-          className="pointer-events-none absolute inset-x-gui-m bottom-full -mb-gui-m flex justify-between gap-gui-s rounded-t-gui-m bg-gui-toolbar px-gui-m pt-gui-xs pb-gui-l text-gui-xs text-gui-neutral-7 tabular-nums opacity-0 ring-1 ring-gui-neutral-4-transparent transition-none group-focus-within/bar:opacity-100 group-hover/pill:opacity-100 group-hover/pill:transition-opacity group-hover/pill:delay-300 group-hover/pill:duration-gui group-hover/pill:ease-gui"
-        >
-          <span className="truncate">{frame.section.title}</span>
-          <span className="shrink-0">{`${position}/${total}`}</span>
-        </p>
+      <div className="relative">
         <div className="relative flex items-center gap-gui-xxs rounded-gui-m bg-gui-toolbar p-gui-xxs shadow-gui-s ring-1 ring-gui-neutral-4-transparent">
           <Tooltip label="All states" shortcut="Esc">
             <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
@@ -99,14 +87,16 @@ export function FocusBar<T extends Inputs>({
           </Tooltip>
           {/* Wraps rather than truncates: on a phone the step drops below the title. */}
           <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-gui-s gap-y-gui-xxs px-gui-xs py-gui-xxs">
-            <p className="min-w-0 text-gui-m font-gui-medium">{frame.item.title}</p>
+            {/* The section is the header: secondary, above the state's title. */}
+            <div className="flex min-w-0 flex-col wrap-break-word">
+              <p className="text-gui-xs text-gui-neutral-7">{frame.section.title}</p>
+              <p className="text-gui-m font-gui-medium">{frame.item.title}</p>
+            </div>
             {frame.step ? (
-              <p className="flex items-center gap-gui-xs text-gui-s text-gui-neutral-7">
-                <Badge className="tabular-nums">
-                  <span aria-hidden>{`${frame.step}/${frame.stepCount}`}</span>
-                  <span className="sr-only">{`Step ${frame.step} of ${frame.stepCount}:`}</span>
-                </Badge>
+              <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7 wrap-break-word">
+                <span className="sr-only">{`Step ${frame.step} of ${frame.stepCount}:`}</span>
                 {frame.stepTitle}
+                <Badge aria-hidden className="tabular-nums">{`${frame.step}/${frame.stepCount}`}</Badge>
               </p>
             ) : null}
           </div>
@@ -172,7 +162,7 @@ export function FocusBar<T extends Inputs>({
 }
 
 // How long the bar stays up after the last action, and how close to the bottom of the window brings it back.
-const IDLE_MS = 2500;
+const IDLE_MS = 6000;
 const BOTTOM_ZONE_PX = 112;
 
 const TEXT_ENTRY = "input, textarea, select, [contenteditable='true']";
