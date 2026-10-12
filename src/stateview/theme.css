@@ -13,16 +13,16 @@
  */
 @font-face {
   font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskLight.woff2") format("woff2");
-  font-weight: 300;
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
-  font-weight: 400;
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskMedium.woff2") format("woff2");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
@@ -107,14 +107,18 @@
   --font-editorial: "Timeless Grotesk", sans-serif;
   /* "Sidebar Geist Mono" maps to the Geist Mono family next/font already loads. */
   --font-data: var(--font-geist-mono), monospace;
-  --weight-ui-regular: 300;
-  --weight-ui-medium: 400;
+  /*
+   * Changed from the export (300/400/600): Light at 12–15px reads thin and grey,
+   * and a 100-weight step between title and body barely registers.
+   */
+  --weight-ui-regular: 400;
+  --weight-ui-medium: 500;
   --weight-ui-heavy: 600;
-  --weight-brand-regular: 300;
-  --weight-brand-medium: 400;
+  --weight-brand-regular: 400;
+  --weight-brand-medium: 500;
   --weight-brand-heavy: 600;
-  --weight-data-regular: 300;
-  --weight-data-medium: 400;
+  --weight-data-regular: 400;
+  --weight-data-medium: 500;
   --weight-data-heavy: 600;
 
   --color-none: transparent;
@@ -154,9 +158,10 @@
   --error-transparent: #ff526333;
 
   --shadow-none: none;
-  --shadow-s: 0px 1px 2px 0px #00000000;
-  --shadow-m: 0px 8px 24px 0px #00000000;
-  --shadow-l: 0px 12px 30px 0px #00000000;
+  /* Changed from the export, whose shadows were fully transparent: hovers and floating surfaces had no lift. */
+  --shadow-s: 0px 1px 2px 0px #0000001f;
+  --shadow-m: 0px 8px 24px 0px #0000001f;
+  --shadow-l: 0px 12px 30px 0px #0000001f;
 
   /* Toolbar group fill: Neutral 1 in light, Neutral 2 in dark (Toolbar assignment). */
   --toolbar-background: var(--neutral-1);
@@ -221,6 +226,7 @@
   --color-gui-neutral-6: var(--neutral-6);
   --color-gui-neutral-7: var(--neutral-7);
   --color-gui-neutral-8: var(--neutral-8);
+  --color-gui-neutral-9: var(--neutral-9);
   --color-gui-neutral-10: var(--neutral-10);
   --color-gui-neutral-10-transparent: var(--neutral-10-transparent);
   --color-gui-1-transparent: var(--color-1-transparent);
@@ -263,6 +269,7 @@
   --radius-gui-xs: var(--radius-xs);
   --radius-gui-s: var(--radius-s);
   --radius-gui-m: var(--radius-m);
+  --radius-gui-l: var(--radius-l);
 
   --shadow-gui-s: var(--shadow-s);
   --shadow-gui-m: var(--shadow-m);
@@ -359,12 +366,18 @@
 /* Hub cards sit one shade darker than whatever is behind them, so they read on any section tint. */
 .stateview-theme {
   --card-fill: color-mix(in srgb, var(--neutral-10) 5%, transparent);
-  --card-fill-hover: color-mix(in srgb, var(--neutral-10) 8%, transparent);
+  --card-fill-hover: color-mix(in srgb, var(--neutral-10) 12%, transparent);
+  /* Thumbnail width: 18rem, narrowed on small phones so a one-card section still fits beside the page padding. */
+  --hub-thumb: min(18rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
 }
 
-/* Hub grid: fixed tracks for one card (an 18rem thumbnail plus XXS card padding) inside a section's S padding. */
+/* Hub grid: fixed tracks for one card (a thumbnail plus XXS card padding) inside a section's S padding. */
 @utility gui-section-grid {
-  grid-template-columns: repeat(auto-fill, calc(18rem + 2 * var(--space-xxs) + 2 * var(--space-s)));
+  grid-template-columns: repeat(auto-fill, calc(var(--hub-thumb) + 2 * var(--space-xxs) + 2 * var(--space-s)));
+}
+
+@utility gui-thumb-width {
+  width: var(--hub-thumb);
 }
 
 /* Section tab edge: top and left only; the tail and the body carry the rest of the outline. */

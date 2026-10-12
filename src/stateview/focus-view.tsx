@@ -100,7 +100,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     void navigator.clipboard
       .writeText(stateContext(manifest, frame) + markdown)
       .then(() => toast.success("Comments copied with this state’s URL and inputs"))
-      .catch(() => toast.error("Couldn’t copy. Your browser blocked clipboard access."));
+      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
 
   return (
@@ -160,9 +160,9 @@ function UnknownState({ id }: { id: string | null }) {
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
-        <p className="text-gui-neutral-7">The review may have changed since this link was made. The hub lists every state.</p>
+        <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
         <Link href={HUB_HREF} className={buttonVariants({ className: "w-fit" })}>
-          Go to the hub
+          See all states
         </Link>
       </div>
       {/* TEMPORARY: feedback while building; remove before the final build. */}

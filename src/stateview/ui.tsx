@@ -31,18 +31,23 @@ export function ThemeScope<T extends ElementType = "div">({
   );
 }
 
-/** Graphical Button (primary, outline, ghost) and Toolbar control. */
+/**
+ * Graphical Button (primary, outline, ghost) and Toolbar control. Disabled
+ * styles key off `data-disabled`, which Base UI sets whether the button is
+ * natively disabled or kept focusable (`focusableWhenDisabled`).
+ */
 export const buttonVariants = cva(
-  "gui-control inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press disabled:pointer-events-none disabled:text-gui-neutral-6 motion-reduce:transition-none",
+  "gui-control inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press data-disabled:text-gui-neutral-6 data-disabled:active:translate-none motion-reduce:transition-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent disabled:bg-gui-neutral-3 disabled:inset-ring-gui-neutral-4-transparent",
+          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent hover:bg-gui-neutral-9 hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
         outline:
-          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent disabled:inset-ring-gui-neutral-4-transparent",
+          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
         ghost: "text-gui-neutral-10 hover:bg-gui-neutral-3-transparent focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
-        toolbar: "text-gui-neutral-10 hover:bg-gui-neutral-3 aria-pressed:bg-gui-neutral-3",
+        // Neutral 4, not the export's Neutral 3: a 3-on-1 hover is a 1.15:1 step and reads as no change.
+        toolbar: "text-gui-neutral-10 hover:bg-gui-neutral-4 aria-pressed:bg-gui-neutral-4 data-disabled:hover:bg-transparent",
       },
       size: {
         default: "px-gui-m py-gui-xs",
@@ -66,6 +71,8 @@ const badgeVariants = cva(
       variant: {
         option: "bg-gui-option-badge text-gui-option-badge-foreground",
         strong: "bg-gui-neutral-10 text-gui-neutral-1",
+        // On a shaded card, where the option fill would be lighter than its background.
+        surface: "bg-gui-neutral-1 text-gui-neutral-10",
       },
     },
     defaultVariants: { variant: "option" },
