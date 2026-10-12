@@ -3,14 +3,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChatCircleIcon, CheckIcon } from "@phosphor-icons/react";
-import { frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
+import { changedInputs, frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { useReview } from "./store";
-import { Thumbnail } from "./thumbnail";
+import { InputsThumbnail, Thumbnail } from "./thumbnail";
 import { Badge, ThemeScope, buttonVariants } from "./ui";
 
 type HubProps<T extends Inputs> = {
   manifest: Manifest<T>;
-  /** A rendered screen for each item id (first step for sequences). */
+  /**
+   * A rendered screen for each item id (first step for sequences). Items
+   * without one show the inputs they change instead, for screens that can't
+   * render many live copies at once (WebGL maps, video).
+   */
   thumbnails: Record<string, ReactNode>;
 };
 
@@ -23,6 +27,15 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
   const commentsOn = (item: Item<T>) =>
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
+  const thumbnailOf = (item: Item<T>) => {
+    const inputs = firstFrameOf(item).inputs;
+    if (item.id in thumbnails) return <Thumbnail viewport={viewportOf(manifest, inputs)}>{thumbnails[item.id]}</Thumbnail>;
+    const changes = changedInputs(manifest, inputs).map((id) => ({
+      label: manifest.inputs.find((input) => input.id === id)?.label ?? id,
+      value: inputs[id],
+    }));
+    return <InputsThumbnail changes={changes} />;
+  };
 
   return (
     <ThemeScope as="main" className="flex-1 bg-gui-neutral-1">
@@ -74,10 +87,9 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
                 key={item.id}
                 item={item}
                 href={frameHref(manifest, firstFrameOf(item))}
-                viewport={viewportOf(manifest, firstFrameOf(item).inputs)}
                 reviewed={reviewed.includes(item.id)}
                 comments={commentsOn(item)}
-                thumbnail={thumbnails[item.id]}
+                thumbnail={thumbnailOf(item)}
               />
             )}
           />
@@ -117,21 +129,19 @@ function HubSection<T extends Inputs>({
 function StateCard<T extends Inputs>({
   item,
   href,
-  viewport,
   reviewed,
   comments,
   thumbnail,
 }: {
   item: Item<T>;
   href: string;
-  viewport: "desktop" | "mobile";
   reviewed: boolean;
   comments: number;
   thumbnail: ReactNode;
 }) {
   return (
     <li className="relative flex w-72 flex-col overflow-hidden rounded-gui-m bg-gui-neutral-1 shadow-gui-s ring-1 ring-gui-border transition duration-gui ease-gui hover:ring-gui-neutral-4 has-focus-visible:gui-focus-ring motion-reduce:transition-none">
-      <Thumbnail viewport={viewport}>{thumbnail}</Thumbnail>
+      {thumbnail}
       {reviewed || comments > 0 ? (
         <div className="absolute top-gui-xs right-gui-xs flex gap-gui-xxs">
           {comments > 0 ? (

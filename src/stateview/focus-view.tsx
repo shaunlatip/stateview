@@ -4,10 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
 import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
-import { FeedbackToolbar } from "@/components/dev/feedback-toolbar";
-import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import type { AnnotationLayer } from "./annotations";
 import { FocusBar } from "./focus-bar";
@@ -29,8 +27,6 @@ const toastIcons = {
   error: <XCircleIcon aria-hidden />,
 };
 
-const HUB_HREF = "/";
-
 // Keys typed here belong to the page or to the comment engine, not to Stateview's shortcuts.
 const OWNS_KEYS = [
   "input",
@@ -49,10 +45,12 @@ type FocusViewProps<T extends Inputs> = {
   /** Renders the real screen from a state's inputs. */
   render: (inputs: T) => ReactNode;
   annotationLayer: AnnotationLayer;
+  /** Where Escape and "back to hub" go. */
+  hubHref?: string;
 };
 
 /** The real screen in one state, with Stateview's review bar on top. */
-export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer }: FocusViewProps<T>) {
+export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer, hubHref = "/" }: FocusViewProps<T>) {
   const router = useRouter();
   const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
   const review = useReview(manifest);
@@ -88,7 +86,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         review.toggleReviewed(frame.item.id);
         break;
       case "Escape":
-        router.push(HUB_HREF);
+        router.push(hubHref);
         break;
     }
   });
@@ -99,7 +97,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  if (!frame) return <UnknownState id={sv} />;
+  if (!frame) return <UnknownState id={sv} hubHref={hubHref} />;
 
   const copyWithState = (markdown: string) => {
     void navigator.clipboard
@@ -123,7 +121,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         position={index + 1}
         total={frames.length}
         reviewed={review.reviewed.includes(frame.item.id)}
-        hubHref={HUB_HREF}
+        hubHref={hubHref}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
         onToggleReviewed={() => review.toggleReviewed(frame.item.id)}
@@ -160,7 +158,7 @@ function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>) 
   ].join("\n");
 }
 
-function UnknownState({ id }: { id: string | null }) {
+function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
@@ -168,12 +166,10 @@ function UnknownState({ id }: { id: string | null }) {
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made. The hub lists every state.</p>
-        <Link href={HUB_HREF} className={buttonVariants({ className: "w-fit" })}>
+        <Link href={hubHref} className={buttonVariants({ className: "w-fit" })}>
           Go to the hub
         </Link>
       </div>
-      {/* TEMPORARY: feedback while building; remove before the final build. */}
-      <FeedbackToolbar />
     </ThemeScope>
   );
 }

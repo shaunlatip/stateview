@@ -21,3 +21,27 @@ export function Thumbnail({ children, viewport }: { children: ReactNode; viewpor
     </div>
   );
 }
+
+/**
+ * Stands in for a live thumbnail when a review turns them off: the inputs the
+ * state changes from the baseline, in the same frame. Sits at the bottom so
+ * the card's badges never cover it.
+ */
+export function InputsThumbnail({ changes }: { changes: { label: string; value: string }[] }) {
+  return (
+    <div aria-hidden className="flex h-50 w-72 flex-col justify-end bg-gui-neutral-2 p-gui-s">
+      {changes.length === 0 ? (
+        <p className="text-gui-s text-gui-neutral-7">Baseline</p>
+      ) : (
+        <dl className="grid grid-cols-2 gap-x-gui-s gap-y-gui-xxs text-gui-s">
+          {changes.map((change) => (
+            <div key={change.label} className="contents">
+              <dt className="truncate text-gui-neutral-7">{change.label}</dt>
+              <dd className="truncate font-gui-data">{change.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
