@@ -36,11 +36,12 @@ Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind
 
 Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app keeps the default shadcn kit in `src/components/ui`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
 
-**Fonts.** Data text uses Geist Mono, which the app already loads. The theme's UI face is **Timeless Grotesk** (free, by Timeless). Its files are sent by email, so they aren't in the repo yet and UI text falls back to the system sans-serif. To add it:
+**Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/stateview/theme.css`. Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
 
-1. Request the family at [timeless.co/type](https://timeless.co/type) ("Get access").
-2. Put the Grotesk cut at weights 300, 400 and 600 (`.woff2`) in `public/fonts/timeless-grotesk/`, with its license file.
-3. Add one `@font-face` per weight to `src/stateview/theme.css` with `font-family: "Timeless Grotesk"`, the matching `font-weight` and `font-display: swap`. The theme's `--font-ui`, `--font-brand` and `--font-editorial` already name that family.
+1. Get the family at [timeless.co/type](https://timeless.co/type) ("Get access"; they email the files).
+2. Copy `TimelessSans-GroteskLight.woff2`, `TimelessSans-GroteskRegular.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
+
+Without them, Stateview's UI falls back to the system sans-serif and nothing else changes.
 
 ## Where to look
 

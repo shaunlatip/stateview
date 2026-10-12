@@ -45,3 +45,6 @@ next-env.d.ts
 test-results/
 playwright-report/
 .gstack/
+
+# Timeless Grotesk: free to embed, but its license forbids public repositories (see README).
+public/fonts/timeless-grotesk/

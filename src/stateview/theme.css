@@ -6,6 +6,35 @@
  * named `gui-*` utilities registered at the end.
  */
 
+/*
+ * Timeless Sans, Grotesk cut (Timeless Free Font License 1.2). The files are
+ * kept out of git because the license forbids public repositories; get them
+ * from timeless.co/type (see README). Without them, text falls back to sans-serif.
+ */
+@font-face {
+  font-family: "Timeless Grotesk";
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskLight.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Timeless Grotesk";
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Timeless Grotesk";
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskSemibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 .stateview-theme {
   --focus-ring-outline: 2px solid color-mix(in srgb, #000000 50%, transparent);
   --icon-stroke-width: 1.5;
@@ -73,7 +102,6 @@
   --border-l: 2px;
   --border-default-color: rgb(0 0 0 / 0.1);
 
-  /* Timeless Grotesk is the selected face; it loads once its files are added (see README). */
   --font-ui: "Timeless Grotesk", sans-serif;
   --font-brand: "Timeless Grotesk", sans-serif;
   --font-editorial: "Timeless Grotesk", sans-serif;
