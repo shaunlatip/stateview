@@ -73,6 +73,105 @@ export function elementLabel(el: Element): string {
   return name ? `${el.localName} "${name}"` : el.localName;
 }
 
+// What a person would call the element. Containers are named by the heading they sit under.
+const ROLE_WORDS: Record<string, string> = {
+  a: "link",
+  button: "button",
+  select: "dropdown",
+  textarea: "text box",
+  img: "image",
+  svg: "icon",
+  ul: "list",
+  ol: "list",
+  li: "list item",
+  nav: "navigation",
+  form: "form",
+  table: "table",
+  tr: "table row",
+  header: "header",
+  footer: "footer",
+  main: "page",
+  section: "section",
+  article: "section",
+  aside: "panel",
+  dialog: "dialog",
+};
+const ARIA_ROLE_WORDS: Record<string, string> = { button: "button", link: "link", tab: "tab", checkbox: "checkbox", radio: "radio button", switch: "switch", dialog: "dialog", menuitem: "menu item", alert: "alert", status: "status message" };
+const TEXT_TAGS = new Set(["p", "span", "small", "strong", "em", "b", "i", "label", "td", "th", "dt", "dd", "code", "time"]);
+const HEADING = "h1, h2, h3, h4, h5, h6, [role='heading']";
+
+function quoted(text: string, max = 32) {
+  return `“${clip(collapse(text), max)}”`;
+}
+
+function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function inputWord(el: Element) {
+  const type = el.getAttribute("type");
+  if (type === "checkbox") return "checkbox";
+  if (type === "radio") return "radio button";
+  if (type === "submit" || type === "button") return "button";
+  return "field";
+}
+
+/**
+ * The heading that names the part of the screen `el` is in: its own first heading, or else the
+ * nearest heading before it in the closest ancestor that has one. Only the heading's lead text,
+ * so a count badge beside it ("Pending invites 2") isn't read as part of the name.
+ */
+function contextHeading(el: Element) {
+  const own = el.matches(HEADING) ? el : el.querySelector(HEADING);
+  if (own) return leadText(own);
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    const before = Array.from(node.querySelectorAll(HEADING)).filter((heading) => heading.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const heading = before.at(-1);
+    const text = heading ? leadText(heading) : null;
+    if (text) return text;
+  }
+  return null;
+}
+
+/** The first substantial piece of text inside `el`, skipping initials and icon labels. */
+function leadText(el: Element) {
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = collapse(node.nodeValue ?? "");
+    if (text.length > 2 && /\p{L}/u.test(text)) return text;
+  }
+  return null;
+}
+
+/**
+ * A title a person can read at a glance: `Remove Daniel Kim button`, `“Members” heading`,
+ * `“owner” text`, `Area in “Invite a teammate”`.
+ */
+export function elementTitle(el: Element): string {
+  const tag = el.localName;
+  const role = el.getAttribute("role");
+  const labelled = el.getAttribute("aria-label") || el.getAttribute("aria-labelledby");
+  const word = (role && ARIA_ROLE_WORDS[role]) ?? (tag === "input" ? inputWord(el) : ROLE_WORDS[tag]);
+
+  if (/^h[1-6]$/.test(tag) || role === "heading") return `${quoted(el.textContent ?? "")} heading`;
+  if (word && ["button", "link", "field", "checkbox", "radio button", "switch", "tab", "menu item", "dropdown", "text box"].includes(word)) {
+    const name = collapse(accessibleName(el));
+    return name ? `${clip(name, 40)} ${word}` : capitalize(word);
+  }
+  if (labelled) return `${clip(collapse(accessibleName(el)), 40)} ${word ?? "area"}`;
+  if (TEXT_TAGS.has(tag) && el.childElementCount === 0) {
+    const text = collapse(el.textContent ?? "");
+    if (text) return `${quoted(text)} text`;
+  }
+  if (tag === "li" || tag === "tr") {
+    const lead = leadText(el);
+    if (lead) return `${capitalize(word)} ${quoted(lead)}`;
+  }
+  const heading = contextHeading(el);
+  const noun = capitalize(word ?? (TEXT_TAGS.has(tag) ? "text" : "area"));
+  return heading ? `${noun} in ${quoted(heading)}` : noun;
+}
+
 function quoteAttribute(value: string) {
   return `"${value.replace(/["\\]/g, "\\$&").replace(/\n/g, "\\a ")}"`;
 }
@@ -170,6 +269,7 @@ export function reactComponents(el: Element): string[] {
 export function describeElement(el: Element, root: Element): AnnotatedElement {
   return {
     selector: uniqueSelector(el, root),
+    title: elementTitle(el),
     label: elementLabel(el),
     html: elementHtml(el),
     components: reactComponents(el),

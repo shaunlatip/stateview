@@ -158,6 +158,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         onTogglePins={() => setPinsVisible(!pinsVisible)}
         onCopyComments={openCount > 0 ? copyComments : null}
         onDeleteComments={annotations.length > 0 ? deleteComments : null}
+        activity={`${frame.key}:${annotations.length}`}
       />
       {/* Keyed by state so a half-written comment never carries over to another state. */}
       <Layer

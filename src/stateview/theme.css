@@ -61,6 +61,18 @@
   --selection-foreground: #ffffff;
   --selection-fill: #0175c50a;
 
+  /*
+   * Code readout (selector and HTML in the comment composer): a dark, IDE-like
+   * surface in both schemes, with syntax roles drawn from the palette. Blue is
+   * left out because it means selection. Every role measures ≥ 5:1 on the surface.
+   */
+  --code-surface: #202020;
+  --code-text: #e5e5e5;
+  --code-muted: #a3a3a3;
+  --code-tag: #e864ff;
+  --code-attribute: #00c9bb;
+  --code-string: #e0e708;
+
   --space-zero: 0px;
   --space-xxs: 4px;
   --space-xs: 7px;
@@ -204,6 +216,9 @@
   --selection-foreground: #000000;
   --selection-fill: #3aa3ff1a;
 
+  /* One step lighter than the dark popover so the code block still reads as an inset. */
+  --code-surface: #2b2b2b;
+
   --color-3: #f4f83b;
   --color-3-transparent: #f4f83b33;
   --neutral-1: #000000;
@@ -253,6 +268,12 @@
   --color-gui-selection: var(--selection);
   --color-gui-selection-foreground: var(--selection-foreground);
   --color-gui-selection-fill: var(--selection-fill);
+  --color-gui-code-surface: var(--code-surface);
+  --color-gui-code-text: var(--code-text);
+  --color-gui-code-muted: var(--code-muted);
+  --color-gui-code-tag: var(--code-tag);
+  --color-gui-code-attribute: var(--code-attribute);
+  --color-gui-code-string: var(--code-string);
 
   --spacing-gui-zero: var(--space-zero);
   --spacing-gui-xxs: var(--space-xxs);

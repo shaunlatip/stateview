@@ -27,12 +27,16 @@ type FocusBarProps<T extends Inputs> = {
   onCopyComments: (() => void) | null;
   /** Null when there's nothing to delete. */
   onDeleteComments: (() => void) | null;
+  /** Changes whenever the reviewer does something worth showing the bar for (new state, new comment). */
+  activity: string;
 };
 
 /**
  * Floating review controls (Graphical Toolbar). Overlaid rather than framed,
  * so the app keeps its full width. Takes the scheme opposite the content
- * behind it, so it stays distinct from any app.
+ * behind it, so it stays distinct from any app. Out of the way until it's
+ * needed: it shows on any review action or when the pointer nears the bottom
+ * of the window, and tucks away again after a few idle seconds.
  */
 export function FocusBar<T extends Inputs>({
   frame,
@@ -48,10 +52,13 @@ export function FocusBar<T extends Inputs>({
   onTogglePins,
   onCopyComments,
   onDeleteComments,
+  activity,
 }: FocusBarProps<T>) {
   const ref = useRef<HTMLElement>(null);
   const scheme = useBackdropScheme(ref);
-  const near = usePointerNear(ref);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Comment mode needs its indicator in view, and an open menu needs its trigger.
+  const { shown, instant } = useAutoHide(ref, activity, commenting || menuOpen);
   const step = frame.step ? `Step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : null;
   // The pins toggle names the action it takes, with the matching icon.
   const pins = pinsVisible ? { label: "Hide pins", icon: <EyeSlashIcon aria-hidden /> } : { label: "Show pins", icon: <EyeIcon aria-hidden /> };
@@ -60,100 +67,102 @@ export function FocusBar<T extends Inputs>({
       as="aside"
       ref={ref}
       aria-label="Review"
-      data-reveal={near || undefined}
+      data-shown={shown || undefined}
       className={cn(
-        "group/bar fixed inset-x-gui-s bottom-gui-s z-40 mx-auto max-w-2xl",
+        // Hidden: slid down and faded, and out of the pointer's way. Keyboard focus still reaches it and brings it back.
+        "group/bar pointer-events-none fixed inset-x-gui-s bottom-gui-s z-40 mx-auto max-w-2xl translate-y-full opacity-0 transition duration-gui ease-gui focus-within:pointer-events-auto focus-within:translate-y-0 focus-within:opacity-100 data-shown:pointer-events-auto data-shown:translate-y-0 data-shown:opacity-100 motion-reduce:translate-y-0",
+        // A keyboard action shows it at once: animating something pressed this often makes it feel slow.
+        instant && "transition-none",
         // Room for the development-only Agentation button in the corner.
         process.env.NODE_ENV === "development" && "max-sm:right-18",
         scheme === "dark" && "dark",
       )}
     >
-      {/*
-       * Where this state sits in the review. Tucked behind the bar and slid out when
-       * the pointer comes near or focus moves into the bar; its bottom runs under the
-       * bar so the two join. Quick in, gone at once. Screen readers get it from the
-       * live region below.
-       */}
-      <p
-        aria-hidden
-        className="pointer-events-none absolute inset-x-gui-m bottom-full -mb-gui-m flex translate-y-full justify-between gap-gui-s rounded-t-gui-m bg-gui-neutral-4 px-gui-m pt-gui-xs pb-gui-l text-gui-xs text-gui-neutral-8 tabular-nums opacity-0 transition-none group-focus-within/bar:translate-y-0 group-focus-within/bar:opacity-100 group-focus-within/bar:transition group-focus-within/bar:duration-gui group-focus-within/bar:ease-gui group-data-reveal/bar:translate-y-0 group-data-reveal/bar:opacity-100 group-data-reveal/bar:transition group-data-reveal/bar:duration-gui group-data-reveal/bar:ease-gui motion-reduce:translate-y-0"
-      >
-        <span className="truncate font-gui-medium">{frame.section.title}</span>
-        <span className="shrink-0">
-          {position} of {total}
-        </span>
-      </p>
-      <div className="relative flex items-center gap-gui-xxs rounded-gui-m bg-gui-toolbar p-gui-xxs shadow-gui-s ring-1 ring-gui-neutral-4-transparent transition duration-gui-large ease-gui-large motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-reduce:transition-none">
-        <Tooltip label="All states" shortcut="Esc">
-          <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
-            <SquaresFourIcon aria-hidden />
-          </Link>
-        </Tooltip>
-        {/* Wraps rather than truncates: on a phone the step drops below the title. */}
-        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-gui-s gap-y-gui-xxs px-gui-xs py-gui-xxs">
-          <p className="min-w-0 text-gui-m font-gui-medium">{frame.item.title}</p>
-          {frame.step ? (
-            <p className="flex items-center gap-gui-xs text-gui-s text-gui-neutral-7">
-              <Badge className="tabular-nums">
-                <span aria-hidden>{`${frame.step}/${frame.stepCount}`}</span>
-                <span className="sr-only">{`Step ${frame.step} of ${frame.stepCount}:`}</span>
-              </Badge>
-              <ToolbarSeparator />
-              {frame.stepTitle}
-            </p>
-          ) : null}
-        </div>
-        <Tooltip label="Comment" shortcut="C">
-          <Button
-            variant="toolbar"
-            size={commentCount > 0 ? "toolbar" : "icon"}
-            aria-label={commentCount > 0 ? `Comment, ${commentCount} open` : "Comment"}
-            aria-pressed={commenting}
-            aria-keyshortcuts="C"
-            onClick={onToggleCommenting}
-          >
-            <ChatCircleIcon aria-hidden />
-            {commentCount > 0 ? (
-              <Badge variant="strong" aria-hidden className="tabular-nums">
-                {commentCount}
-              </Badge>
+      <div className="group/pill relative">
+        {/*
+         * Where this state sits in the review: a header that grows out of the bar
+         * in its own fill when the pointer rests on it (or focus is inside), and is
+         * gone the moment it leaves. Screen readers get it from the live region below.
+         */}
+        <p
+          aria-hidden
+          className="pointer-events-none absolute inset-x-gui-m bottom-full -mb-gui-m flex justify-between gap-gui-s rounded-t-gui-m bg-gui-toolbar px-gui-m pt-gui-xs pb-gui-l text-gui-xs text-gui-neutral-7 tabular-nums opacity-0 ring-1 ring-gui-neutral-4-transparent transition-none group-focus-within/bar:opacity-100 group-hover/pill:opacity-100 group-hover/pill:transition-opacity group-hover/pill:delay-300 group-hover/pill:duration-gui group-hover/pill:ease-gui"
+        >
+          <span className="truncate">{frame.section.title}</span>
+          <span className="shrink-0">{`${position}/${total}`}</span>
+        </p>
+        <div className="relative flex items-center gap-gui-xxs rounded-gui-m bg-gui-toolbar p-gui-xxs shadow-gui-s ring-1 ring-gui-neutral-4-transparent">
+          <Tooltip label="All states" shortcut="Esc">
+            <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
+              <SquaresFourIcon aria-hidden />
+            </Link>
+          </Tooltip>
+          {/* Wraps rather than truncates: on a phone the step drops below the title. */}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-gui-s gap-y-gui-xxs px-gui-xs py-gui-xxs">
+            <p className="min-w-0 text-gui-m font-gui-medium">{frame.item.title}</p>
+            {frame.step ? (
+              <p className="flex items-center gap-gui-xs text-gui-s text-gui-neutral-7">
+                <Badge className="tabular-nums">
+                  <span aria-hidden>{`${frame.step}/${frame.stepCount}`}</span>
+                  <span className="sr-only">{`Step ${frame.step} of ${frame.stepCount}:`}</span>
+                </Badge>
+                {frame.stepTitle}
+              </p>
             ) : null}
-          </Button>
-        </Tooltip>
-        <Menu>
-          <MenuTrigger
-            render={
-              <IconButton label="More comment actions">
-                <DotsThreeVerticalIcon aria-hidden />
-              </IconButton>
-            }
-          />
-          <MenuPopup>
-            <MenuItem onClick={onTogglePins}>
-              {pins.icon}
-              {pins.label}
-            </MenuItem>
-            <MenuItem disabled={!onCopyComments} onClick={onCopyComments ?? undefined}>
-              <CopyIcon aria-hidden />
-              Copy comments for your agent
-            </MenuItem>
-            <MenuItem disabled={!onDeleteComments} onClick={onDeleteComments ?? undefined}>
-              <TrashIcon aria-hidden />
-              Delete all comments in this state
-            </MenuItem>
-          </MenuPopup>
-        </Menu>
-        <ToolbarSeparator />
-        <Tooltip label="Previous state" shortcut="K">
-          <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
-            <CaretLeftIcon aria-hidden />
-          </Button>
-        </Tooltip>
-        <Tooltip label="Next state" shortcut="J">
-          <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
-            <CaretRightIcon aria-hidden />
-          </Button>
-        </Tooltip>
+          </div>
+          <ToolbarSeparator />
+          <Tooltip label="Comment" shortcut="C">
+            <Button
+              variant="toolbar"
+              size={commentCount > 0 ? "toolbar" : "icon"}
+              aria-label={commentCount > 0 ? `Comment, ${commentCount} open` : "Comment"}
+              aria-pressed={commenting}
+              aria-keyshortcuts="C"
+              onClick={onToggleCommenting}
+            >
+              <ChatCircleIcon aria-hidden />
+              {commentCount > 0 ? (
+                <Badge variant="strong" aria-hidden className="tabular-nums">
+                  {commentCount}
+                </Badge>
+              ) : null}
+            </Button>
+          </Tooltip>
+          <Menu open={menuOpen} onOpenChange={setMenuOpen}>
+            <MenuTrigger
+              render={
+                <IconButton label="More comment actions">
+                  <DotsThreeVerticalIcon aria-hidden />
+                </IconButton>
+              }
+            />
+            <MenuPopup>
+              <MenuItem onClick={onTogglePins}>
+                {pins.icon}
+                {pins.label}
+              </MenuItem>
+              <MenuItem disabled={!onCopyComments} onClick={onCopyComments ?? undefined}>
+                <CopyIcon aria-hidden />
+                Copy comments for your agent
+              </MenuItem>
+              <MenuItem disabled={!onDeleteComments} onClick={onDeleteComments ?? undefined}>
+                <TrashIcon aria-hidden />
+                Delete all comments in this state
+              </MenuItem>
+            </MenuPopup>
+          </Menu>
+          <ToolbarSeparator />
+          <Tooltip label="Previous state" shortcut="K">
+            <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
+              <CaretLeftIcon aria-hidden />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Next state" shortcut="J">
+            <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
+              <CaretRightIcon aria-hidden />
+            </Button>
+          </Tooltip>
+        </div>
       </div>
       <p aria-live="polite" className="sr-only">
         {`${frame.section.title}, ${position} of ${total}: ${frame.item.title}${step ? `, ${step}` : ""}`}
@@ -162,40 +171,60 @@ export function FocusBar<T extends Inputs>({
   );
 }
 
-// How far around the bar the pointer counts as near it: generous to the sides and
-// above, where the section tab slides out, so the reveal isn't a precise target.
-const NEAR = { x: 64, above: 96, below: 24 };
+// How long the bar stays up after the last action, and how close to the bottom of the window brings it back.
+const IDLE_MS = 2500;
+const BOTTOM_ZONE_PX = 112;
+
+const TEXT_ENTRY = "input, textarea, select, [contenteditable='true']";
 
 /**
- * Whether the pointer is over or near the element. Measured from pointer moves
- * rather than a larger invisible hit area, so the page around the bar still
- * takes clicks.
+ * Shows the element after any action (a key outside a text field, or a change
+ * to `activity`) or while the pointer is in the bottom band of the window, and
+ * hides it once both have gone quiet. `instant` is true when a key brought it
+ * back, so it can appear without a transition.
  */
-function usePointerNear(ref: RefObject<HTMLElement | null>) {
+function useAutoHide(ref: RefObject<HTMLElement | null>, activity: string, pinned: boolean) {
+  const [presses, setPresses] = useState(0);
+  const [instant, setInstant] = useState(false);
   const [near, setNear] = useState(false);
+  // The action that has since gone idle. The bar is awake while the latest action isn't it.
+  const [idleAfter, setIdleAfter] = useState<string | null>(null);
+  const latest = `${activity}:${presses}`;
 
   useEffect(() => {
-    const onMove = (event: PointerEvent) => {
+    const timer = setTimeout(() => setIdleAfter(latest), IDLE_MS);
+    return () => clearTimeout(timer);
+  }, [latest]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Shift" || event.key === "Meta" || event.key === "Control" || event.key === "Alt") return;
+      if (event.target instanceof Element && event.target.closest(TEXT_ENTRY)) return;
+      setInstant(true);
+      setPresses((count) => count + 1);
+    };
+    const onPointer = (event: PointerEvent) => {
       const rect = ref.current?.getBoundingClientRect();
-      if (!rect) return;
-      setNear(
-        event.clientX >= rect.left - NEAR.x &&
-          event.clientX <= rect.right + NEAR.x &&
-          event.clientY >= rect.top - NEAR.above &&
-          event.clientY <= rect.bottom + NEAR.below,
-      );
+      const overBar = !!rect && event.clientY >= rect.top && event.clientX >= rect.left && event.clientX <= rect.right;
+      const isNear = event.clientY >= window.innerHeight - BOTTOM_ZONE_PX || overBar;
+      setNear(isNear);
+      if (isNear) setInstant(false);
     };
     // The pointer leaving the window counts as moving away.
     const onLeave = (event: MouseEvent) => {
       if (!event.relatedTarget) setNear(false);
     };
-    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("pointerdown", onPointer, { passive: true });
     document.addEventListener("mouseout", onLeave);
     return () => {
-      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("mouseout", onLeave);
     };
   }, [ref]);
 
-  return near;
+  return { shown: pinned || near || idleAfter !== latest, instant };
 }

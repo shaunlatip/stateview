@@ -4,10 +4,11 @@ import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type F
 import { Collapsible } from "@base-ui/react/collapsible";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { ArrowCounterClockwiseIcon, CaretRightIcon, CheckIcon, TrashIcon } from "@phosphor-icons/react";
+import { CaretRightIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { orderAnnotations, type AnnotatedElement, type Annotation, type AnnotationLayerProps } from "./annotations";
-import { describeElement, elementLabel } from "./describe-element";
+import { CodeView } from "./code-view";
+import { describeElement, elementTitle } from "./describe-element";
 import { Button, ThemeScope } from "./ui";
 
 /**
@@ -140,7 +141,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
     if (!next || !inScreen(next)) return;
     next.scrollIntoView({ block: "nearest" });
     show(next, true);
-    setAnnouncement(elementLabel(next));
+    setAnnouncement(elementTitle(next));
   });
 
   useEffect(() => {
@@ -252,12 +253,6 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) save(event);
   };
 
-  const setStatus = (annotation: Annotation, status: Annotation["status"]) => {
-    onUpdate({ ...annotation, status, note: composer?.text.trim() || annotation.note });
-    setAnnouncement(status === "resolved" ? "Comment resolved." : "Comment reopened.");
-    close();
-  };
-
   const remove = (annotation: Annotation) => {
     onDelete(annotation.id);
     setAnnouncement("Comment deleted.");
@@ -333,14 +328,13 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
                     <div className="flex min-w-0 flex-col">
                       <Popover.Title className="truncate text-gui-m font-gui-medium">
                         <span className="sr-only">{composer?.kind === "edit" ? `Comment ${number} on ` : "Comment on "}</span>
-                        {subject.label}
+                        {subject.title ?? subject.label}
                       </Popover.Title>
                       {subject.components.length > 0 ? (
                         <p className="truncate font-gui-data text-gui-xs text-gui-neutral-7">{subject.components.join(" › ")}</p>
                       ) : null}
                     </div>
                     <CodeDetails element={subject} />
-                    {editing?.status === "resolved" ? <p className="text-gui-s text-gui-neutral-7">Resolved</p> : null}
                     <form onSubmit={save} className="flex flex-col gap-gui-xs">
                       <label htmlFor={`${composer?.id}-note`} className="sr-only">
                         Comment
@@ -352,26 +346,15 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
                         onChange={(event) => setComposer((current) => (current ? { ...current, text: event.target.value } : current))}
                         onKeyDown={onTextKeyDown}
                         placeholder="What should change?"
-                        rows={3}
+                        rows={1}
                         aria-keyshortcuts="Enter"
-                        className="max-h-48 min-h-20 resize-none rounded-gui-s bg-gui-neutral-1 px-gui-s py-gui-xs font-gui-ui text-gui-m text-gui-neutral-10 ring-1 ring-gui-neutral-4 outline-none transition-shadow duration-gui ease-gui field-sizing-content placeholder:text-gui-neutral-6 hover:ring-gui-neutral-5 focus-visible:gui-focus-ring dark:bg-gui-neutral-2"
+                        className="max-h-48 resize-none rounded-gui-s bg-gui-neutral-1 px-gui-s py-gui-xs font-gui-ui text-gui-m text-gui-neutral-10 ring-1 ring-gui-neutral-4 outline-none transition-shadow duration-gui ease-gui field-sizing-content placeholder:text-gui-neutral-6 hover:ring-gui-neutral-5 focus-visible:gui-focus-ring dark:bg-gui-neutral-2"
                       />
                       <div className="flex items-center gap-gui-xxs">
                         {editing ? (
-                          <>
-                            <Button type="button" variant="ghost" size="icon" aria-label="Delete comment" onClick={() => remove(editing)}>
-                              <TrashIcon aria-hidden />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="toolbar"
-                              onClick={() => setStatus(editing, editing.status === "open" ? "resolved" : "open")}
-                            >
-                              {editing.status === "open" ? <CheckIcon aria-hidden /> : <ArrowCounterClockwiseIcon aria-hidden />}
-                              {editing.status === "open" ? "Resolve" : "Reopen"}
-                            </Button>
-                          </>
+                          <Button type="button" variant="quiet" size="toolbar" onClick={() => remove(editing)}>
+                            Delete
+                          </Button>
                         ) : null}
                         <Button type="button" variant="ghost" size="toolbar" className="ml-auto" onClick={close}>
                           Cancel
@@ -443,7 +426,8 @@ type PinProps = {
 
 function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProps) {
   const resolved = annotation.status === "resolved";
-  const where = position.detached ? `${annotation.element.label}, not found on this screen` : annotation.element.label;
+  const title = annotation.element.title ?? annotation.element.label;
+  const where = position.detached ? `${title}, not found on this screen` : title;
   return (
     <Tooltip.Root>
       <Tooltip.Trigger
@@ -497,22 +481,9 @@ function CodeDetails({ element }: { element: AnnotatedElement }) {
         Code
       </Collapsible.Trigger>
       <Collapsible.Panel className="h-(--collapsible-panel-height) overflow-hidden transition-all duration-gui-large ease-gui-large data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none">
-        <dl className="mt-gui-xxs flex flex-col gap-gui-xs rounded-gui-s bg-gui-neutral-2 p-gui-s font-gui-data text-gui-xs text-gui-neutral-8 ring-1 ring-gui-neutral-4-transparent">
-          <div className="flex flex-col">
-            <dt className="text-gui-neutral-7">Selector</dt>
-            <dd className="wrap-anywhere">{element.selector}</dd>
-          </div>
-          <div className="flex flex-col">
-            <dt className="text-gui-neutral-7">HTML</dt>
-            <dd>
-              {/* Focusable so a long snippet can be scrolled from the keyboard. */}
-              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region needs keyboard access */}
-              <pre tabIndex={0} className="max-h-32 overflow-auto rounded-gui-xs whitespace-pre-wrap wrap-anywhere outline-none focus-visible:gui-focus-ring">
-                {element.html}
-              </pre>
-            </dd>
-          </div>
-        </dl>
+        <div className="mt-gui-xxs">
+          <CodeView selector={element.selector} html={element.html} />
+        </div>
       </Collapsible.Panel>
     </Collapsible.Root>
   );
@@ -548,7 +519,7 @@ function pointOn(element: Element, anchor: Anchor) {
 
 function measureBox(element: Element): Box {
   const rect = element.getBoundingClientRect();
-  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height, label: elementLabel(element) };
+  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height, label: elementTitle(element) };
 }
 
 /** Position as CSS variables, read by the `left-(--x)` / `translate-x-(--x)` classes. */

@@ -13,7 +13,9 @@ export type AnnotationStatus = "open" | "resolved";
 export type AnnotatedElement = {
   /** A CSS selector, unique within the screen, that an agent can use to find the element. */
   selector: string;
-  /** Human-readable element name, e.g. `button "Remove"`. */
+  /** What a person would call the element, e.g. `Remove Daniel Kim button`. Missing on comments saved before titles existed. */
+  title?: string;
+  /** The element's tag and accessible name, e.g. `button "Remove"`. */
   label: string;
   /** The element's opening tag with its attributes, a short summary of its content and its closing tag. */
   html: string;
@@ -69,7 +71,7 @@ export function formatAnnotations(annotations: Annotation[]) {
     .flatMap((annotation, index) => {
       if (annotation.status !== "open") return [];
       const { element } = annotation;
-      const lines = [`### ${index + 1}. ${element.label}`, `Selector: \`${element.selector}\``];
+      const lines = [`### ${index + 1}. ${element.title ?? element.label}`, `Element: \`${element.label}\``, `Selector: \`${element.selector}\``];
       if (element.components.length > 0) lines.push(`Components: ${element.components.join(" › ")}`);
       lines.push("```html", element.html, "```", `Comment: ${annotation.note}`);
       return [lines.join("\n")];
