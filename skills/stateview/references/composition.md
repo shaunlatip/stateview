@@ -61,9 +61,9 @@ Each rule is followed by how to apply it in the manifest.
 9. **Mark the origin.** `design` for states a designer would draw. `code-only` for flag-gated and entitlement-gated variants that designs don't show, and for sub-component loading, saving and error states. Code-only states are the ones reviewers are least likely to find on their own.
    *Manifest:* `origin: "design"` or `origin: "code-only"` on every item. A state that turns on a `source: "flag"` input is `code-only`.
 10. **Scope to the change.** Only inputs the diff reads, plus a short "Nearby features" section for unchanged things the change could break.
-    *Manifest:* `scope` records the branch, base and changed file count. Inputs the diff doesn't touch are left out of `inputs`.
+    *Manifest:* `scope` records the repo, branch and base. Inputs the diff doesn't touch are left out of `inputs`.
 11. **Report coverage honestly.** Combinations no state covers are listed, not forced into unreadable states.
-    *Manifest:* `uncovered` lists combinations that are possible but not shown; `excluded` lists combinations that are impossible, with the reason.
+    *Manifest:* `uncovered` lists combinations that are possible but not shown, each a `title` named the way a state would be and the `set` it would need; the hub shows them as dashed cards. `excluded` lists combinations that are impossible, as strings with the reason.
 12. **Keep the budget small.** About 8 to 15 states per review, in no more than the nine hub sections below. More than that means the scope is too wide; split the review by screen.
     *Manifest:* count items (a sequence counts as one item).
 13. **Keep process material out.** Option comparisons, references, competitor screenshots and before/after notes are not states.
@@ -73,21 +73,23 @@ Each rule is followed by how to apply it in the manifest.
 
 The hub shows sections in the order a design handoff does. Use these titles and this order:
 
-| Order | Section | Holds | `tone` |
-|---|---|---|---|
-| 1 | **Happy path** | the screen most people see most of the time; holds the baseline | `base` |
-| 2 | **First use** | empty or brand-new accounts | `base` |
-| 3 | **Main flows** | the flows the change adds or alters, usually sequences | `base` |
-| 4 | **Roles** | who can do what | `who` |
-| 5 | **Plan & flags** | entitlements and flags that change what the screen offers | `who` |
-| 6 | **Loading & errors** | async states inside the page | `system` |
-| 7 | **Long content** | real data at its largest or most extreme | `data` |
-| 8 | **Breakpoints** | where the layout reflows | `data` |
-| 9 | **Nearby features** | unchanged parts of the page the change could break | `nearby` |
+| Order | Section | Holds |
+|---|---|---|
+| 1 | **Happy path** | the screen most people see most of the time; holds the baseline |
+| 2 | **First use** | empty or brand-new accounts |
+| 3 | **Main flows** | the flows the change adds or alters, usually sequences |
+| 4 | **Roles** | who can do what |
+| 5 | **Plan & flags** | entitlements and flags that change what the screen offers |
+| 6 | **Loading & errors** | async states inside the page |
+| 7 | **Long content** | real data at its largest or most extreme |
+| 8 | **Breakpoints** | where the layout reflows |
+| 9 | **Nearby features** | unchanged parts of the page the change could break |
 
-Omit a section when it has nothing to show. A screen with no roles has no Roles section; don't add a placeholder. Each section's `why` is one sentence saying why this family of states matters for this change ("Who can do what. The change added a viewer role."); it isn't shown on the hub, but it's the section's reason for existing and the checker requires it.
+Omit a section when it has nothing to show. A screen with no roles has no Roles section; don't add a placeholder. Each section's `why` is one sentence saying why this family of states matters for this change ("Who can do what. The change added a viewer role."); the hub shows it under the section title.
 
-`tone` colors the section on the hub by question family, the way Figma section colors do: `base` for the screen as most people see it, `who` for roles, plans and flags, `system` for loading and errors, `data` for content and layout extremes, `nearby` for unchanged features. Leaving it out means `base`. A section that doesn't fit the list above takes the tone of the family it's closest to.
+## Input values and labels
+
+List each input's `values` in reading order (smallest to largest, off before on, the order a person would step through them), not with the baseline first; `baseline` says which value is the default. The state panel and card chips show a value sentence-cased (`at-limit` → "At limit"); when that reads wrong, give the input `labels` for those values (`{ "many-long": "Many" }`).
 
 ## Writing titles, `why` lines and checks
 
@@ -165,7 +167,7 @@ Everything else is judgment: whether a combination is plausible, whether two thi
 
 ## Worked example 1: Team members (`src/sample-app/review.json`)
 
-Branch `feat/member-management` vs `main`, 6 files. The change adds a viewer role, inviting with a role, an SSO beta and seat limits on the Free plan.
+Repo `halcyon-web`, branch `feat/member-management` vs `main`. The change adds a viewer role, inviting with a role, an SSO beta and seat limits on the Free plan.
 
 **Baseline:** owner · Pro · SSO beta off · typical team (6 people) · 2 pending invites · members loaded · no request in flight · empty invite form · desktop.
 
@@ -203,7 +205,7 @@ A hypothetical branch `regions-unlimited` vs `main` lets people compare any numb
 
 **Inputs from product knowledge, marked inferred:** a tiny place (Vatican City), a huge one (Russia), a place of many islands (Indonesia), a place crossing the 180° line (Fiji), a high latitude where Mercator distorts (Greenland), more regions than the palette has colors.
 
-| Input | `class` | `source` | Values (baseline first) |
+| Input | `class` | `source` | Values (baseline first here; in reading order in the manifest) |
 |---|---|---|---|
 | `regions` | data | prop | `two`, `three`, `eight` (inferred: more than the palette) |
 | `places` (inferred) | data | api | `sf-manhattan`, `vatican`, `fiji`, `indonesia`, `greenland` |

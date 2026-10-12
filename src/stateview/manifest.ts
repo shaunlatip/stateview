@@ -16,7 +16,10 @@ export type Input<T extends Inputs = Inputs> = {
     label: string;
     class: InputClass;
     source: InputSource;
+    /** In the order the state panel shows them. */
     values: readonly T[K][];
+    /** Display names where sentence-casing the value isn't enough ("many-long" → "Many"). */
+    labels?: Partial<Record<T[K], string>>;
   };
 }[keyof T & string];
 
@@ -45,16 +48,17 @@ export type SequenceItem<T extends Inputs = Inputs> = {
 
 export type Item<T extends Inputs = Inputs> = StateItem<T> | SequenceItem<T>;
 
-/** The family of question a section answers. */
-export type SectionTone = "base" | "who" | "system" | "data" | "nearby";
-
 export type Section<T extends Inputs = Inputs> = {
   id: string;
   title: string;
   why: string;
-  /** Color-codes the section's question family on the hub, like Figma section colors. Defaults to "base". */
-  tone?: SectionTone;
   items: Item<T>[];
+};
+
+/** A combination of inputs no state shows, named the way a state would be. */
+export type Uncovered<T extends Inputs = Inputs> = {
+  title: string;
+  set: Partial<T>;
 };
 
 export type Manifest<T extends Inputs = Inputs> = {
@@ -64,12 +68,12 @@ export type Manifest<T extends Inputs = Inputs> = {
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
   screen: string;
-  scope: { branch: string; base: string; files: number };
+  scope: { repo: string; branch: string; base: string };
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];
   /** Combinations no state covers, listed rather than forced into an unreadable composite. */
-  uncovered: string[];
+  uncovered: Uncovered<T>[];
   /** Combinations left out because no real account can be in them. */
   excluded: string[];
 };
@@ -134,6 +138,14 @@ export function listItems<T extends Inputs>(manifest: Manifest<T>) {
 /** Input ids whose value differs from the baseline. */
 export function changedInputs<T extends Inputs>(manifest: Manifest<T>, inputs: T) {
   return manifest.inputs.filter((input) => inputs[input.id] !== manifest.baseline[input.id]).map((input) => input.id);
+}
+
+/** A value as the reviewer reads it: the input's own label, or the id in sentence case. */
+export function valueLabel(input: { labels?: Partial<Record<string, string>> }, value: string) {
+  const label = input.labels?.[value];
+  if (label) return label;
+  const words = value.replaceAll("-", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** Width to render a frame at, from the manifest's environment input ("mobile" → 375px). */

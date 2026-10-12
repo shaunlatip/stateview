@@ -5,21 +5,32 @@ import type { Annotation } from "./annotations";
 import type { Manifest } from "./manifest";
 
 /**
- * Review comments, saved in localStorage under the manifest's id and version.
- * A changed manifest gets a fresh record instead of mapping old comments onto
- * the wrong states.
+ * Review comments and the states the reviewer has opened, saved in
+ * localStorage under the manifest's id and version. A changed manifest gets a
+ * fresh record instead of mapping old comments onto the wrong states.
  */
 
 type ReviewRecord = {
   annotations: Annotation[];
+  /** Ids of the states and flows the reviewer has opened. */
+  viewed: string[];
 };
 
-const EMPTY: ReviewRecord = { annotations: [] };
+const EMPTY: ReviewRecord = { annotations: [], viewed: [] };
 const listeners = new Set<() => void>();
 const snapshots = new Map<string, { raw: string | null; record: ReviewRecord }>();
 
 function storageKey(manifest: Pick<Manifest, "id" | "version">) {
   return `stateview:${manifest.id}@${manifest.version}`;
+}
+
+// Comments saved by the old Agentation adapter have no element or anchor, so the comment engine can't place them.
+function isPlaceable(annotation: Partial<Annotation>): annotation is Annotation {
+  return isObject(annotation.element) && isObject(annotation.anchor);
+}
+
+function isObject(value: unknown) {
+  return typeof value === "object" && value !== null;
 }
 
 function read(key: string): ReviewRecord {
@@ -29,7 +40,12 @@ function read(key: string): ReviewRecord {
   let record = EMPTY;
   try {
     const parsed = raw ? (JSON.parse(raw) as Partial<ReviewRecord>) : null;
-    if (parsed) record = { annotations: parsed.annotations ?? [] };
+    if (parsed) {
+      record = {
+        annotations: (parsed.annotations ?? []).filter(isPlaceable),
+        viewed: (parsed.viewed ?? []).filter((id) => typeof id === "string"),
+      };
+    }
   } catch {
     // Unreadable record: start fresh rather than crash the review.
   }
@@ -67,6 +83,11 @@ export function useReview(manifest: Pick<Manifest, "id" | "version">) {
 
   return {
     annotations: record.annotations,
+    viewed: record.viewed,
+    markViewed(id: string) {
+      if (read(key).viewed.includes(id)) return;
+      write(key, (r) => ({ ...r, viewed: [...r.viewed, id] }));
+    },
     addAnnotation(annotation: Annotation) {
       write(key, (r) => ({ ...r, annotations: [...r.annotations.filter((a) => a.id !== annotation.id), annotation] }));
     },

@@ -47,9 +47,9 @@ test("shape", () => {
   const { errors } = check((m) => {
     m.id = "Team Members";
     m.version = "1";
-    delete m.scope.files;
+    delete m.scope.repo;
   });
-  assert.deepEqual(errors.map((e) => e.path), ["id", "version", "scope.files"]);
+  assert.deepEqual(errors.map((e) => e.path), ["id", "version", "scope.repo"]);
   assert.ok(errors.every((e) => e.rule === "shape"));
 });
 
@@ -57,9 +57,12 @@ test("input", () => {
   const { errors } = check((m) => {
     input(m, "plan").class = "account";
     input(m, "invites").values = ["some", "none", "none"];
+    input(m, "members").labels = { "many-short": "Many", one: "" };
   });
   assert.deepEqual(errors.map((e) => [e.rule, e.path]), [
     ["input", "inputs[1].class"],
+    ["input", 'inputs[3].labels["many-short"]'],
+    ["input", "inputs[3].labels.one"],
     ["input", "inputs[4].values[2]"],
   ]);
 });
@@ -86,13 +89,25 @@ test("section", () => {
   const { errors } = check((m) => {
     m.sections[1].id = "happy-path";
     m.sections[2].items = [];
-    m.sections[3].tone = "loud";
-    delete m.sections[4].tone;
   });
   assert.deepEqual(errors.map((e) => [e.rule, e.path]), [
     ["section", "sections[1].id"],
     ["section", "sections[2].items"],
-    ["section", "sections[3].tone"],
+  ]);
+});
+
+test("uncovered", () => {
+  const { errors } = check((m) => {
+    m.uncovered[0].title = "";
+    m.uncovered[1].set = {};
+    m.uncovered[2].set.role = "admin";
+    m.uncovered.push("Phone in dark mode");
+  });
+  assert.deepEqual(errors.map((e) => [e.rule, e.path]), [
+    ["uncovered", "uncovered[0].title"],
+    ["uncovered", "uncovered[1].set"],
+    ["set", "uncovered[2].set.role"],
+    ["uncovered", "uncovered[3]"],
   ]);
 });
 

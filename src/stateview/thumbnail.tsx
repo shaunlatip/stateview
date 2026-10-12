@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import { changedInputs, valueLabel, type Inputs, type Manifest } from "./manifest";
+
+type Size = "card" | "strip";
 
 /**
  * A live, scaled-down render of the real screen. Inert and hidden from
@@ -7,18 +10,36 @@ import { cn } from "./cn";
  * browser until it scrolls near the viewport. The screen inside starts from
  * the host app's own typography, not Stateview's.
  *
- * 18rem wide, the hub card's inner width (the grid track in theme.css is
- * measured from it): a 1152px desktop render at 0.25, or a 375px phone
- * render at 0.5, centred.
+ * "card" is the hub's 208 × 130 and "strip" the viewer filmstrip's 144 × 90
+ * (theme.css). A desktop render fills the width; a phone render is centred.
  */
-export function Thumbnail({ children, viewport }: { children: ReactNode; viewport: "desktop" | "mobile" }) {
+export function Thumbnail({
+  children,
+  viewport,
+  size,
+  className,
+}: {
+  children: ReactNode;
+  viewport: "desktop" | "mobile";
+  size: Size;
+  className?: string;
+}) {
   return (
-    // inert set through a ref: React 18 drops the boolean attribute, React 19 ignores the string form.
-    <div aria-hidden ref={makeInert} className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2">
+    <div
+      aria-hidden
+      // inert set through a ref: React 18 drops the boolean attribute, React 19 ignores the string form.
+      ref={makeInert}
+      className={cn(
+        "content-auto relative shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
+        size === "card" ? "gui-thumb-card" : "gui-thumb-strip",
+        className,
+      )}
+    >
+      {/* A still picture: loading skeletons and the like don't loop in every thumbnail. */}
       <div
         className={cn(
-          "host-frame pointer-events-none absolute top-0 origin-top bg-background select-none",
-          viewport === "mobile" ? "left-1/2 h-200 w-93.75 -translate-x-1/2 scale-50" : "left-0 h-200 w-288 origin-top-left scale-25",
+          "host-frame pointer-events-none absolute top-0 h-200 bg-background select-none **:animate-none",
+          viewport === "mobile" ? "gui-thumb-mobile left-1/2 origin-top -translate-x-1/2" : "gui-thumb-desktop left-0 origin-top-left",
         )}
       >
         {children}
@@ -27,26 +48,40 @@ export function Thumbnail({ children, viewport }: { children: ReactNode; viewpor
   );
 }
 
-function makeInert(element: HTMLDivElement | null) {
+export function makeInert(element: HTMLElement | null) {
   element?.setAttribute("inert", "");
 }
 
+/** The inputs a frame changes from the baseline, as the reviewer reads them, for InputsThumbnail. */
+export function inputChanges<T extends Inputs>(manifest: Manifest<T>, inputs: T) {
+  return changedInputs(manifest, inputs).flatMap((id) => {
+    const input = manifest.inputs.find((candidate) => candidate.id === id);
+    return input ? [{ label: input.label, value: valueLabel(input, inputs[id]) }] : [];
+  });
+}
+
 /**
- * Stands in for a live thumbnail when a review turns them off: the inputs the
- * state changes from the baseline, in the same frame. Sits at the bottom so
- * the card's badges never cover it.
+ * Stands in for a live thumbnail when a review turns them off (WebGL maps,
+ * video): the inputs the state changes from the baseline, in the same frame.
  */
-export function InputsThumbnail({ changes }: { changes: { label: string; value: string }[] }) {
+export function InputsThumbnail({ changes, size, className }: { changes: { label: string; value: string }[]; size: Size; className?: string }) {
   return (
-    <div aria-hidden className="gui-thumb-width flex h-50 shrink-0 flex-col justify-end rounded-gui-s bg-gui-neutral-2 p-gui-s">
+    <div
+      aria-hidden
+      className={cn(
+        "flex shrink-0 flex-col justify-end overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
+        size === "card" ? "gui-thumb-card p-gui-s text-gui-xs" : "gui-thumb-strip p-gui-xs text-gui-xs",
+        className,
+      )}
+    >
       {changes.length === 0 ? (
-        <p className="text-gui-s text-gui-neutral-8">Baseline</p>
+        <p className="text-gui-neutral-8">Baseline</p>
       ) : (
-        <dl className="grid grid-cols-2 gap-x-gui-s gap-y-gui-xxs text-gui-s">
+        <dl className="grid grid-cols-2 gap-x-gui-xs gap-y-gui-xxs">
           {changes.map((change) => (
             <div key={change.label} className="contents">
-              <dt className="min-w-0 break-words text-gui-neutral-8">{change.label}</dt>
-              <dd className="min-w-0 break-words font-gui-data">{change.value}</dd>
+              <dt className="min-w-0 wrap-break-word text-gui-neutral-8">{change.label}</dt>
+              <dd className="min-w-0 wrap-break-word font-gui-data">{change.value}</dd>
             </div>
           ))}
         </dl>

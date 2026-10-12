@@ -12,7 +12,7 @@
 //      empty review registry, unless they already exist:
 //        /stateview                     every review
 //        /stateview/<review>            the hub
-//        /stateview/<review>/state?sv=  one state, with the review bar
+//        /stateview/<review>/state?sv=  one state, with the viewer bar
 //   4. Lists the packages the engine imports that the app doesn't have yet. It doesn't install them.
 
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -67,8 +67,8 @@ function copyEngine() {
 
 /**
  * Packages the engine imports that the app doesn't have, or has at a version
- * older than Stateview's range allows (an older agentation, say, lacks props
- * the engine passes), with Stateview's version ranges.
+ * older than Stateview's range allows (an older sonner, say, lacks the
+ * toasterId the engine passes), with Stateview's version ranges.
  */
 function missingPackages() {
   const ours = readJson(join(source, "package.json"));

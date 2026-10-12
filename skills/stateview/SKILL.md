@@ -37,7 +37,7 @@ It copies the engine into `src/stateview/` (vendored; don't edit the copy), impo
 node <skill>/scripts/new-review.mjs <review-id> --screen "<Area › Screen>"
 ```
 
-Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the branch, base and file count filled in from git), a render stub in `stateview-reviews/<id>/index.tsx`, and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so if the list includes files unrelated to the change (a lockfile touched by a package manager, say), correct `scope.files` by hand.
+Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git), a render stub in `stateview-reviews/<id>/index.tsx`, and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
 
 Paths below assume a `src/` folder; in apps without one, the folders sit at the project root (`stateview/`, `stateview-reviews/`, `app/stateview/`). The scripts print the real paths.
 
@@ -56,9 +56,9 @@ Make the screen renderable from a plain object of string inputs, then write the 
 - Moments (open sheet, typed draft, selected row) become optional `initial*` props.
 - The review narrows the frame to 375 px for the `mobile` value of the environment input, but the window stays desktop-sized: CSS media queries (Tailwind `sm:`), `100vw`, `matchMedia` and `innerWidth` all still see desktop. Convert the changed screen's breakpoint classes to container queries (after checking the root is as wide as the window; a space-taking scrollbar makes it narrower) and pass an `isMobile` override for JavaScript checks. Fixed-position sheets need a `contain: layout paint` wrapper to stay in the frame.
 - The app's shell (`_app.tsx` or the root layout) wraps the review routes too: skip its global nav, analytics and dev toolbars under `/stateview`.
-- The review bar covers the bottom 6rem of the window. Full-height screens (maps, editors, anything `h-dvh`) need to be rendered in a box that stops above it.
+- The viewer bar takes the top of the window, and the screen renders in a frame below it (and beside the filmstrip on wide screens). Full-height screens (maps, editors, anything `h-dvh` or `100vh`) should fill the frame with `h-full` in the review rather than measure the window, or their bottom is cut off by the bar's height.
 - Production behavior doesn't change: every prop and override you add is optional and defaults to today's behavior. Keep a list of every production file you edit; it goes in your report.
-- For WebGL, canvas or video screens, pass `{ thumbnails: "off" }` to `defineReview`: the hub shows each state's changed inputs instead of a live render, since browsers cap active WebGL contexts at about 16.
+- For WebGL, canvas or video screens, pass `{ thumbnails: "off" }` to `defineReview`: the hub and filmstrip show each state's changed inputs instead of a live render, since browsers cap active WebGL contexts at about 16.
 
 ### 5. Write the manifest
 
@@ -67,7 +67,8 @@ Fill in `review.json`: `baseline`, `inputs`, `sections` of states and sequences,
 - The realistic baseline comes first. Each state is one moment a real person could be in, answering one question, changing one or two inputs from the baseline.
 - Only stack what can be true at the same moment: who, config and data combine freely; one request state and one moment per state unless they truly co-occur. Use a sequence for anything that needs order (a flow, error then retry).
 - Mark flag- and entitlement-gated states and sub-component loading/error states `"code-only"` (the hub labels them "Not in designs"). They're the states nobody draws, and the most valuable ones here.
-- About 8–15 states in the standard section order, each section with the `tone` the order table gives it, a short "Nearby features" section for unchanged things the change could break, and an honest `uncovered` and `excluded` list.
+- About 8–15 states in the standard section order, a short "Nearby features" section for unchanged things the change could break, and an honest `uncovered` list (each a `title` and the `set` it would need) and `excluded` list.
+- Each input's `values` in reading order, not baseline first; add `labels` where sentence-casing a value reads wrong.
 - Titles name the state ("Viewer checking who's on the team"); each `why` is one sentence written as a person doing something; `checks` are short, observable things to verify.
 
 Keep `route` as `/stateview/<id>/state`. Bump `version` whenever you change states in a review someone has started, so saved progress and comments don't map onto the wrong state.

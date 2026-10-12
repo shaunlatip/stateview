@@ -2,30 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
-import { Toaster, toast } from "sonner";
-import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { stateContext } from "./agent-export";
+import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
-import type { AnnotationLayer } from "./annotations";
+import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
-import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
+import { findFrameIndex, frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
+import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
+import { StateviewToaster, notify } from "./toast";
 import { ThemeScope, buttonVariants } from "./ui";
-import { pushFrame, useFrameQuery } from "./use-frame-query";
-
-// Graphical Toast: the shared Toaster's default look is replaced, not layered over.
-const toastClassNames = {
-  toast:
-    "flex w-full items-center gap-gui-xs rounded-gui-m bg-gui-neutral-1 p-gui-m font-gui-ui text-gui-m text-gui-neutral-10 shadow-gui-m ring-1 ring-gui-neutral-4-transparent dark:bg-gui-neutral-2",
-  title: "font-gui-medium",
-  description: "text-gui-neutral-7",
-  icon: "text-gui-neutral-10",
-};
-
-const toastIcons = {
-  success: <CheckCircleIcon aria-hidden />,
-  error: <XCircleIcon aria-hidden />,
-};
+import { useEffectEvent } from "./use-effect-event";
+import { pushFrame, replaceParams, useFrameQuery } from "./use-frame-query";
 
 // Keys typed here belong to the page or to the comment engine, not to Stateview's shortcuts.
 const OWNS_KEYS = [
@@ -37,7 +26,7 @@ const OWNS_KEYS = [
   "[role='menu']",
   "[role='radiogroup']",
   "[role='dialog']",
-  "[data-agentation-portal]",
+  "[data-feedback-toolbar]",
 ].join(",");
 
 type FocusViewProps<T extends Inputs> = {
@@ -45,53 +34,114 @@ type FocusViewProps<T extends Inputs> = {
   /** Renders the real screen from a state's inputs. */
   render: (inputs: T) => ReactNode;
   annotationLayer: AnnotationLayer;
-  /** Where Escape and "back to hub" go. */
+  /** Where Escape and the logo go. Links back pass scroll={false}: the hub restores the reviewer's own position. */
   hubHref?: string;
+  /** "off" for screens that can't render many live copies at once (WebGL maps, video): the filmstrip lists inputs instead. */
+  thumbnails?: "live" | "off";
 };
 
-/** The real screen in one state, with Stateview's review bar on top. */
-export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer, hubHref = "/" }: FocusViewProps<T>) {
+// From this width the filmstrip opens by default and takes its own column; below it, it overlays the app.
+const WIDE = "(min-width: 768px)";
+
+function subscribeWide(onChange: () => void) {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
+export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer, hubHref = "/", thumbnails = "live" }: FocusViewProps<T>) {
   const router = useRouter();
   const query = useFrameQuery();
   const review = useReview(manifest);
+  const [commenting, setCommenting] = useState(false);
+  const [pinsVisible, setPinsVisible] = useState(true);
+  const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const frames = listFrames(manifest);
   const index = query ? findFrameIndex(frames, query.sv, query.step) : -1;
   const frame = index === -1 ? null : frames[index];
+  // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
+  const inputs = frame && query ? withOverrides(manifest, frame.inputs, query.params) : null;
+  const annotations = frame ? review.annotations.filter((a) => a.stateId === frame.key) : [];
+  const openCount = annotations.filter((a) => a.status === "open").length;
 
+  const toggleCommenting = () => {
+    setCommenting(!commenting);
+    // A new comment's pin should be visible once it's saved.
+    if (!commenting) setPinsVisible(true);
+  };
+
+  const wide = useSyncExternalStore(
+    subscribeWide,
+    () => window.matchMedia(WIDE).matches,
+    () => true,
+  );
+  // Null until the reviewer toggles it: open on wide screens, closed on phones.
+  const [stripChoice, setStripChoice] = useState<boolean | null>(null);
+  const stripOpen = stripChoice ?? wide;
+  const stripId = useId();
+
+  const markViewed = review.markViewed;
+  const itemId = frame?.item.id;
+  useEffect(() => {
+    if (itemId) markViewed(itemId);
+  }, [itemId, markViewed]);
+
+  const commentsOn = (item: Item<T>) =>
+    review.annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
+
+  const panelId = useId();
+  const [panelElement, setPanelElement] = useState<HTMLElement | null>(null);
+  const panelTriggerRef = useRef<HTMLButtonElement>(null);
+  // How the panel was opened: from the keyboard it takes focus, from a click it leaves focus on the button.
+  const [panel, setPanel] = useState<"closed" | "pointer" | "keyboard">("closed");
+
+  const closePanel = () => {
+    if (panelElement?.contains(document.activeElement)) panelTriggerRef.current?.focus();
+    setPanel("closed");
+  };
+
+  // The frame's own URL carries no input params, so stepping also clears the reviewer's changes.
   const goTo = (target: number) => {
     const next = frames[target];
     if (next) pushFrame(frameHref(manifest, next));
   };
 
-  const onKeyDown = (event: KeyboardEvent) => {
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (!frame || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
     if (event.target instanceof Element && event.target.closest(OWNS_KEYS)) return;
     switch (event.key) {
-      case "j":
-      case "J":
+      case "k":
+      case "K":
       case "ArrowRight":
         event.preventDefault();
         goTo(index + 1);
         break;
-      case "k":
-      case "K":
+      case "j":
+      case "J":
       case "ArrowLeft":
         event.preventDefault();
         goTo(index - 1);
         break;
+      case "c":
+      case "C":
+        event.preventDefault();
+        toggleCommenting();
+        break;
+      case "s":
+      case "S":
+        event.preventDefault();
+        if (panel === "closed") setPanel("keyboard");
+        else closePanel();
+        break;
       case "Escape":
-        router.push(hubHref);
+        router.push(hubHref, { scroll: false });
         break;
     }
-  };
-
-  // One listener for the page's lifetime that always calls this render's handler (useEffectEvent, but React 18 has none).
-  const keyHandler = useRef(onKeyDown);
-  useEffect(() => {
-    keyHandler.current = onKeyDown;
   });
+
   useEffect(() => {
-    const listener = (event: KeyboardEvent) => keyHandler.current(event);
+    const listener = (event: KeyboardEvent) => onKeyDown(event);
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, []);
@@ -113,24 +163,35 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
 
   // The URL is only known once the page is in the browser.
   if (!query) return null;
-  if (!frame) return <UnknownState id={query.sv} hubHref={hubHref} />;
+  if (!frame || !inputs) return <UnknownState id={query.sv} hubHref={hubHref} />;
 
-  const copyWithState = (markdown: string) => {
+  const copyComments = () => {
     void navigator.clipboard
-      .writeText(stateContext(manifest, frame) + markdown)
-      .then(() => toast.success("Comments copied with this state’s URL and inputs"))
-      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+      .writeText(stateContext(manifest, frame, inputs) + formatAnnotations(annotations))
+      .then(() => notify.success("Comments copied with this state’s URL and inputs"))
+      .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+  };
+
+  const deleteComments = () => {
+    const deleted = annotations;
+    for (const annotation of deleted) review.deleteAnnotation(annotation.id);
+    notify.success(`Deleted ${deleted.length} ${deleted.length === 1 ? "comment" : "comments"}`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          for (const annotation of deleted) review.addAnnotation(annotation);
+        },
+      },
+    });
+  };
+
+  const setInput = (id: keyof T & string, value: string) => {
+    // Only differences from the state are kept in the URL; setting a value back to the state's own clears it.
+    replaceParams({ [id]: value === frame.inputs[id] ? null : value });
   };
 
   return (
     <>
-      {/* Bottom padding keeps the end of the page clear of the review bar. */}
-      <ThemeScope className={cn("grid min-h-dvh pb-24", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
-        {/* Keyed by state so the screen starts fresh from its inputs every time. */}
-        <div key={frame.key} className="host-frame grid">
-          {render(frame.inputs)}
-        </div>
-      </ThemeScope>
       <FocusBar
         frame={frame}
         position={index + 1}
@@ -138,37 +199,94 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         hubHref={hubHref}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
+        strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
+        commenting={commenting}
+        onToggleCommenting={toggleCommenting}
+        commentCount={openCount}
+        pinsVisible={pinsVisible}
+        onTogglePins={() => setPinsVisible(!pinsVisible)}
+        onCopyComments={openCount > 0 ? copyComments : null}
+        onCopyLink={copyLink}
+        onDeleteComments={annotations.length > 0 ? deleteComments : null}
+        panel={{ id: panelId, open: panel !== "closed", onToggle: () => (panel === "closed" ? setPanel("pointer") : closePanel()) }}
+        panelTriggerRef={panelTriggerRef}
       />
+      <Filmstrip
+        id={stripId}
+        manifest={manifest}
+        currentId={frame.item.id}
+        open={stripOpen}
+        auto={stripChoice === null}
+        viewed={review.viewed}
+        commentsOn={commentsOn}
+        render={thumbnails === "live" ? render : null}
+        // On a phone the strip covers the app, so picking a state puts it away.
+        onPick={() => {
+          if (!wide) setStripChoice(false);
+        }}
+      />
+      {/*
+       * The app's window: below the bar and, on wide screens, beside the open
+       * filmstrip. The transform makes this box the app's viewport for fixed
+       * elements (a fixed sidebar stays beside the filmstrip, not under it),
+       * and the app scrolls inside it rather than the page.
+       */}
+      <ThemeScope
+        className={cn(
+          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center transition-all duration-gui-large ease-gui-large motion-reduce:transition-none",
+          stripOpen && "md:left-(--viewer-strip)",
+        )}
+      >
+        <div className={cn("w-full transform-gpu overflow-hidden", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}>
+          <div data-pin-layer="" className="relative grid h-full overflow-y-auto overscroll-contain">
+            {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
+            <div
+              key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
+              ref={setScreen}
+              className={cn("host-frame grid", commenting && "cursor-crosshair **:cursor-crosshair")}
+            >
+              {render(inputs)}
+            </div>
+          </div>
+        </div>
+      </ThemeScope>
+      {panel !== "closed" ? (
+        <StatePanel id={panelId} onElement={setPanelElement} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
+      ) : null}
+      {/* Keyed by state so a half-written comment never carries over to another state. */}
       <Layer
+        key={frame.key}
         stateId={frame.key}
-        inputs={frame.inputs}
-        annotations={review.annotations.filter((a) => a.stateId === frame.key)}
+        inputs={inputs}
+        annotations={annotations}
+        root={screen}
+        active={commenting}
+        onActiveChange={setCommenting}
+        pinsVisible={pinsVisible}
         onAdd={review.addAnnotation}
         onUpdate={review.updateAnnotation}
         onDelete={review.deleteAnnotation}
-        onCopy={copyWithState}
       />
-      <ThemeScope>
-        <Toaster position="top-center" icons={toastIcons} toastOptions={{ unstyled: true, classNames: toastClassNames }} />
-      </ThemeScope>
+      <StateviewToaster />
     </>
   );
 }
 
-/** A header for copied comments, so an agent can open exactly the state the reviewer saw. */
-function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>) {
-  const changed = new Set<string>(changedInputs(manifest, frame.inputs));
-  const inputs = manifest.inputs
-    .map((input) => `${input.id}=${frame.inputs[input.id]}${changed.has(input.id) ? " (changed)" : ""}`)
-    .join(", ");
-  const step = frame.step ? ` · step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : "";
-  return [
-    `## State: ${frame.section.title} › ${frame.item.title}${step}`,
-    `URL: ${window.location.origin}${frameHref(manifest, frame)}`,
-    `Inputs: ${inputs}`,
-    "",
-    "",
-  ].join("\n");
+/** The current URL carries the state and any inputs changed in the panel. */
+function copyLink() {
+  void navigator.clipboard
+    .writeText(window.location.href)
+    .then(() => notify.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
+    .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+}
+
+/** A state's inputs with the reviewer's changes from the URL on top, keeping only values the input allows. */
+function withOverrides<T extends Inputs>(manifest: Manifest<T>, inputs: T, params: URLSearchParams): T {
+  const set = manifest.inputs.flatMap((input) => {
+    const value = params.get(input.id);
+    return value !== null && (input.values as readonly string[]).includes(value) ? [[input.id, value]] : [];
+  });
+  return { ...inputs, ...Object.fromEntries(set) };
 }
 
 function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
@@ -179,7 +297,7 @@ function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
-        <Link href={hubHref} className={buttonVariants({ className: "w-fit" })}>
+        <Link href={hubHref} scroll={false} className={buttonVariants({ className: "w-fit" })}>
           See all states
         </Link>
       </div>

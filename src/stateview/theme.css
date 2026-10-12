@@ -27,6 +27,28 @@
   --navigation-active-background: #f0f0f0;
   --navigation-active-foreground: #000000;
 
+  /*
+   * Comment picker selection: the outline on the picked element and the pins.
+   * A neutral tool blue, not the brand palette, so it never reads as part of
+   * the app under review. Agentation's hue (OKLCH 249), darkened in sRGB to
+   * pass 4.5:1 for white pin numbers and 3:1 for the outline on white.
+   */
+  --selection: #0175c5;
+  --selection-foreground: #ffffff;
+  --selection-fill: #0175c50a;
+
+  /*
+   * Code readout (selector and HTML in the comment composer): a dark, IDE-like
+   * surface in both schemes, with syntax roles drawn from the palette. Blue is
+   * left out because it means selection. Every role measures ≥ 5:1 on the surface.
+   */
+  --code-surface: #202020;
+  --code-text: #e5e5e5;
+  --code-muted: #a3a3a3;
+  --code-tag: #e864ff;
+  --code-attribute: #00c9bb;
+  --code-string: #e0e708;
+
   --space-zero: 0px;
   --space-xxs: 4px;
   --space-xs: 7px;
@@ -166,6 +188,13 @@
   --navigation-active-background: #2b2b2b;
   --navigation-active-foreground: #ffffff;
 
+  --selection: #3aa3ff;
+  --selection-foreground: #000000;
+  --selection-fill: #3aa3ff1a;
+
+  /* One step lighter than the dark popover so the code block still reads as an inset. */
+  --code-surface: #2b2b2b;
+
   --color-3: #f4f83b;
   --color-3-transparent: #f4f83b33;
   --neutral-1: #000000;
@@ -199,6 +228,7 @@
   --color-gui-neutral-3-transparent: var(--neutral-3-transparent);
   --color-gui-neutral-4: var(--neutral-4);
   --color-gui-neutral-4-transparent: var(--neutral-4-transparent);
+  --color-gui-neutral-5: var(--neutral-5);
   --color-gui-neutral-6: var(--neutral-6);
   --color-gui-neutral-7: var(--neutral-7);
   --color-gui-neutral-8: var(--neutral-8);
@@ -211,6 +241,15 @@
   --color-gui-border: var(--border-default-color);
   --color-gui-option-badge: var(--option-badge-background);
   --color-gui-option-badge-foreground: var(--option-badge-foreground);
+  --color-gui-selection: var(--selection);
+  --color-gui-selection-foreground: var(--selection-foreground);
+  --color-gui-selection-fill: var(--selection-fill);
+  --color-gui-code-surface: var(--code-surface);
+  --color-gui-code-text: var(--code-text);
+  --color-gui-code-muted: var(--code-muted);
+  --color-gui-code-tag: var(--code-tag);
+  --color-gui-code-attribute: var(--code-attribute);
+  --color-gui-code-string: var(--code-string);
 
   --spacing-gui-zero: var(--space-zero);
   --spacing-gui-xxs: var(--space-xxs);
@@ -252,11 +291,6 @@
 
   --ease-gui: var(--motion-easing);
   --ease-gui-large: var(--motion-large-easing);
-
-  --color-gui-section-fill: var(--section-fill);
-  --color-gui-section-edge: var(--section-edge);
-  --color-gui-card: var(--card-fill);
-  --color-gui-card-hover: var(--card-fill-hover);
 }
 
 /* Keyboard focus: the theme's outline, kept separate from the component edge. */
@@ -264,7 +298,7 @@
   outline: var(--focus-ring-outline);
 }
 
-/* Small motion for controls; large for surfaces like the review bar and toasts. */
+/* Small motion for controls; large for surfaces like the review bar and the state panel. */
 @utility duration-gui {
   --tw-duration: var(--motion-duration);
   transition-duration: var(--motion-duration);
@@ -288,9 +322,43 @@
   min-width: calc(var(--line-m) + 2 * var(--space-xs));
 }
 
+/* A segment inside a segmented control's track: the track's S radius less its 2px inset, so the corners stay concentric. */
+@utility rounded-gui-segment {
+  border-radius: calc(var(--radius-s) - 2px);
+}
+
+/* A select's list is at least as wide as its trigger (Base UI sets --anchor-width on the positioner). */
+@utility gui-anchor-width {
+  min-width: var(--anchor-width);
+}
+
+/*
+ * The viewer's frame: a bar along the top, one toolbar control tall inside
+ * XXS padding, and a filmstrip down the left, one strip thumbnail wide inside
+ * S padding. The app under review fills the rest.
+ */
+.stateview-theme {
+  --viewer-bar: calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-xxs));
+  --viewer-strip: calc(var(--thumb-strip-width) * 1px + 2 * var(--space-s));
+  --thumb-strip-width: 144;
+}
+
+/* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
+@utility gui-panel-height {
+  max-height: calc(100dvh - var(--viewer-bar) - 2 * var(--space-xs));
+}
+
 /* Edges and dividers are drawn with inset shadows, never native borders. */
 @utility gui-divider-top {
   box-shadow: inset 0 var(--border-s) 0 0 var(--border-default-color);
+}
+
+@utility gui-divider-bottom {
+  box-shadow: inset 0 calc(-1 * var(--border-s)) 0 0 var(--border-default-color);
+}
+
+@utility gui-divider-end {
+  box-shadow: inset calc(-1 * var(--border-s)) 0 0 0 var(--border-default-color);
 }
 
 @utility gui-divider-vertical {
@@ -316,72 +384,32 @@
 }
 
 /*
- * Hub sections, color-coded by the family of question they answer (like
- * Figma section colors). Fills are opaque mixes with Neutral 1, so the tab
- * can hide the body edge it overlaps and the tints flip with dark mode.
+ * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90), both
+ * 16:10. Sizes are unitless so the screen inside can scale from them: a
+ * desktop render (1088px wide) fills the width; a phone render (375px wide)
+ * shows its top 400px.
  */
-.stateview-theme [data-tone="base"] {
-  --section-fill: var(--neutral-1);
-  --section-edge: var(--neutral-4);
+@utility gui-thumb-card {
+  --thumb-width: 208;
+  --thumb-height: 130;
+  width: calc(var(--thumb-width) * 1px);
+  height: calc(var(--thumb-height) * 1px);
 }
 
-.stateview-theme [data-tone="who"] {
-  --section-fill: color-mix(in srgb, var(--color-4) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-4) 55%, var(--neutral-1));
+@utility gui-thumb-strip {
+  --thumb-width: var(--thumb-strip-width);
+  --thumb-height: 90;
+  width: calc(var(--thumb-width) * 1px);
+  height: calc(var(--thumb-height) * 1px);
 }
 
-.stateview-theme [data-tone="system"] {
-  --section-fill: color-mix(in srgb, var(--color-2) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-2) 55%, var(--neutral-1));
+@utility gui-thumb-desktop {
+  width: 1088px;
+  scale: calc(var(--thumb-width) / 1088);
 }
 
-.stateview-theme [data-tone="data"] {
-  --section-fill: color-mix(in srgb, var(--color-1) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-1) 55%, var(--neutral-1));
+@utility gui-thumb-mobile {
+  width: 375px;
+  scale: calc(var(--thumb-height) / 400);
 }
 
-.stateview-theme [data-tone="nearby"] {
-  --section-fill: var(--neutral-3);
-  --section-edge: var(--neutral-5);
-}
-
-/* Hub cards sit one shade darker than whatever is behind them, so they read on any section tint. */
-.stateview-theme {
-  --card-fill: color-mix(in srgb, var(--neutral-10) 5%, transparent);
-  --card-fill-hover: color-mix(in srgb, var(--neutral-10) 12%, transparent);
-  /* Thumbnail width: 18rem, narrowed on small phones so a one-card section still fits beside the page padding. */
-  --hub-thumb: min(18rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
-}
-
-/* Hub grid: fixed tracks for one card (a thumbnail plus XXS card padding) inside a section's S padding. */
-@utility gui-section-grid {
-  grid-template-columns: repeat(auto-fill, calc(var(--hub-thumb) + 2 * var(--space-xxs) + 2 * var(--space-s)));
-}
-
-@utility gui-thumb-width {
-  width: var(--hub-thumb);
-}
-
-/* Section tab edge: top and left only; the tail and the body carry the rest of the outline. */
-@utility gui-section-tab-edge {
-  box-shadow: inset var(--border-s) var(--border-s) 0 0 var(--section-edge);
-}
-
-/*
- * The tab's curved tail, after Rauno's Next.js dev tools notch: an SVG glued
- * to the tab's right edge (overlapping it by one edge width) that scales with
- * the tab's height. Inset half an edge top and bottom so its stroke, drawn at
- * y=0 and y=24 of the viewBox, lands on the centre of the tab's top edge and
- * of the body's top edge.
- */
-@utility gui-notch-tail {
-  position: absolute;
-  top: calc(var(--border-s) / 2);
-  left: calc(100% - var(--border-s));
-  height: calc(100% - var(--border-s));
-  overflow: visible;
-}
-
-@utility gui-stroke-edge {
-  stroke-width: var(--border-s);
-}

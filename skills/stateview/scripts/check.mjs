@@ -21,7 +21,6 @@ const INPUT_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const CLASSES = ["who", "config", "data", "system", "moment", "environment"];
 const SOURCES = ["prop", "flag", "entitlement", "api", "viewport"];
 const ORIGINS = new Set(["design", "code-only"]);
-const TONES = ["base", "who", "system", "data", "nearby"];
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git"]);
 
 /** Limits behind the composition warnings. */
@@ -82,6 +81,7 @@ export function checkManifest(manifest) {
   const model = checkInputs(manifest, f);
   model.baseline = checkBaseline(manifest, model, f);
   const entries = checkSections(manifest, model, f);
+  checkUncovered(manifest, model, f);
   checkComposition(manifest, entries, model, f);
   return { errors: f.errors, warnings: f.warnings, summary: summarize(manifest) };
 }
@@ -93,11 +93,11 @@ function checkShape(m, f) {
   f.expect(Number.isInteger(m.version) && m.version >= 1, "shape", "version", `version should be a whole number of 1 or more${got(m.version)}.`);
   f.expect(typeof m.route === "string" && m.route.startsWith("/"), "shape", "route", `route should be the path that renders the screen, starting with "/"${got(m.route)}.`);
   f.expect(isText(m.screen), "shape", "screen", `screen should name the screen under review, like "Team settings › Members"${got(m.screen)}.`);
-  if (f.expect(isObject(m.scope), "shape", "scope", `scope should be an object with branch, base and files${got(m.scope)}.`)) {
-    const { branch, base, files } = m.scope;
+  if (f.expect(isObject(m.scope), "shape", "scope", `scope should be an object with repo, branch and base${got(m.scope)}.`)) {
+    const { repo, branch, base } = m.scope;
+    f.expect(isText(repo), "shape", "scope.repo", `scope.repo should name the repository, like "acme-web"${got(repo)}.`);
     f.expect(typeof branch === "string", "shape", "scope.branch", `scope.branch should be the branch name${got(branch)}.`);
     f.expect(typeof base === "string", "shape", "scope.base", `scope.base should be the branch it merges into, like "main"${got(base)}.`);
-    f.expect(Number.isInteger(files) && files >= 0, "shape", "scope.files", `scope.files should be the number of files changed, 0 or more${got(files)}.`);
   }
   if (f.expect(isObject(m.baseline), "shape", "baseline", `baseline should be an object with a value for every input${got(m.baseline)}.`)) {
     for (const [key, value] of Object.entries(m.baseline)) {
@@ -106,7 +106,7 @@ function checkShape(m, f) {
   }
   f.expect(Array.isArray(m.inputs) && m.inputs.length > 0, "shape", "inputs", `inputs should list at least one input${got(m.inputs)}.`);
   f.expect(Array.isArray(m.sections) && m.sections.length > 0, "shape", "sections", `sections should list at least one section${got(m.sections)}.`);
-  f.expect(isStringArray(m.uncovered), "shape", "uncovered", `uncovered should be a list of strings; use [] if every combination is covered${got(m.uncovered)}.`);
+  f.expect(Array.isArray(m.uncovered), "shape", "uncovered", `uncovered should be a list of { title, set } combinations; use [] if every combination is covered${got(m.uncovered)}.`);
   f.expect(isStringArray(m.excluded), "shape", "excluded", `excluded should be a list of strings; use [] if nothing is excluded${got(m.excluded)}.`);
 }
 
@@ -135,6 +135,7 @@ function checkInputs(m, f) {
     f.expect(CLASSES.includes(input.class), "input", at(path, "class"), `class should be one of ${CLASSES.join(", ")}${got(input.class)}.`);
     f.expect(SOURCES.includes(input.source), "input", at(path, "source"), `source should be one of ${SOURCES.join(", ")}${got(input.source)}.`);
     usable = checkValues(values, at(path, "values"), f) && usable;
+    if (input.labels !== undefined) checkLabels(input.labels, values, at(path, "labels"), f);
     if (input.class === "environment") {
       if (environment) f.error("environment", at(path, "class"), `Only one input can have class "environment", and ${environment} already does; merge them into one input.`);
       else environment = path;
@@ -154,6 +155,15 @@ function checkValues(values, path, f) {
     seen.add(value);
   });
   return true;
+}
+
+/** Optional display names: each key a value of the input, each name a non-empty string. */
+function checkLabels(labels, values, path, f) {
+  if (!f.expect(isObject(labels), "input", path, `labels should map values to display names, like { "many-long": "Many" }${got(labels)}.`)) return;
+  for (const [value, label] of Object.entries(labels)) {
+    if (Array.isArray(values) && !values.includes(value)) f.error("input", at(path, value), `labels names "${value}", which isn't one of this input's values; remove it or fix the spelling.`);
+    f.expect(isText(label), "input", at(path, value), `A label should be the name shown for the value, like "Many"${got(label)}.`);
+  }
 }
 
 /** Returns the baseline when it covers exactly the declared inputs with valid values, else null. */
@@ -193,9 +203,6 @@ function checkSections(m, model, f) {
     checkId(section.id, at(path, "id"), sectionIds, "section", "Section", "loading-errors", f);
     f.expect(isText(section.title), "section", at(path, "title"), `Section title should be a short heading, like "Loading & errors"${got(section.title)}.`);
     f.expect(isText(section.why), "section", at(path, "why"), `Section why should say in one sentence why these states matter${got(section.why)}.`);
-    if (section.tone !== undefined) {
-      f.expect(TONES.includes(section.tone), "section", at(path, "tone"), `Section tone should be one of ${TONES.join(", ")}, or left out for "base"${got(section.tone)}.`);
-    }
     const itemsPath = at(path, "items");
     if (!f.expect(Array.isArray(section.items) && section.items.length > 0, "section", itemsPath, `A section needs at least one item; add one or remove the section${got(section.items)}.`)) return;
     section.items.forEach((item, i) => {
@@ -252,6 +259,20 @@ function sequenceFrames(item, path, model, f) {
     }
   });
   return frames;
+}
+
+/** Each uncovered combination is named like a state and sets real inputs to real values. */
+function checkUncovered(m, model, f) {
+  if (!Array.isArray(m.uncovered)) return;
+  m.uncovered.forEach((entry, index) => {
+    const path = at("uncovered", index);
+    if (!f.expect(isObject(entry), "uncovered", path, "Each uncovered entry should be an object with a title and the set of inputs no state shows.")) return;
+    f.expect(isText(entry.title), "uncovered", at(path, "title"), `Title should name the combination the way a state would be, like "Viewer on a Free team"${got(entry.title)}.`);
+    const setPath = at(path, "set");
+    if (f.expect(isObject(entry.set) && Object.keys(entry.set).length > 0, "uncovered", setPath, `set should list the inputs in this combination, like { "role": "viewer", "plan": "free" }${got(entry.set)}.`)) {
+      checkSet(entry.set, setPath, model, f);
+    }
+  });
 }
 
 /**

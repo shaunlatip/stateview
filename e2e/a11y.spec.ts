@@ -49,3 +49,49 @@ for (const route of routes) {
     });
   });
 }
+
+test.describe("a11y commenting", () => {
+  test("a comment can be made by keyboard, and the composer passes axe", async ({ page }) => {
+    await open(page, "/app/members?sv=viewer-view");
+    await page.keyboard.press("c");
+    await expect(page.getByRole("button", { name: "Comment", exact: false }).first()).toHaveAttribute("aria-pressed", "true");
+    const remove = page.getByRole("button", { name: "Remove Priya Raman", exact: true });
+    await remove.focus();
+    await page.keyboard.press("Enter");
+    const composer = page.getByRole("dialog");
+    await expect(composer).toBeVisible();
+    await expect(composer.getByRole("textbox", { name: "Comment" })).toBeFocused();
+    // Comment mode stops the screen reacting: Enter opened the composer instead of removing Priya.
+    await expect(remove).toBeVisible();
+    // Scan the composer at rest: mid-fade, its text measures lighter than it is.
+    await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== "running"));
+
+    const { violations } = await new AxeBuilder({ page }).include("[role=dialog]").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+    expect(violations.map((v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+
+    await page.keyboard.type("Viewers shouldn't see this");
+    await page.keyboard.press("Enter");
+    await expect(composer).toBeHidden();
+    await expect(page.getByRole("button", { name: /^Comment 1 on Remove Priya Raman button/ })).toBeVisible();
+    // Focus goes back to where the reviewer was.
+    await expect(remove).toBeFocused();
+  });
+});
+
+// The state panel only exists once opened, so the route scans above never see it.
+for (const width of [1440, 375]) {
+  test(`state panel at ${width}px has no WCAG A/AA violations and fits`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 812 });
+    await open(page, "/app/members?sv=viewer-view");
+    await page.keyboard.press("s");
+    const panel = page.locator("[data-state-panel]");
+    await expect(panel).toBeFocused();
+    const { violations } = await new AxeBuilder({ page })
+      .include("[data-state-panel]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(violations.map((v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+    const overflow = await panel.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}

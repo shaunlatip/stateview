@@ -4,9 +4,11 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 ## Try it
 
-- `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
-- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states and `Esc` goes back to the hub; hover a control to see its shortcut.
-- Comment on any element with the toolbar in the bottom-right corner (or `⌘⇧F`). Each comment is saved with the state it was made in.
+- `/` is the hub: every state for the change, one row per section, with live thumbnails. The index on the left jumps to a section, and the button at the top right copies every open comment for a coding agent.
+- Open a state to see the real page in that state, with a filmstrip of every state down the left. `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut.
+- `C` (or Comment in the viewer bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
+- Each comment is saved with the state it was made in, as a numbered pin that stays on its element. Hover a pin to read it; click it to edit or delete it. The viewer bar’s ⋮ menu can hide pins, copy the state's open comments as Markdown for a coding agent (state URL, inputs, and each element's selector, React components and HTML), copy a link to the state, or delete its comments (with undo).
+- `S` (or the sliders button) opens the state panel: every input the screen reads, each one editable, kept in the URL.
 
 The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
 
@@ -55,11 +57,11 @@ In the app, the review lives at `/stateview/<review>` (hub) and `/stateview/<rev
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Agentation · Phosphor icons
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Phosphor icons
 
 ## Design language
 
-Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app keeps the default shadcn kit in `src/components/ui`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
+Stateview's own UI (hub, viewer bar, filmstrip, state panel, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app uses the shadcn kit in `src/components/ui` with its own brand, a fictional product called Halcyon: blue, orange and cool-grey tokens in `src/sample-app/halcyon.css`, scoped to `.halcyon`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
 
 **Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/app/fonts.css` (kept out of the engine, so apps it's installed into don't request the files). Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
 
@@ -70,7 +72,7 @@ Without them, Stateview's UI falls back to the system sans-serif and nothing els
 
 ## Where to look
 
-- `src/stateview/` — the review layer, and the engine the skill copies into other apps. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `review.tsx` and `review-focus.tsx` (`defineReview` and the entry points the generated routes use), `store.ts` (comments in localStorage), `annotations.ts` (the comment interface), `agentation-layer.tsx` (the one adapter behind it) and `cn.ts` (class merging that knows the theme's utilities). It imports nothing from the app it's in.
+- `src/stateview/` — the review layer, and the engine the skill copies into other apps. It imports nothing from the app it's in. `manifest.ts` (state types and helpers), `hub.tsx` and `focus-view.tsx` (the two screens), `focus-bar.tsx`, `filmstrip.tsx` and `state-panel.tsx` (the viewer's bar, state list and input panel), `thumbnail.tsx` and `card-chips.tsx` (state cards), `logo.tsx`, `agent-export.ts` (comments as Markdown for an agent), `store.ts` (comments and opened states in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer), `describe-element.ts` (an element's name, selector, HTML and React components), `review.tsx` and `review-focus.tsx` (`defineReview` and the entry points the generated routes use), `use-frame-query.ts` (the state in the URL), `toast.tsx` (Stateview's own toasts) and `cn.ts` (class merging that knows the theme's utilities).
 - `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `review.json` lists the states for this change (typed in `manifest.ts`).
 - `skills/stateview/` — the `/stateview` skill: `SKILL.md`, `references/` (composition rules, boundary patterns) and `scripts/` (install, new-review, check, verify).
 - `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state).
@@ -81,9 +83,9 @@ The Team members screen takes all of its state through one object (`MembersState
 
 ## Dependencies worth naming
 
-- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) provides element picking and the comment popover. It is used as an npm dependency through its public props and exports only; none of its source is copied into this repo. Everything else depends on Stateview's own `AnnotationLayer` interface (`src/stateview/annotations.ts`), so the engine can be replaced with an in-house picker by swapping one file. Agentation keeps one comment list per pathname, and every state shares `/app/members`, so the adapter seeds Agentation's storage with the current state's comments and remounts it when the state changes. Stateview's copy is the one that counts.
-- **Temporary:** while building, a plain Agentation toolbar also sits on the hub and the unknown-state page (`src/components/dev/feedback-toolbar.tsx`) for feedback on Stateview's own UI. It will be removed before the final build.
-- The current state (`?sv=`, `?step=`) lives in the URL, so every state has a link and the back button steps back. It's read and written through the History API (`src/stateview/use-frame-query.ts`) rather than a router library, so the same engine runs under the App Router and the Pages Router.
+- **Comments** are Stateview's own engine (`src/stateview/comment-layer.tsx`), written from scratch. Everything else depends on the `AnnotationLayer` interface in `src/stateview/annotations.ts`, so the engine could be swapped for another one by changing one file. React component names come from React's development build, so production builds show the selector and HTML without them.
+- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) is a dev dependency only, for commenting on Stateview's own UI while building it (`src/components/dev/feedback-toolbar.tsx`, synced to the local Agentation server). It renders only under `next dev`; production builds contain none of it, and the engine the skill installs doesn't use it. None of its source is copied into this repo.
+- The current state (`?sv=`, `?step=`, and any input changed in the state panel) lives in the URL, so every state has a link and the back button steps back. It's read and written through the History API (`src/stateview/use-frame-query.ts`) rather than a router library, so the same engine runs under the App Router and the Pages Router.
 
 ## Credits
 
@@ -101,13 +103,16 @@ The sample screen's layout follows the Team Settings page of Vercel's [Next.js S
 
 A running list of interaction and visual details, kept while building.
 
-- Thumbnails are the real screen rendered at 1152 px and scaled to a quarter, so they always match the build. They are inert and hidden from assistive tech, and `content-visibility: auto` skips the ones far off screen.
-- A review of a WebGL or video screen turns live thumbnails off (browsers cap active WebGL contexts at about 16); its cards show the inputs each state changes from the baseline instead, in the same frame.
+- Thumbnails are the real screen rendered at 1088 px and scaled down to the card, so they always match the build. They are inert and hidden from assistive tech, animations inside them are off (a loading skeleton doesn't pulse in every card), and `content-visibility: auto` skips the ones far off screen.
+- A review of a WebGL or video screen turns live thumbnails off (browsers cap active WebGL contexts at about 16); its cards and filmstrip show the inputs each state changes from the baseline instead, in the same frame.
 - The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
 - The whole state card is one link, named by its title and described by its why line and chips, so element pickers and screen readers each get one clear target.
-- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors, with the title on a tab whose edge steps down into the body through an SVG tail glued to the tab, after Rauno's Next.js dev tools notch. The tab grows with its title.
-- The hub is a bento grid of fixed one-card tracks; a section spans as many tracks as it has cards, so one-card sections share a row.
-- The review bar floats over the page instead of framing it, so the app keeps its full width. It samples the colour behind it and takes the opposite scheme, so it stays distinct from any app. On phones it leaves room for the comment toolbar, and its text wraps instead of truncating.
+- Each section is a row: its title and why line on the left, its cards wrapping on the right. Below 1024 px the title goes above the cards. The index marks the section at the top of the window.
+- A card shows a light "New" badge until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards with its step count; the stack fans out on hover.
+- Combinations of inputs that no state shows are the last row, "Not covered", as dashed cards listing the inputs, with the combinations left out on purpose beside them.
+- Coming back to the hub (Escape, the logo or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
+- The viewer bar runs across the top and is always dark, so it reads as Stateview's frame around the app. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. On phones the filmstrip starts closed and covers the app when opened.
+- The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.
 - Shortcuts don't fire while typing, inside a radio group or menu, or inside the comment popover. Escape first closes the comment tools; only a second Escape leaves the state.

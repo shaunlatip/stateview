@@ -8,7 +8,7 @@
 // the right code next. Run install.mjs first.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { basename, join, relative } from "node:path";
 import { appLayout, camelCase, fail, git, parseArgs, writeOnce } from "./lib.mjs";
 
 const { options, positional } = parseArgs(process.argv.slice(2), { screen: "string", base: "string", app: "string" });
@@ -28,7 +28,7 @@ const manifest = {
   version: 1,
   route: `/stateview/${id}/state`,
   screen: options.screen,
-  scope: { branch: scope.branch, base: scope.base, files: scope.files.length },
+  scope: { repo: repoName(), branch: scope.branch, base: scope.base },
   baseline: {},
   inputs: [],
   sections: [],
@@ -57,8 +57,17 @@ console.log(`Review "${id}" for ${options.screen}\n`);
 for (const line of written) console.log(`  ${line}`);
 console.log(`\nScope: ${scope.branch} against ${scope.base} · ${scope.files.length} ${scope.files.length === 1 ? "file" : "files"} changed`);
 for (const file of scope.files) console.log(`  ${file}`);
-if (!scope.found) console.log(`\n(Couldn't find the base branch "${scope.base}"; pass --base. The file count is 0 until then.)`);
+if (!scope.found) console.log(`\n(Couldn't find the base branch "${scope.base}"; pass --base to list the changed files.)`);
 console.log(`\nReview pages: /stateview/${id} (hub) and /stateview/${id}/state?sv=<state id>`);
+
+/** The repository's name: origin's, else the top folder's, so a worktree or a renamed clone still reads right. */
+function repoName() {
+  const remote = git(appRoot, ["remote", "get-url", "origin"]);
+  const fromRemote = remote?.match(/([^/:]+?)(?:\.git)?\/?$/)?.[1];
+  if (fromRemote) return fromRemote;
+  const top = git(appRoot, ["rev-parse", "--show-toplevel"]) ?? appRoot;
+  return basename(top);
+}
 
 /** The branch, its base, and the files it changed, committed or not, minus Stateview's own. */
 function branchScope() {

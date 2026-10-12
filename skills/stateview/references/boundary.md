@@ -68,7 +68,7 @@ export function MembersScreen(props: MembersScreenProps) {
 }
 ```
 
-Then parse the manifest's string inputs into the screen's props. List each input's values once, first value as the default, and fall back to the default for unknown values:
+Then parse the manifest's string inputs into the screen's props. List each input's values once, in the order the state panel should show them (smallest to largest, off before on). The manifest's `baseline` says which value is the default, and the viewer always passes a value for every input, so the fallback to the first value only guards against a stale link:
 
 ```ts
 export const membersInputValues = {
@@ -215,8 +215,8 @@ Measurements that read the window directly (a map fitting its zoom to `window.in
 ### Fixed-position elements and full-height screens
 
 - **`position: fixed` escapes the frame.** A sheet, scrim or toast that's fixed to the viewport spans the whole window, not the 375 px frame. Wrap the mobile render in an element with `contain: layout paint` (Tailwind `[contain:layout_paint]`), which makes it the containing block for fixed descendants and clips them to the frame (a closed side sheet parked off-screen otherwise paints beside it).
-- **Window scroll carries over between frames.** The review remounts the screen for each frame but doesn't reset the window's scroll. A state that starts scrolled to a section scrolls there itself (an effect in the render function), and every other state should start at the top.
-- **The review bar sits over the bottom 6rem of the window.** The frame adds bottom padding, which only helps pages that scroll. A full-height screen (`h-dvh`, `h-screen`, a map or editor) keeps its bottom edge under the bar. In the render function, give the screen a box `calc(100dvh - 6rem)` tall and let its root fill it (an optional `className` prop on the screen, or `[&>main]:h-full` on the wrapper).
+- **The screen scrolls inside the frame, not the window.** The frame sits below the viewer bar and scrolls on its own, so code that reads or sets `window.scrollY` sees 0. A state that starts scrolled to a section scrolls there itself with `scrollIntoView` (an effect in the render function).
+- **The frame is shorter than the window by the viewer bar.** A full-height screen (`h-dvh`, `h-screen`, a map or editor) overflows it by the bar's height. In the render function, let the screen's root fill the frame with `h-full` (an optional `className` prop on the screen, or `[&>main]:h-full` on the wrapper).
 
 ## 8. Determinism
 
@@ -246,6 +246,6 @@ The hub then shows each state's changed inputs in place of the thumbnail. Focus 
 - [ ] No review state calls a real API, writes data, patches `fetch` or reads secrets.
 - [ ] Loading never resolves, errors reject, and actions answer from canned responses after a short delay.
 - [ ] The mobile state reflows inside the 375 px frame: no media-query classes or window measurements left on the changed screen's path, and fixed elements stay in the frame.
-- [ ] A full-height screen's bottom edge isn't under the review bar.
+- [ ] A full-height screen fits the frame below the viewer bar, with its bottom edge showing.
 - [ ] Opening the same state twice renders the same screen.
 - [ ] The app's typecheck passes (its `typecheck` script, or `tsc --noEmit` from its own `node_modules` if it has none), and its lint, if it has one.
