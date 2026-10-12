@@ -30,7 +30,17 @@ CI runs lint, typecheck and build on every push (`.github/workflows/ci.yml`).
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Agentation
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Agentation · Phosphor icons
+
+## Design language
+
+Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app keeps the default shadcn kit in `src/components/ui`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
+
+**Fonts.** Data text uses Geist Mono, which the app already loads. The theme's UI face is **Timeless Grotesk** (free, by Timeless). Its files are sent by email, so they aren't in the repo yet and UI text falls back to the system sans-serif. To add it:
+
+1. Request the family at [timeless.co/type](https://timeless.co/type) ("Get access").
+2. Put the Grotesk cut at weights 300, 400 and 600 (`.woff2`) in `public/fonts/timeless-grotesk/`, with its license file.
+3. Add one `@font-face` per weight to `src/stateview/theme.css` with `font-family: "Timeless Grotesk"`, the matching `font-weight` and `font-display: swap`. The theme's `--font-ui`, `--font-brand` and `--font-editorial` already name that family.
 
 ## Where to look
 
@@ -70,3 +80,5 @@ A running list of interaction and visual details, kept while building.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team. Not reviewed."), and the page title follows the state.
 - Shortcuts don't fire while typing, inside a radio group or menu, or inside the comment popover. Escape first closes the comment tools; only a second Escape leaves the state.
 - Comments copied from the toolbar are prefixed with the state's title, URL and inputs, so an agent can open exactly what the reviewer saw.
+- "Mark reviewed" is a toggle (`aria-pressed`) with a fixed label; the pressed state shows as the toolbar's pressed fill and a checked circle.
+- Component edges are inset or outset box shadows, never native borders, so adding an edge never shifts layout.

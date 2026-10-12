@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Routes to check. Add stateful URLs too (e.g. "/?state=empty") so empty,
 // error and loading states get the same scan as the default view.
-const routes: string[] = ["/"];
+const routes: string[] = ["/", "/app/members?sv=viewer-view", "/app/members?sv=invite-flow&step=3", "/app/members?sv=nope"];
 
 // Dev-only tools injected into the page (Agentation, Next's dev overlay) are not the product.
 const DEV_CHROME = ["agentation-toolbar", "[data-agentation-root]", "[data-feedback-toolbar]", "nextjs-portal"];
@@ -13,7 +13,8 @@ async function open(page: Page, route: string) {
   // Don't scan a loading skeleton: wait for the network to settle and for busy regions to finish.
   // Mark loading containers with aria-busy="true" (it's also what screen readers need).
   await page.waitForLoadState("networkidle");
-  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 10_000 });
+  // Inert content (hub thumbnails, one of which shows a loading state on purpose) is hidden from users, so it doesn't count.
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]:not([inert] *)'), null, { timeout: 10_000 });
   await page.addStyleTag({ content: `${DEV_CHROME.join(",")}{display:none!important}` });
 }
 
