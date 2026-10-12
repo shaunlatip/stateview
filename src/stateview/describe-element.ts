@@ -133,12 +133,15 @@ function contextHeading(el: Element) {
   return null;
 }
 
+// Built from a string: apps that target es5 reject the `u` flag on a regex literal.
+const LETTER = new RegExp(String.raw`\p{L}`, "u");
+
 /** The first substantial piece of text inside `el`, skipping initials and icon labels. */
 function leadText(el: Element) {
   const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = collapse(node.nodeValue ?? "");
-    if (text.length > 2 && /\p{L}/u.test(text)) return text;
+    if (text.length > 2 && LETTER.test(text)) return text;
   }
   return null;
 }

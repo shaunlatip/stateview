@@ -111,24 +111,29 @@ function Tokens({ tokens }: { tokens: Token[] }) {
       else runs.push([token(kind, piece)]);
     }
   }
-  return runs.map((run, index) =>
-    typeof run === "string" ? (
-      // A single space between words collapses where the line wraps, so a wrapped line never starts with one.
-      // oxlint-disable-next-line react/no-array-index-key -- runs are positional
-      <span key={index} className={index > 0 && run === " " ? "whitespace-normal" : undefined}>
-        {run}
-      </span>
-    ) : (
-      // oxlint-disable-next-line react/no-array-index-key -- runs are positional
-      <span key={index} className="inline-block max-w-full indent-0 align-top">
-        {run.map((part, at) => (
-          // oxlint-disable-next-line react/no-array-index-key -- tokens are positional
-          <span key={at} className={TOKEN_CLASS[part.kind]}>
-            {part.value}
+  // A fragment, not a bare array: React 18's types don't accept an array as a component's result.
+  return (
+    <>
+      {runs.map((run, index) =>
+        typeof run === "string" ? (
+          // A single space between words collapses where the line wraps, so a wrapped line never starts with one.
+          // oxlint-disable-next-line react/no-array-index-key -- runs are positional
+          <span key={index} className={index > 0 && run === " " ? "whitespace-normal" : undefined}>
+            {run}
           </span>
-        ))}
-      </span>
-    ),
+        ) : (
+          // oxlint-disable-next-line react/no-array-index-key -- runs are positional
+          <span key={index} className="inline-block max-w-full indent-0 align-top">
+            {run.map((part, at) => (
+              // oxlint-disable-next-line react/no-array-index-key -- tokens are positional
+              <span key={at} className={TOKEN_CLASS[part.kind]}>
+                {part.value}
+              </span>
+            ))}
+          </span>
+        ),
+      )}
+    </>
   );
 }
 
@@ -175,7 +180,8 @@ function formatHtml(html: string): Line[] | null {
 // --- Selector --------------------------------------------------------------------------
 
 const IDENT = String.raw`(?:\\[0-9a-f]{1,6}\s?|\\.|[\w-]|[\u0080-￿])+`;
-const COMBINATOR = /\s*[>+~,]\s*|\s+/y;
+// Built from strings: apps that target es5 reject the `y` flag on a regex literal.
+const COMBINATOR = new RegExp(String.raw`\s*[>+~,]\s*|\s+`, "y");
 const ATTRIBUTE_SELECTOR = new RegExp(String.raw`\[(${IDENT})(?:([~|^$*]?=)(?:"([^"]*)"|'([^']*)'|(${IDENT})))?\]`, "iy");
 const ID_OR_CLASS = new RegExp(String.raw`[#.]${IDENT}`, "iy");
 const PSEUDO = new RegExp(String.raw`::?${IDENT}`, "iy");

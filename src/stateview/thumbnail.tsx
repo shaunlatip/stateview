@@ -66,22 +66,32 @@ export function inputChanges<T extends Inputs>(manifest: Manifest<T>, inputs: T)
  */
 export function InputsThumbnail({ changes, size, className }: { changes: { label: string; value: string }[]; size: Size; className?: string }) {
   return (
+    // Top-aligned and clear of the corner chip, so the footer chips (step count, Code only) sit below the text, not on it.
     <div
       aria-hidden
       className={cn(
-        "flex shrink-0 flex-col justify-end overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
-        size === "card" ? "gui-thumb-card p-gui-s text-gui-xs" : "gui-thumb-strip p-gui-xs text-gui-xs",
+        "flex shrink-0 flex-col overflow-hidden rounded-gui-s bg-gui-neutral-2 pr-gui-l text-gui-xs ring-1 ring-gui-border",
+        size === "card" ? "gui-thumb-card py-gui-s pl-gui-s" : "gui-thumb-strip py-gui-xs pl-gui-xs",
         className,
       )}
     >
       {changes.length === 0 ? (
         <p className="text-gui-neutral-8">Baseline</p>
+      ) : size === "strip" ? (
+        // The strip is too narrow for labels; the values alone tell the states apart, and the title names the state.
+        <ul className="flex flex-col gap-gui-xxs">
+          {changes.map((change) => (
+            <li key={change.label} className="truncate font-gui-data">
+              {change.value}
+            </li>
+          ))}
+        </ul>
       ) : (
         <dl className="grid grid-cols-2 gap-x-gui-xs gap-y-gui-xxs">
           {changes.map((change) => (
             <div key={change.label} className="contents">
-              <dt className="min-w-0 wrap-break-word text-gui-neutral-8">{change.label}</dt>
-              <dd className="min-w-0 wrap-break-word font-gui-data">{change.value}</dd>
+              <dt className="line-clamp-2 min-w-0 text-gui-neutral-8">{change.label}</dt>
+              <dd className="min-w-0 truncate font-gui-data">{change.value}</dd>
             </div>
           ))}
         </dl>

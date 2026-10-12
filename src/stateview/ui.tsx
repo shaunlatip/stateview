@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, type ComponentProps, type ElementType, type ReactElement, type ReactNode, type Ref } from "react";
+import { forwardRef, type ComponentProps, type ComponentPropsWithoutRef, type ElementType, type ReactElement, type ReactNode, type Ref } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { Radio } from "@base-ui/react/radio";
@@ -183,7 +183,7 @@ export function Select({
   scheme,
   className,
   ...props
-}: Omit<ComponentProps<"button">, "value"> & {
+}: Omit<ComponentPropsWithoutRef<"button">, "value"> & {
   value: string;
   onValueChange: (value: string) => void;
   options: ControlOption[];

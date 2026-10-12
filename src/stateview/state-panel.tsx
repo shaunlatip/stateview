@@ -48,7 +48,7 @@ type StatePanelProps<T extends Inputs> = {
  * from the viewer bar over the top right of the app, dark like the bar.
  */
 export function StatePanel<T extends Inputs>({ id, onElement, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
-  const localRef = useRef<HTMLElement>(null);
+  const localRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (focusOnOpen) localRef.current?.focus();

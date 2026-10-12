@@ -49,7 +49,8 @@ export function setStripWidth(width: number, settled: boolean) {
       // Storage full or blocked: keep the width for this visit only.
     }
   }
-  for (const listener of listeners) listener();
+  // forEach rather than for..of: apps that target es5 can't iterate a Set.
+  listeners.forEach((listener) => listener());
 }
 
 export function useStripWidth() {
