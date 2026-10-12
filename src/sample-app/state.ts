@@ -1,14 +1,15 @@
 /**
  * Every input the Team members screen reads, in one place. The screen is a
  * pure function of this object: the boundary where Stateview injects state.
- * The first value of each list is the default.
+ * Values are listed in the order a reviewer reads them (smallest to largest,
+ * off before on); the manifest's baseline says which one is the default.
  */
 export const membersInputValues = {
   role: ["owner", "member", "viewer"],
-  plan: ["pro", "free"],
+  plan: ["free", "pro"],
   ssoBeta: ["off", "on"],
-  members: ["typical", "one", "at-limit", "many-long"],
-  invites: ["some", "none"],
+  members: ["one", "typical", "at-limit", "many-long"],
+  invites: ["none", "some"],
   membersRequest: ["ready", "loading"],
   removeRequest: ["idle", "error"],
   inviteDraft: ["empty", "filled"],

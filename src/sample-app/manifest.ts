@@ -29,7 +29,7 @@ export const membersManifest: Manifest<MembersState> = {
     { id: "role", label: "Role", class: "who", source: "api", values: v.role },
     { id: "plan", label: "Plan", class: "who", source: "entitlement", values: v.plan },
     { id: "ssoBeta", label: "SSO beta", class: "config", source: "flag", values: v.ssoBeta },
-    { id: "members", label: "Members", class: "data", source: "api", values: v.members },
+    { id: "members", label: "Members", class: "data", source: "api", values: v.members, labels: { "many-long": "Many" } },
     { id: "invites", label: "Pending invites", class: "data", source: "api", values: v.invites },
     { id: "membersRequest", label: "Members request", class: "system", source: "api", values: v.membersRequest },
     { id: "removeRequest", label: "Remove request", class: "system", source: "api", values: v.removeRequest },

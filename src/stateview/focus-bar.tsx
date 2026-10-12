@@ -1,8 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type RefObject } from "react";
-import { CaretLeftIcon, CaretRightIcon, ChatCircleIcon, CopyIcon, DotsThreeVerticalIcon, EyeIcon, EyeSlashIcon, SquaresFourIcon, TrashIcon } from "@phosphor-icons/react";
+import { useEffect, useRef, useState, type Ref, type RefObject } from "react";
+import {
+  CaretLeftIcon,
+  CaretRightIcon,
+  ChatCircleIcon,
+  CopyIcon,
+  DotsThreeVerticalIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  SlidersIcon,
+  SquaresFourIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { Frame, Inputs } from "./manifest";
 import { Badge, Button, IconButton, Menu, MenuItem, MenuPopup, MenuTrigger, ThemeScope, ToolbarSeparator, Tooltip, buttonVariants } from "./ui";
@@ -29,6 +40,10 @@ type FocusBarProps<T extends Inputs> = {
   onDeleteComments: (() => void) | null;
   /** Changes whenever the reviewer does something worth showing the bar for (new state, new comment). */
   activity: string;
+  /** The state panel this bar opens and closes. */
+  panel: { id: string; open: boolean; onToggle: () => void };
+  /** Focus returns here when the panel closes from inside. */
+  panelTriggerRef: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -53,12 +68,14 @@ export function FocusBar<T extends Inputs>({
   onCopyComments,
   onDeleteComments,
   activity,
+  panel,
+  panelTriggerRef,
 }: FocusBarProps<T>) {
   const ref = useRef<HTMLElement>(null);
   const scheme = useBackdropScheme(ref);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Comment mode needs its indicator in view, and an open menu needs its trigger.
-  const { shown, instant } = useAutoHide(ref, activity, commenting || menuOpen);
+  // Comment mode needs its indicator in view; an open menu or state panel needs its trigger.
+  const { shown, instant } = useAutoHide(ref, activity, commenting || menuOpen || panel.open);
   const step = frame.step ? `Step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : null;
   // The pins toggle names the action it takes, with the matching icon.
   const pins = pinsVisible ? { label: "Hide pins", icon: <EyeSlashIcon aria-hidden /> } : { label: "Show pins", icon: <EyeIcon aria-hidden /> };
@@ -101,6 +118,20 @@ export function FocusBar<T extends Inputs>({
             ) : null}
           </div>
           <ToolbarSeparator />
+          <Tooltip label={panel.open ? "Hide state" : "Show state"} shortcut="S">
+            <Button
+              ref={panelTriggerRef}
+              variant="toolbar"
+              size="icon"
+              aria-label="State"
+              aria-keyshortcuts="S"
+              aria-expanded={panel.open}
+              aria-controls={panel.open ? panel.id : undefined}
+              onClick={panel.onToggle}
+            >
+              <SlidersIcon aria-hidden />
+            </Button>
+          </Tooltip>
           <Tooltip label="Comment" shortcut="C">
             <Button
               variant="toolbar"

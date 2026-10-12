@@ -2,31 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
-import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode } from "react";
+import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { toast } from "sonner";
-import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
-import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { FocusBar } from "./focus-bar";
 import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
+import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
 import { ThemeScope, buttonVariants } from "./ui";
-
-// Graphical Toast: the shared Toaster's default look is replaced, not layered over.
-const toastClassNames = {
-  toast:
-    "flex w-full items-center gap-gui-xs rounded-gui-m bg-gui-neutral-1 p-gui-m font-gui-ui text-gui-m text-gui-neutral-10 shadow-gui-m ring-1 ring-gui-neutral-4-transparent dark:bg-gui-neutral-2",
-  title: "font-gui-medium",
-  description: "text-gui-neutral-7",
-  icon: "text-gui-neutral-10",
-};
-
-const toastIcons = {
-  success: <CheckCircleIcon aria-hidden />,
-  error: <XCircleIcon aria-hidden />,
-};
 
 // Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
 const HUB_HREF = "/";
@@ -55,6 +40,8 @@ type FocusViewProps<T extends Inputs> = {
 export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer }: FocusViewProps<T>) {
   const router = useRouter();
   const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
+  // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
+  const [overrides, setOverrides] = useQueryStates(inputParsers(manifest), { history: "replace" });
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);
   const [pinsVisible, setPinsVisible] = useState(true);
@@ -62,6 +49,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   const frames = listFrames(manifest);
   const index = findFrameIndex(frames, sv, step);
   const frame = index === -1 ? null : frames[index];
+  const inputs = frame ? withOverrides(frame.inputs, overrides) : null;
   const annotations = frame ? review.annotations.filter((a) => a.stateId === frame.key) : [];
   const openCount = annotations.filter((a) => a.status === "open").length;
 
@@ -71,9 +59,21 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     if (!commenting) setPinsVisible(true);
   };
 
+  const panelId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const panelTriggerRef = useRef<HTMLButtonElement>(null);
+  // How the panel was opened: from the keyboard it takes focus, from a click it leaves focus on the button.
+  const [panel, setPanel] = useState<"closed" | "pointer" | "keyboard">("closed");
+
+  const closePanel = () => {
+    if (panelRef.current?.contains(document.activeElement)) panelTriggerRef.current?.focus();
+    setPanel("closed");
+  };
+
   const goTo = (target: number) => {
     const next = frames[target];
     if (!next) return;
+    void setOverrides(null);
     void setQuery({ sv: next.item.id, step: next.step && next.step > 1 ? next.step : null });
   };
 
@@ -98,6 +98,12 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         event.preventDefault();
         toggleCommenting();
         break;
+      case "s":
+      case "S":
+        event.preventDefault();
+        if (panel === "closed") setPanel("keyboard");
+        else closePanel();
+        break;
       case "Escape":
         router.push(HUB_HREF, { scroll: false });
         break;
@@ -110,11 +116,11 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  if (!frame) return <UnknownState id={sv} />;
+  if (!frame || !inputs) return <UnknownState id={sv} />;
 
   const copyComments = () => {
     void navigator.clipboard
-      .writeText(stateContext(manifest, frame) + formatAnnotations(annotations))
+      .writeText(stateContext(manifest, frame, inputs) + formatAnnotations(annotations))
       .then(() => toast.success("Comments copied with this state’s URL and inputs"))
       .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
@@ -132,17 +138,26 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     });
   };
 
+  const setInput = (id: keyof T & string, value: string) => {
+    // Only differences from the state are kept in the URL; setting a value back to the state's own clears it.
+    void setOverrides({ [id]: value === frame.inputs[id] ? null : value });
+  };
+
   return (
     <>
       <title>{`${frame.item.title} · Stateview`}</title>
-      <ThemeScope className={cn("grid min-h-dvh", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
+      <ThemeScope className={cn("grid min-h-dvh", viewportOf(manifest, inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
         {/*
-         * Keyed by state so the screen starts fresh from its inputs every time.
-         * Bottom padding on the app's root keeps the end of the page clear of
-         * the review bar, painted in the app's own background.
+         * Keyed by state and inputs so the screen starts fresh from its inputs
+         * every time. Bottom padding on the app's root keeps the end of the
+         * page clear of the review bar, painted in the app's own background.
          */}
-        <div key={frame.key} ref={setScreen} className={cn("host-frame grid *:pb-24", commenting && "cursor-crosshair **:cursor-crosshair")}>
-          {render(frame.inputs)}
+        <div
+          key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
+          ref={setScreen}
+          className={cn("host-frame grid *:pb-24", commenting && "cursor-crosshair **:cursor-crosshair")}
+        >
+          {render(inputs)}
         </div>
       </ThemeScope>
       <FocusBar
@@ -160,12 +175,26 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         onCopyComments={openCount > 0 ? copyComments : null}
         onDeleteComments={annotations.length > 0 ? deleteComments : null}
         activity={`${frame.key}:${annotations.length}`}
+        panel={{ id: panelId, open: panel !== "closed", onToggle: () => (panel === "closed" ? setPanel("pointer") : closePanel()) }}
+        panelTriggerRef={panelTriggerRef}
       />
+      {panel !== "closed" ? (
+        <StatePanel
+          id={panelId}
+          ref={panelRef}
+          manifest={manifest}
+          inputs={inputs}
+          onChange={setInput}
+          onCopyLink={copyLink}
+          onClose={closePanel}
+          focusOnOpen={panel === "keyboard"}
+        />
+      ) : null}
       {/* Keyed by state so a half-written comment never carries over to another state. */}
       <Layer
         key={frame.key}
         stateId={frame.key}
-        inputs={frame.inputs}
+        inputs={inputs}
         annotations={annotations}
         root={screen}
         active={commenting}
@@ -175,24 +204,42 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         onUpdate={review.updateAnnotation}
         onDelete={review.deleteAnnotation}
       />
-      <ThemeScope>
-        <Toaster position="top-center" icons={toastIcons} toastOptions={{ unstyled: true, classNames: toastClassNames }} />
-      </ThemeScope>
     </>
   );
 }
 
+/** The current URL carries the state and any inputs changed in the panel. */
+function copyLink() {
+  void navigator.clipboard
+    .writeText(window.location.href)
+    .then(() => toast.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
+    .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+}
+
+/** One URL parser per input, accepting only that input's values. */
+function inputParsers<T extends Inputs>(manifest: Manifest<T>) {
+  return Object.fromEntries(manifest.inputs.map((input) => [input.id, parseAsStringLiteral(input.values as readonly string[])]));
+}
+
+/** A state's inputs with the reviewer's changes on top. */
+function withOverrides<T extends Inputs>(inputs: T, overrides: Record<string, string | null>): T {
+  const set = Object.entries(overrides).filter(([id, value]) => value !== null && id in inputs);
+  return { ...inputs, ...Object.fromEntries(set) };
+}
+
 /** A header for copied comments, so an agent can open exactly the state the reviewer saw. */
-function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>) {
-  const changed = new Set<string>(changedInputs(manifest, frame.inputs));
-  const inputs = manifest.inputs
-    .map((input) => `${input.id}=${frame.inputs[input.id]}${changed.has(input.id) ? " (changed)" : ""}`)
+function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>, inputs: T) {
+  const changed = new Set<string>(changedInputs(manifest, inputs));
+  const list = manifest.inputs
+    .map((input) => `${input.id}=${inputs[input.id]}${changed.has(input.id) ? " (changed)" : ""}`)
     .join(", ");
   const step = frame.step ? ` · step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : "";
+  // With inputs changed in the state panel, the current URL carries them; otherwise the state's own link.
+  const edited = manifest.inputs.some((input) => inputs[input.id] !== frame.inputs[input.id]);
   return [
-    `## State: ${frame.section.title} › ${frame.item.title}${step}`,
-    `URL: ${window.location.origin}${frameHref(manifest, frame)}`,
-    `Inputs: ${inputs}`,
+    `## State: ${frame.section.title} › ${frame.item.title}${step}${edited ? " (inputs changed by the reviewer)" : ""}`,
+    `URL: ${edited ? window.location.href : `${window.location.origin}${frameHref(manifest, frame)}`}`,
+    `Inputs: ${list}`,
     "",
     "",
   ].join("\n");
