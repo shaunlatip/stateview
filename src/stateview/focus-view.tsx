@@ -6,6 +6,7 @@ import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
+import { FeedbackToolbar } from "@/components/dev/feedback-toolbar";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import type { AnnotationLayer } from "./annotations";
@@ -171,6 +172,8 @@ function UnknownState({ id }: { id: string | null }) {
           Go to the hub
         </Link>
       </div>
+      {/* TEMPORARY: feedback while building; remove before the final build. */}
+      <FeedbackToolbar />
     </ThemeScope>
   );
 }
