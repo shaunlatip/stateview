@@ -29,6 +29,7 @@ const toastIcons = {
   error: <XCircleIcon aria-hidden />,
 };
 
+// Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
 const HUB_HREF = "/";
 
 // Keys typed here belong to the page or to the comment engine, not to Stateview's shortcuts.
@@ -83,7 +84,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         goTo(index - 1);
         break;
       case "Escape":
-        router.push(HUB_HREF);
+        router.push(HUB_HREF, { scroll: false });
         break;
     }
   });
@@ -161,7 +162,7 @@ function UnknownState({ id }: { id: string | null }) {
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
-        <Link href={HUB_HREF} className={buttonVariants({ className: "w-fit" })}>
+        <Link href={HUB_HREF} scroll={false} className={buttonVariants({ className: "w-fit" })}>
           See all states
         </Link>
       </div>

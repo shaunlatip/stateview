@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Popover } from "@base-ui/react/popover";
 import { CaretDownIcon, ChatCircleIcon } from "@phosphor-icons/react";
 import { frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
@@ -15,7 +15,42 @@ type HubProps<T extends Inputs> = {
   thumbnails: Record<string, ReactNode>;
 };
 
+/*
+ * Where the reviewer was on the hub, so coming back from a state lands on the
+ * same row. Saved when a card is opened (not on every scroll, which would also
+ * catch the jump to the top during navigation) and restored on the way back,
+ * retrying for a few frames until the page is tall enough to reach it.
+ */
+const SCROLL_KEY = "stateview:hub-scroll";
+
+function rememberScroll() {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  } catch {
+    // Storage blocked: nothing to remember.
+  }
+}
+
+function useRestoredScroll() {
+  useEffect(() => {
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(SCROLL_KEY)) || 0;
+    } catch {
+      // Storage blocked: start at the top.
+    }
+    if (saved <= 0) return;
+    let tries = 0;
+    let frame = requestAnimationFrame(function restore() {
+      window.scrollTo(0, saved);
+      if (Math.abs(window.scrollY - saved) > 1 && ++tries < 10) frame = requestAnimationFrame(restore);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+}
+
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
+  useRestoredScroll();
   const { annotations } = useReview(manifest);
   const frames = listFrames(manifest);
   const items = listItems(manifest);
@@ -24,7 +59,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
 
   return (
-    <ThemeScope as="main" className="flex-1 bg-gui-neutral-1">
+    <ThemeScope as="main" className="flex-1 bg-gui-neutral-2">
       <div className="mx-auto box-content flex max-w-300 flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
         <header className="flex flex-wrap items-end justify-between gap-x-gui-xl gap-y-gui-s">
           <div className="flex flex-col gap-gui-xxs">
@@ -99,21 +134,21 @@ function Coverage({ uncovered, excluded }: { uncovered: string[]; excluded: stri
 
 /**
  * A titled group of screens, after Figma's sections: a light fill and outline
- * in the section's hue, with the title in a bold chip sitting on top of the
+ * in the section's hue, with the title in a bold chip just above the
  * section's top-left corner, outside it.
  */
 function HubSection<T extends Inputs>({ section, renderCard }: { section: Section<T>; renderCard: (item: Item<T>) => ReactNode }) {
   const headingId = `section-${section.id}`;
   return (
-    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className="flex max-w-full flex-col">
+    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className="flex max-w-full flex-col gap-gui-xxs">
       <h2
         id={headingId}
-        className="w-fit rounded-t-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text"
+        className="w-fit rounded-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text"
       >
         {section.title}
       </h2>
       {/* M padding and gap leave room for a hovered card's fill, which extends XS past the card. */}
-      <ul className="flex flex-wrap gap-gui-m rounded-gui-s rounded-tl-none bg-gui-section-fill p-gui-m inset-ring inset-ring-gui-section-edge">
+      <ul className="flex flex-wrap gap-gui-m rounded-gui-s bg-gui-section-fill p-gui-m inset-ring inset-ring-gui-section-edge">
         {section.items.map(renderCard)}
       </ul>
     </section>
@@ -148,6 +183,7 @@ function StateCard<T extends Inputs>({
         href={href}
         aria-labelledby={`card-${item.id}-title`}
         aria-describedby={`card-${item.id}-details`}
+        onClick={rememberScroll}
         className="relative isolate flex w-min flex-col gap-gui-xs outline-none before:absolute before:-inset-gui-xs before:-z-10 before:rounded-gui-m before:transition-colors before:duration-gui before:ease-gui hover:before:bg-gui-section-card focus-visible:before:bg-gui-section-card focus-visible:before:gui-focus-ring active:gui-press active:before:bg-gui-section-card-hover motion-reduce:before:transition-none"
       >
         <Thumbnail viewport={viewport}>{thumbnail}</Thumbnail>

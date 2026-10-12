@@ -38,7 +38,7 @@ export function FocusBar<T extends Inputs>({ frame, position, total, hubHref, on
       )}
     >
       <Tooltip label="All states" shortcut="Esc">
-        <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
+        <Link href={hubHref} scroll={false} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
           <SquaresFourIcon aria-hidden />
         </Link>
       </Tooltip>

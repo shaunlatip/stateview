@@ -81,6 +81,7 @@ A running list of interaction and visual details, kept while building.
 - Sections are tinted by question family (who, system, data, nearby) like Figma's section colors: a light fill and outline in the section's hue, cards in a stronger tint of the same hue, and the title in a bold chip with black or white text, whichever reads on it.
 - Sections hug their cards and wrap inside a 1200 px column, so one-card sections share a row and every section has even padding.
 - What the review leaves out sits behind a "combinations not covered" popover in the header, so the header stays one row.
+- Coming back to the hub (Escape, All states or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
 - The review bar floats over the page instead of framing it, so the app keeps its full width. It samples the colour behind it and takes the opposite scheme, so it stays distinct from any app. On phones it leaves room for the comment toolbar, and its text wraps instead of truncating.
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  */
 export function Thumbnail({ children, viewport }: { children: ReactNode; viewport: "desktop" | "mobile" }) {
   return (
-    <div aria-hidden inert className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2">
+    <div aria-hidden inert className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 shadow-gui-s ring-1 ring-gui-border">
       <div
         className={cn(
           "host-frame pointer-events-none absolute top-0 origin-top bg-background select-none",
