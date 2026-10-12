@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Design language
+
+For UI work, follow `GUI.md` and use the `graphical-ui`, `graphical-convert` or `graphical-audit` skills in `.agents/skills/` as appropriate.
+
 <!-- harden:start -->
 ## Quality gates
 
