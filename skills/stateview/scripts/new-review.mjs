@@ -17,7 +17,7 @@ if (!id || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) fail("Give the review a kebab-c
 if (!options.screen) fail('Name the screen with --screen, e.g. --screen "Team settings › Members".', 2);
 
 const appRoot = options.app ?? process.cwd();
-const { srcDir, routesDir } = appLayout(appRoot);
+const { srcDir, router, routesDir } = appLayout(appRoot);
 const reviewsDir = join(srcDir, "stateview-reviews");
 const registry = join(reviewsDir, "index.ts");
 if (!existsSync(registry)) fail("No review registry yet. Run install.mjs first.");
@@ -28,7 +28,7 @@ const manifest = {
   version: 1,
   route: `/stateview/${id}/state`,
   screen: options.screen,
-  scope: { repo: repoName(), branch: scope.branch, base: scope.base },
+  scope: { repo: repoName(), ...favicon(), branch: scope.branch, base: scope.base },
   baseline: {},
   inputs: [],
   sections: [],
@@ -67,6 +67,20 @@ function repoName() {
   if (fromRemote) return fromRemote;
   const top = git(appRoot, ["rev-parse", "--show-toplevel"]) ?? appRoot;
   return basename(top);
+}
+
+/**
+ * `{ icon }` when the app serves a favicon at a known path: an App Router icon
+ * file (served from the root) or one in public/. Empty when there's none; the
+ * hub then shows the repo name alone.
+ */
+function favicon() {
+  const names = ["icon.svg", "icon.png", "favicon.svg", "favicon.png", "favicon.ico"];
+  for (const name of names) {
+    const served = [...(router === "app" ? [join(routesDir, name)] : []), join(appRoot, "public", name)].some((path) => existsSync(path));
+    if (served) return { icon: `/${name}` };
+  }
+  return {};
 }
 
 /** The branch, its base, and the files it changed, committed or not, minus Stateview's own. */

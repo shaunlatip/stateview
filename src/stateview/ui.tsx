@@ -51,9 +51,9 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent hover:bg-gui-neutral-9 hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
+          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent not-data-disabled:hover:bg-gui-neutral-9 not-data-disabled:hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
         outline:
-          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
+          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 not-data-disabled:hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
         // Neutral 4 hover, like the toolbar: the export's Neutral 3 at 20% was invisible on Neutral 1.
         ghost: "text-gui-neutral-10 hover:bg-gui-neutral-4 focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
         // A secondary action that shouldn't compete, e.g. Delete beside Cancel and Save.

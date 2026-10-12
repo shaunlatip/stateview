@@ -61,7 +61,7 @@ Each rule is followed by how to apply it in the manifest.
 9. **Mark the origin.** `design` for states a designer would draw. `code-only` for flag-gated and entitlement-gated variants that designs don't show, and for sub-component loading, saving and error states. Code-only states are the ones reviewers are least likely to find on their own.
    *Manifest:* `origin: "design"` or `origin: "code-only"` on every item. A state that turns on a `source: "flag"` input is `code-only`.
 10. **Scope to the change.** Only inputs the diff reads, plus a short "Nearby features" section for unchanged things the change could break.
-    *Manifest:* `scope` records the repo, branch and base. Inputs the diff doesn't touch are left out of `inputs`.
+    *Manifest:* `scope` records the repo, branch and base, and optionally the app's favicon path as `icon`. Inputs the diff doesn't touch are left out of `inputs`.
 11. **Report coverage honestly.** Combinations no state covers are listed, not forced into unreadable states.
     *Manifest:* `uncovered` lists combinations that are possible but not shown, each a `title` named the way a state would be and the `set` it would need; the hub shows them as dashed cards. `excluded` lists combinations that are impossible, as strings with the reason.
 12. **Keep the budget small.** About 8 to 15 states per review, in no more than the nine hub sections below. More than that means the scope is too wide; split the review by screen.

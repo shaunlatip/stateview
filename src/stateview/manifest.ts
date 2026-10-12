@@ -68,7 +68,8 @@ export type Manifest<T extends Inputs = Inputs> = {
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
   screen: string;
-  scope: { repo: string; branch: string; base: string };
+  /** The repo and branch under review; `icon` is the app's own favicon, as a URL path. */
+  scope: { repo: string; icon?: string; branch: string; base: string };
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];

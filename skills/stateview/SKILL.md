@@ -37,7 +37,7 @@ It copies the engine into `src/stateview/` (vendored; don't edit the copy), impo
 node <skill>/scripts/new-review.mjs <review-id> --screen "<Area › Screen>"
 ```
 
-Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git), a render stub in `stateview-reviews/<id>/index.tsx`, and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
+Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git, and the app's favicon as `scope.icon` when it finds one), a render stub in `stateview-reviews/<id>/index.tsx`, and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
 
 Paths below assume a `src/` folder; in apps without one, the folders sit at the project root (`stateview/`, `stateview-reviews/`, `app/stateview/`). The scripts print the real paths.
 

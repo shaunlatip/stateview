@@ -94,8 +94,11 @@ function checkShape(m, f) {
   f.expect(typeof m.route === "string" && m.route.startsWith("/"), "shape", "route", `route should be the path that renders the screen, starting with "/"${got(m.route)}.`);
   f.expect(isText(m.screen), "shape", "screen", `screen should name the screen under review, like "Team settings › Members"${got(m.screen)}.`);
   if (f.expect(isObject(m.scope), "shape", "scope", `scope should be an object with repo, branch and base${got(m.scope)}.`)) {
-    const { repo, branch, base } = m.scope;
+    const { repo, icon, branch, base } = m.scope;
     f.expect(isText(repo), "shape", "scope.repo", `scope.repo should name the repository, like "acme-web"${got(repo)}.`);
+    if (icon !== undefined) {
+      f.expect(typeof icon === "string" && icon.startsWith("/"), "shape", "scope.icon", `scope.icon should be the app's favicon as a path, like "/favicon.ico", or left out${got(icon)}.`);
+    }
     f.expect(typeof branch === "string", "shape", "scope.branch", `scope.branch should be the branch name${got(branch)}.`);
     f.expect(typeof base === "string", "shape", "scope.base", `scope.base should be the branch it merges into, like "main"${got(base)}.`);
   }

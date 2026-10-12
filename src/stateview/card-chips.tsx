@@ -12,7 +12,7 @@ import type { Item } from "./manifest";
 const DARK_CHIP = "bg-gui-neutral-10 text-gui-neutral-1 dark:bg-gui-neutral-1 dark:text-gui-neutral-10";
 const LIGHT_CHIP = "bg-gui-neutral-3 text-gui-neutral-10 dark:bg-gui-neutral-10 dark:text-gui-neutral-1";
 
-/** Top right: open comments, then a light "New" badge until the state has been opened. */
+/** Top right: open comments, then a dot until the state has been opened. */
 export function CornerChips({ comments, viewed }: { comments: number; viewed: boolean }) {
   if (comments === 0 && viewed) return null;
   return (
@@ -23,11 +23,9 @@ export function CornerChips({ comments, viewed }: { comments: number; viewed: bo
           {comments}
         </span>
       ) : null}
+      {/* Dark on the app's light screen in both schemes, like the dark chips; the ring keeps it apart from the screen. */}
       {viewed ? null : (
-        <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full px-gui-xs text-gui-xs shadow-gui-s ring-1 ring-gui-border", LIGHT_CHIP)}>
-          <span className="size-1.5 rounded-full bg-gui-neutral-6" />
-          New
-        </span>
+        <span className="m-gui-xxs size-2 rounded-full bg-gui-neutral-10 ring-2 ring-gui-neutral-1 dark:bg-gui-neutral-1 dark:ring-gui-neutral-10" />
       )}
     </span>
   );

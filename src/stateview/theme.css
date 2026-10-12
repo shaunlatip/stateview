@@ -334,13 +334,22 @@
 
 /*
  * The viewer's frame: a bar along the top, one toolbar control tall inside
- * XXS padding, and a filmstrip down the left, one strip thumbnail wide inside
- * S padding. The app under review fills the rest.
+ * XXS padding, and a filmstrip down the left, one strip thumbnail wide. The
+ * strip's side inset is the bar's XXS padding plus a control's XS padding, so
+ * the thumbnails line up under the logo. On wide screens the reviewer can
+ * resize the strip: the viewer sets --thumb-strip-chosen (unitless px) inline
+ * on each surface that reads it. On phones the strip overlays the app and
+ * stays at its default width. The app under review fills the rest.
  */
 .stateview-theme {
   --viewer-bar: calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-xxs));
-  --viewer-strip: calc(var(--thumb-strip-width) * 1px + 2 * var(--space-s));
+  --viewer-strip-inset: calc(var(--space-xxs) + var(--space-xs));
+  --viewer-strip: calc(var(--thumb-strip-width) * 1px + 2 * var(--viewer-strip-inset));
   --thumb-strip-width: 144;
+
+  @media (width >= 48rem) {
+    --thumb-strip-width: var(--thumb-strip-chosen, 144);
+  }
 }
 
 /* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
@@ -384,10 +393,11 @@
 }
 
 /*
- * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90), both
- * 16:10. Sizes are unitless so the screen inside can scale from them: a
- * desktop render (1088px wide) fills the width; a phone render (375px wide)
- * shows its top 400px.
+ * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90 by
+ * default, any width the reviewer drags it to), both 16:10. Sizes are
+ * unitless so the screen inside can scale from them: a desktop render
+ * (1088px wide) fills the width; a phone render (375px wide) shows its top
+ * 400px.
  */
 @utility gui-thumb-card {
   --thumb-width: 208;
@@ -398,7 +408,7 @@
 
 @utility gui-thumb-strip {
   --thumb-width: var(--thumb-strip-width);
-  --thumb-height: 90;
+  --thumb-height: calc(var(--thumb-strip-width) * 130 / 208);
   width: calc(var(--thumb-width) * 1px);
   height: calc(var(--thumb-height) * 1px);
 }

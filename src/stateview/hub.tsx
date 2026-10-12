@@ -114,10 +114,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   return (
     <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
       <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-gui-l overflow-y-auto bg-gui-neutral-2 px-gui-m py-gui-l gui-divider-end md:flex">
-        <div className="flex flex-col gap-gui-xs px-gui-xs">
-          <Logo className="h-6 w-auto self-start" />
-          <h1 className="text-gui-m wrap-break-word">{manifest.scope.repo}</h1>
-        </div>
+        <Brand className="px-gui-xs" />
         <ul className="flex flex-col">
           {manifest.sections.map((section) => (
             <IndexLink key={section.id} id={section.id} current={current === section.id}>
@@ -139,19 +136,26 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
 
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s px-gui-m py-gui-m gui-divider-bottom md:px-gui-xxl">
-          <div className="flex min-w-0 flex-col gap-gui-xs">
-            {/* Below md the index is hidden, so its logo and title move here. Only one h1 is ever displayed. */}
-            <div className="flex flex-col gap-gui-xxs md:hidden">
-              <Logo className="h-6 w-auto self-start" />
-              <h1 className="text-gui-m wrap-break-word">{manifest.scope.repo}</h1>
+          <div className="flex min-w-0 flex-col gap-gui-s">
+            {/* Below md the index is hidden, so the brand moves here. */}
+            <Brand className="md:hidden" />
+            <div className="flex min-w-0 flex-wrap items-center gap-x-gui-l gap-y-gui-xs">
+              <h1 className="flex min-w-0 items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
+                {/* The app's own favicon, decorative beside its repo name. */}
+                {manifest.scope.icon ? (
+                  // oxlint-disable-next-line nextjs/no-img-element -- the engine is vendored into apps whose next/image config (loader, basePath, export) it can't know; a 20 px favicon gains nothing from optimization
+                  <img src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
+                ) : null}
+                {manifest.scope.repo}
+              </h1>
+              <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7">
+                <GitBranchIcon aria-hidden className="text-gui-m text-gui-neutral-10" />
+                <span className="sr-only">Reviewing</span>
+                <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.branch}</code>
+                vs
+                <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.base}</code>
+              </p>
             </div>
-            <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7">
-              <GitBranchIcon aria-hidden className="text-gui-m text-gui-neutral-10" />
-              <span className="sr-only">Reviewing</span>
-              <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.branch}</code>
-              vs
-              <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.base}</code>
-            </p>
           </div>
           <CopyComments manifest={manifest} />
         </header>
@@ -199,6 +203,16 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
       </main>
       <StateviewToaster />
     </ThemeScope>
+  );
+}
+
+/** Stateview's mark with its name set in the UI face. */
+function Brand({ className }: { className?: string }) {
+  return (
+    <p className={cn("flex items-center gap-gui-xs text-gui-m font-gui-heavy", className)}>
+      <Logo className="h-4 w-auto" />
+      Stateview
+    </p>
   );
 }
 
@@ -277,7 +291,11 @@ function SectionRow({
   );
 }
 
-/** The whole card is the link, so element pickers (Agentation) and pointers hit one target. */
+/**
+ * Two targets to the same state: the screen, for the pointer, and the title,
+ * with its own hover, which is also the one keyboard stop and carries the
+ * card's description. The description text between them isn't a link.
+ */
 function StateCard<T extends Inputs>({
   item,
   href,
@@ -294,32 +312,31 @@ function StateCard<T extends Inputs>({
 }) {
   const details = chipText(item, viewed);
   return (
-    <li className="flex">
-      {/* Named by the title alone; the description and chips are its description. */}
-      <Link
-        href={href}
-        aria-labelledby={`card-${item.id}-title`}
-        aria-describedby={`card-${item.id}-details`}
-        onClick={rememberScroll}
-        className="group flex w-min flex-col gap-gui-xs rounded-gui-s outline-offset-4 outline-none focus-visible:gui-focus-ring active:gui-press"
-      >
-        <div className="relative">
-          {item.kind === "sequence" ? <FlowStack /> : null}
-          {preview}
-          <CornerChips comments={comments} viewed={viewed} />
-          <FooterChips item={item} />
-        </div>
-        <div className="flex flex-col">
-          <h3 id={`card-${item.id}-title`} className="line-clamp-1 text-gui-s">
-            {item.title}
-          </h3>
-          <p id={`card-${item.id}-details`} className="text-gui-xs text-gui-neutral-7">
-            {item.why}
-            {comments > 0 ? <span className="sr-only">{` ${comments} open ${comments === 1 ? "comment" : "comments"}.`}</span> : null}
-            {details ? <span className="sr-only">{` ${details}.`}</span> : null}
-          </p>
-        </div>
+    <li className="flex w-min flex-col gap-gui-xs">
+      {/* Out of the tab order and the accessibility tree: the title link below is the same link. */}
+      <Link href={href} tabIndex={-1} aria-hidden onClick={rememberScroll} className="group relative block rounded-gui-s outline-none active:gui-press">
+        {item.kind === "sequence" ? <FlowStack /> : null}
+        {preview}
+        <CornerChips comments={comments} viewed={viewed} />
+        <FooterChips item={item} />
       </Link>
+      <div className="flex flex-col">
+        <h3 className="line-clamp-1 text-gui-s">
+          <Link
+            href={href}
+            aria-describedby={`card-${item.id}-details`}
+            onClick={rememberScroll}
+            className="rounded-gui-xs underline-offset-2 outline-none hover:underline focus-visible:gui-focus-ring"
+          >
+            {item.title}
+          </Link>
+        </h3>
+        <p id={`card-${item.id}-details`} className="text-gui-xs text-gui-neutral-7">
+          {item.why}
+          {comments > 0 ? <span className="sr-only">{` ${comments} open ${comments === 1 ? "comment" : "comments"}.`}</span> : null}
+          {details ? <span className="sr-only">{` ${details}.`}</span> : null}
+        </p>
+      </div>
     </li>
   );
 }

@@ -48,8 +48,9 @@ test("shape", () => {
     m.id = "Team Members";
     m.version = "1";
     delete m.scope.repo;
+    m.scope.icon = "favicon.ico";
   });
-  assert.deepEqual(errors.map((e) => e.path), ["id", "version", "scope.repo"]);
+  assert.deepEqual(errors.map((e) => e.path), ["id", "version", "scope.repo", "scope.icon"]);
   assert.ok(errors.every((e) => e.rule === "shape"));
 });
 
