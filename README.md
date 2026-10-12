@@ -1,11 +1,11 @@
 # Stateview
 
-A review layer for web apps. Instead of clicking around a build from a cold start, the reviewer steps through a small set of named states for a change (role, plan, feature flag, data shape, loading and error, breakpoint), comments on elements, marks each state reviewed, and ends with a prompt for their coding agent.
+A review layer for web apps. Instead of clicking around a build from a cold start, the reviewer steps through a small set of named states for a change (role, plan, feature flag, data shape, loading and error, breakpoint), comments on elements, and ends with a prompt for their coding agent.
 
 ## Try it
 
-- `/` is the hub: every state for the change, grouped into sections, with live thumbnails and reviewed counts.
-- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states, `R` marks the state reviewed, `Esc` goes back to the hub.
+- `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
+- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states and `Esc` goes back to the hub; hover a control to see its shortcut.
 - Comment on any element with the toolbar in the bottom-right corner (or `⌘⇧F`). Each comment is saved with the state it was made in.
 
 The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
@@ -45,7 +45,7 @@ Without them, Stateview's UI falls back to the system sans-serif and nothing els
 
 ## Where to look
 
-- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (review progress in localStorage), `annotations.ts` (the comment interface) and `agentation-layer.tsx` (the one adapter behind it).
+- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (comments in localStorage), `annotations.ts` (the comment interface) and `agentation-layer.tsx` (the one adapter behind it).
 - `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `manifest.ts` lists the states for this change.
 - `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state).
 
@@ -79,8 +79,7 @@ A running list of interaction and visual details, kept while building.
 - The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
 - Each state card's title is the link; its hit area stretches over the whole card, and the focus ring is drawn on the card.
 - The review bar floats over the page instead of framing it, so the app keeps its full width. On phones it leaves room for the comment toolbar.
-- Step changes are announced to screen readers ("Roles: Viewer checking who's on the team. Not reviewed."), and the page title follows the state.
+- Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.
 - Shortcuts don't fire while typing, inside a radio group or menu, or inside the comment popover. Escape first closes the comment tools; only a second Escape leaves the state.
 - Comments copied from the toolbar are prefixed with the state's title, URL and inputs, so an agent can open exactly what the reviewer saw.
-- "Mark reviewed" is a toggle (`aria-pressed`) with a fixed label; the pressed state shows as the toolbar's pressed fill and a checked circle.
 - Component edges are inset or outset box shadows, never native borders, so adding an edge never shifts layout.

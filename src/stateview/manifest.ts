@@ -45,10 +45,15 @@ export type SequenceItem<T extends Inputs = Inputs> = {
 
 export type Item<T extends Inputs = Inputs> = StateItem<T> | SequenceItem<T>;
 
+/** The family of question a section answers. */
+export type SectionTone = "base" | "who" | "system" | "data" | "nearby";
+
 export type Section<T extends Inputs = Inputs> = {
   id: string;
   title: string;
   why: string;
+  /** Color-codes the section's question family on the hub, like Figma section colors. Defaults to "base". */
+  tone?: SectionTone;
   items: Item<T>[];
 };
 

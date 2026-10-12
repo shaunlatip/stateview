@@ -42,6 +42,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "happy-path",
       title: "Happy path",
       why: "The screen most people see most of the time.",
+      tone: "base",
       items: [
         {
           kind: "state",
@@ -57,6 +58,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "first-use",
       title: "First use",
       why: "What a brand-new team looks like before anyone joins.",
+      tone: "base",
       items: [
         {
           kind: "state",
@@ -72,6 +74,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "main-flows",
       title: "Main flows",
       why: "The change adds inviting with a role; each step is a moment someone is really in.",
+      tone: "base",
       items: [
         {
           kind: "sequence",
@@ -92,6 +95,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "roles",
       title: "Roles",
       why: "Who can do what. The change added a viewer role.",
+      tone: "who",
       items: [
         {
           kind: "state",
@@ -117,6 +121,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "plan-flags",
       title: "Plan & flags",
       why: "Entitlements and flags change what the screen offers, and a missing feature doesn't look missing.",
+      tone: "who",
       items: [
         {
           kind: "state",
@@ -142,6 +147,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "loading-errors",
       title: "Loading & errors",
       why: "Async states inside the page that designs rarely draw.",
+      tone: "system",
       items: [
         {
           kind: "state",
@@ -176,6 +182,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "long-content",
       title: "Long content",
       why: "Real data at its largest.",
+      tone: "data",
       items: [
         {
           kind: "state",
@@ -192,6 +199,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "breakpoints",
       title: "Breakpoints",
       why: "Where the layout reflows.",
+      tone: "data",
       items: [
         {
           kind: "state",
@@ -207,6 +215,7 @@ export const membersManifest: Manifest<MembersState> = {
       id: "nearby",
       title: "Nearby features",
       why: "Unchanged parts of the page the change could break.",
+      tone: "nearby",
       items: [
         {
           kind: "state",
