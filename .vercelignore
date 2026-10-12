@@ -1,0 +1,9 @@
+# Local-only folders the CLI would otherwise upload as build source.
+# public/fonts/timeless-grotesk/ is gitignored but deliberately deployed (see README).
+.context
+.gstack
+.claude
+.conductor
+.harden
+test-results
+playwright-report
