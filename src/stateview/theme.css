@@ -1,0 +1,284 @@
+/*
+ * Stateview's design language (Graphical theme "Stateview", see GUI.md and
+ * gui/themes/stateview.md). Scoped to `.stateview-theme` so the review layer
+ * never restyles the app under review, which keeps its own shadcn tokens.
+ * Literal values live only in the two mode blocks below; components use the
+ * named `gui-*` utilities registered at the end.
+ */
+
+.stateview-theme {
+  --focus-ring-outline: 2px solid color-mix(in srgb, #000000 50%, transparent);
+  --icon-stroke-width: 1.5;
+
+  --motion-duration: 150ms;
+  --motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-large-duration: 300ms;
+  --motion-large-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-popup-scale: 0.96;
+  --motion-press-distance: 1px;
+
+  --option-badge-background: #f0f0f0;
+  --option-badge-foreground: #000000;
+  --navigation-active-background: #f0f0f0;
+  --navigation-active-foreground: #000000;
+
+  --space-zero: 0px;
+  --space-xxs: 4px;
+  --space-xs: 7px;
+  --space-s: 11px;
+  --space-m: 14px;
+  --space-l: 22px;
+  --space-xl: 29px;
+  --space-xxl: 43px;
+
+  --tracking-xs: -0.02em;
+  --tracking-s: -0.01em;
+  --tracking-m: 0em;
+  --tracking-l: 0.01em;
+  --tracking-xl: 0.02em;
+
+  --size-xxs: 10px;
+  --line-xxs: 13px;
+  --letter-spacing-xxs: 0.02em;
+  --size-xs: 12px;
+  --line-xs: 15px;
+  --letter-spacing-xs: 0.01em;
+  --size-s: 13px;
+  --line-s: 19px;
+  --letter-spacing-s: 0.01em;
+  --size-m: 15px;
+  --line-m: 23px;
+  --letter-spacing-m: 0em;
+  --size-l: 23px;
+  --line-l: 31px;
+  --letter-spacing-l: -0.01em;
+  --size-xl: 35px;
+  --line-xl: 38px;
+  --letter-spacing-xl: -0.01em;
+  --size-xxl: 46px;
+  --line-xxl: 50px;
+  --letter-spacing-xxl: -0.02em;
+
+  --radius-zero: 0px;
+  --radius-xs: 3px;
+  --radius-s: 7px;
+  --radius-m: 10px;
+  --radius-l: 20px;
+  --radius-xl: 30px;
+  --radius-full: 9999px;
+
+  --border-none: 0px;
+  --border-s: 1px;
+  --border-m: 1px;
+  --border-l: 2px;
+  --border-default-color: rgb(0 0 0 / 0.1);
+
+  /* Timeless Grotesk is the selected face; it loads once its files are added (see README). */
+  --font-ui: "Timeless Grotesk", sans-serif;
+  --font-brand: "Timeless Grotesk", sans-serif;
+  --font-editorial: "Timeless Grotesk", sans-serif;
+  /* "Sidebar Geist Mono" maps to the Geist Mono family next/font already loads. */
+  --font-data: var(--font-geist-mono), monospace;
+  --weight-ui-regular: 300;
+  --weight-ui-medium: 400;
+  --weight-ui-heavy: 600;
+  --weight-brand-regular: 300;
+  --weight-brand-medium: 400;
+  --weight-brand-heavy: 600;
+  --weight-data-regular: 300;
+  --weight-data-medium: 400;
+  --weight-data-heavy: 600;
+
+  --color-none: transparent;
+  --color-1: #e0e708;
+  --color-1-transparent: #e0e70833;
+  --color-2: #00c9bb;
+  --color-2-transparent: #00c9bb33;
+  --color-3: #e0e709;
+  --color-3-transparent: #e0e70933;
+  --color-4: #e864ff;
+  --color-4-transparent: #e864ff33;
+  --neutral-1: #ffffff;
+  --neutral-1-transparent: #ffffff33;
+  --neutral-2: #fafafa;
+  --neutral-2-transparent: #fafafa33;
+  --neutral-3: #f0f0f0;
+  --neutral-3-transparent: #f0f0f033;
+  --neutral-4: #dddddd;
+  --neutral-4-transparent: #dddddd33;
+  --neutral-5: #c5c5c5;
+  --neutral-5-transparent: #c5c5c533;
+  --neutral-6: #969696;
+  --neutral-6-transparent: #96969633;
+  --neutral-7: #6c6c6c;
+  --neutral-7-transparent: #6c6c6c33;
+  --neutral-8: #454545;
+  --neutral-8-transparent: #45454533;
+  --neutral-9: #252525;
+  --neutral-9-transparent: #25252533;
+  --neutral-10: #000000;
+  --neutral-10-transparent: #00000033;
+  --success: #76ef6b;
+  --success-transparent: #76ef6b33;
+  --warning: #ffa344;
+  --warning-transparent: #ffa34433;
+  --error: #ff5263;
+  --error-transparent: #ff526333;
+
+  --shadow-none: none;
+  --shadow-s: 0px 1px 2px 0px #00000000;
+  --shadow-m: 0px 8px 24px 0px #00000000;
+  --shadow-l: 0px 12px 30px 0px #00000000;
+
+  font-family: var(--font-ui);
+  font-weight: var(--weight-ui-regular);
+  font-size: var(--size-m);
+  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-m);
+  color: var(--neutral-10);
+  text-wrap: pretty;
+}
+
+.dark .stateview-theme,
+.stateview-theme.dark {
+  --focus-ring-outline: 2px solid color-mix(in srgb, #ffffff 50%, transparent);
+
+  --option-badge-background: #2b2b2b;
+  --option-badge-foreground: #ffffff;
+  --navigation-active-background: #2b2b2b;
+  --navigation-active-foreground: #ffffff;
+
+  --color-3: #f4f83b;
+  --color-3-transparent: #f4f83b33;
+  --neutral-1: #000000;
+  --neutral-1-transparent: #00000033;
+  --neutral-2: #202020;
+  --neutral-2-transparent: #20202033;
+  --neutral-3: #2b2b2b;
+  --neutral-3-transparent: #2b2b2b33;
+  --neutral-4: #383838;
+  --neutral-4-transparent: #38383833;
+  --neutral-5: #505050;
+  --neutral-5-transparent: #50505033;
+  --neutral-6: #777777;
+  --neutral-6-transparent: #77777733;
+  --neutral-7: #a3a3a3;
+  --neutral-7-transparent: #a3a3a333;
+  --neutral-8: #c6c6c6;
+  --neutral-8-transparent: #c6c6c633;
+  --neutral-9: #e5e5e5;
+  --neutral-9-transparent: #e5e5e533;
+  --neutral-10: #ffffff;
+  --neutral-10-transparent: #ffffff33;
+}
+
+/* Registered as `gui-*` utilities (bg-gui-neutral-3, p-gui-m, text-gui-s, rounded-gui-s, …). */
+@theme inline {
+  --color-gui-neutral-1: var(--neutral-1);
+  --color-gui-neutral-2: var(--neutral-2);
+  --color-gui-neutral-3: var(--neutral-3);
+  --color-gui-neutral-3-transparent: var(--neutral-3-transparent);
+  --color-gui-neutral-4: var(--neutral-4);
+  --color-gui-neutral-4-transparent: var(--neutral-4-transparent);
+  --color-gui-neutral-6: var(--neutral-6);
+  --color-gui-neutral-7: var(--neutral-7);
+  --color-gui-neutral-8: var(--neutral-8);
+  --color-gui-neutral-10: var(--neutral-10);
+  --color-gui-neutral-10-transparent: var(--neutral-10-transparent);
+  --color-gui-1-transparent: var(--color-1-transparent);
+  --color-gui-1: var(--color-1);
+  --color-gui-error: var(--error);
+  --color-gui-border: var(--border-default-color);
+  --color-gui-option-badge: var(--option-badge-background);
+  --color-gui-option-badge-foreground: var(--option-badge-foreground);
+
+  --spacing-gui-zero: var(--space-zero);
+  --spacing-gui-xxs: var(--space-xxs);
+  --spacing-gui-xs: var(--space-xs);
+  --spacing-gui-s: var(--space-s);
+  --spacing-gui-m: var(--space-m);
+  --spacing-gui-l: var(--space-l);
+  --spacing-gui-xl: var(--space-xl);
+  --spacing-gui-xxl: var(--space-xxl);
+
+  --text-gui-xs: var(--size-xs);
+  --text-gui-xs--line-height: var(--line-xs);
+  --text-gui-xs--letter-spacing: var(--letter-spacing-xs);
+  --text-gui-s: var(--size-s);
+  --text-gui-s--line-height: var(--line-s);
+  --text-gui-s--letter-spacing: var(--letter-spacing-s);
+  --text-gui-m: var(--size-m);
+  --text-gui-m--line-height: var(--line-m);
+  --text-gui-m--letter-spacing: var(--letter-spacing-m);
+  --text-gui-l: var(--size-l);
+  --text-gui-l--line-height: var(--line-l);
+  --text-gui-l--letter-spacing: var(--letter-spacing-l);
+
+  --font-gui-ui: var(--font-ui);
+  --font-gui-brand: var(--font-brand);
+  --font-gui-data: var(--font-data);
+  --font-weight-gui-regular: var(--weight-ui-regular);
+  --font-weight-gui-medium: var(--weight-ui-medium);
+  --font-weight-gui-heavy: var(--weight-ui-heavy);
+  --font-weight-gui-brand-heavy: var(--weight-brand-heavy);
+
+  --radius-gui-xs: var(--radius-xs);
+  --radius-gui-s: var(--radius-s);
+  --radius-gui-m: var(--radius-m);
+
+  --shadow-gui-s: var(--shadow-s);
+  --shadow-gui-m: var(--shadow-m);
+
+  --ease-gui: var(--motion-easing);
+  --ease-gui-large: var(--motion-large-easing);
+}
+
+/* Keyboard focus: the theme's outline, kept separate from the component edge. */
+@utility gui-focus-ring {
+  outline: var(--focus-ring-outline);
+}
+
+/* Small motion for controls; large for surfaces like the review bar and toasts. */
+@utility duration-gui {
+  --tw-duration: var(--motion-duration);
+  transition-duration: var(--motion-duration);
+}
+
+@utility duration-gui-large {
+  --tw-duration: var(--motion-large-duration);
+  transition-duration: var(--motion-large-duration);
+}
+
+@utility gui-press {
+  translate: 0 var(--motion-press-distance);
+}
+
+/* Controls size from content plus padding: one line of M text with XS padding above and below. */
+@utility gui-control {
+  min-height: calc(var(--line-m) + 2 * var(--space-xs));
+}
+
+@utility gui-control-square {
+  min-width: calc(var(--line-m) + 2 * var(--space-xs));
+}
+
+/* Edges and dividers are drawn with inset shadows, never native borders. */
+@utility gui-divider-top {
+  box-shadow: inset 0 var(--border-s) 0 0 var(--border-default-color);
+}
+
+@utility gui-divider-vertical {
+  width: var(--border-s);
+  box-shadow: inset var(--border-s) 0 0 0 var(--neutral-4);
+}
+
+/* App content embedded in Stateview UI (hub thumbnails) starts from the host app's own defaults. */
+@utility host-frame {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: var(--foreground);
+  text-wrap: wrap;
+}

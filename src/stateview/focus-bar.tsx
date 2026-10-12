@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
-import { Separator } from "@/components/ui/separator";
+import { ArrowLeftIcon, CaretLeftIcon, CaretRightIcon, CheckCircleIcon, CircleIcon } from "@phosphor-icons/react";
 import type { Frame, Inputs } from "./manifest";
+import { Button, Kbd, ThemeScope, ToolbarSeparator, buttonVariants } from "./ui";
 
 type FocusBarProps<T extends Inputs> = {
   frame: Frame<T>;
@@ -19,49 +17,48 @@ type FocusBarProps<T extends Inputs> = {
   onToggleReviewed: () => void;
 };
 
-/** Floating review controls. Overlaid rather than framed, so the app keeps its full width. */
+/**
+ * Floating review controls (Graphical Toolbar). Overlaid rather than framed,
+ * so the app keeps its full width.
+ */
 export function FocusBar<T extends Inputs>({ frame, position, total, reviewed, hubHref, onPrevious, onNext, onToggleReviewed }: FocusBarProps<T>) {
   const step = frame.step ? `Step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : null;
   return (
-    <aside
+    <ThemeScope
+      as="aside"
       aria-label="Review"
-      className="fixed inset-x-3 bottom-3 z-40 mx-auto max-sm:right-18 flex max-w-2xl items-center gap-1 rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 sm:gap-2"
+      className="fixed inset-x-gui-s bottom-gui-s z-40 mx-auto flex max-w-2xl items-center gap-gui-xxs rounded-gui-s bg-gui-neutral-1 p-gui-xxs shadow-gui-s ring-1 ring-gui-neutral-4-transparent duration-gui-large ease-gui-large max-sm:right-18 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 dark:bg-gui-neutral-2"
     >
-      <Link href={hubHref} aria-keyshortcuts="Escape" className={buttonVariants({ variant: "ghost" })}>
-        <ArrowLeft aria-hidden />
+      <Link href={hubHref} aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "toolbar" })}>
+        <ArrowLeftIcon aria-hidden />
         <span className="max-sm:sr-only">Hub</span>
-        <Kbd aria-hidden className="max-sm:hidden">
-          Esc
-        </Kbd>
+        <Kbd className="max-sm:hidden">Esc</Kbd>
       </Link>
-      <Separator orientation="vertical" className="h-6" />
-      <div className="flex min-w-0 flex-1 flex-col px-1">
-        <p className="truncate text-xs text-muted-foreground tabular-nums">
+      <ToolbarSeparator />
+      <div className="flex min-w-0 flex-1 flex-col px-gui-xs">
+        <p className="truncate text-gui-xs text-gui-neutral-7 tabular-nums">
           {frame.section.title} · {position} of {total}
         </p>
-        <p className="truncate text-sm font-medium">
+        <p className="truncate text-gui-s font-gui-medium">
           {frame.item.title}
-          {step ? <span className="font-normal text-muted-foreground"> · {step}</span> : null}
+          {step ? <span className="font-gui-regular text-gui-neutral-7"> · {step}</span> : null}
         </p>
       </div>
-      <div className="flex items-center">
-        <Button type="button" variant="ghost" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" disabled={!onPrevious} onClick={onPrevious ?? undefined}>
-          <ChevronLeft aria-hidden />
-        </Button>
-        <Button type="button" variant="ghost" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" disabled={!onNext} onClick={onNext ?? undefined}>
-          <ChevronRight aria-hidden />
-        </Button>
-      </div>
-      <Button type="button" variant={reviewed ? "default" : "outline"} aria-keyshortcuts="R" onClick={onToggleReviewed}>
-        <Check aria-hidden />
-        <span className="max-sm:sr-only">{reviewed ? "Reviewed" : "Mark reviewed"}</span>
-        <Kbd aria-hidden className="max-sm:hidden">
-          R
-        </Kbd>
+      <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" disabled={!onPrevious} onClick={onPrevious ?? undefined}>
+        <CaretLeftIcon aria-hidden />
+      </Button>
+      <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" disabled={!onNext} onClick={onNext ?? undefined}>
+        <CaretRightIcon aria-hidden />
+      </Button>
+      <ToolbarSeparator />
+      <Button variant="toolbar" size="toolbar" aria-pressed={reviewed} aria-keyshortcuts="R" onClick={onToggleReviewed}>
+        {reviewed ? <CheckCircleIcon aria-hidden /> : <CircleIcon aria-hidden />}
+        <span className="max-sm:sr-only">Mark reviewed</span>
+        <Kbd className="max-sm:hidden">R</Kbd>
       </Button>
       <p aria-live="polite" className="sr-only">
         {`${frame.section.title}: ${frame.item.title}${step ? `, ${step}` : ""}. ${reviewed ? "Reviewed." : "Not reviewed."}`}
       </p>
-    </aside>
+    </ThemeScope>
   );
 }

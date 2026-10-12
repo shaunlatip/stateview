@@ -5,13 +5,28 @@ import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
-import { buttonVariants } from "@/components/ui/button";
+import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import type { AnnotationLayer } from "./annotations";
 import { FocusBar } from "./focus-bar";
 import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
 import { useReview } from "./store";
+import { ThemeScope, buttonVariants } from "./ui";
+
+// Graphical Toast: the shared Toaster's default look is replaced, not layered over.
+const toastClassNames = {
+  toast:
+    "flex w-full items-center gap-gui-xs rounded-gui-m bg-gui-neutral-1 p-gui-m font-gui-ui text-gui-m text-gui-neutral-10 shadow-gui-m ring-1 ring-gui-neutral-4-transparent dark:bg-gui-neutral-2",
+  title: "font-gui-medium",
+  description: "text-gui-neutral-7",
+  icon: "text-gui-neutral-10",
+};
+
+const toastIcons = {
+  success: <CheckCircleIcon aria-hidden />,
+  error: <XCircleIcon aria-hidden />,
+};
 
 const HUB_HREF = "/";
 
@@ -95,12 +110,13 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   return (
     <>
       <title>{`${frame.item.title} · Stateview`}</title>
-      <div className={cn("grid min-h-dvh pb-24", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 border-x")}>
+      {/* Bottom padding keeps the end of the page clear of the review bar. */}
+      <ThemeScope className={cn("grid min-h-dvh pb-24", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
         {/* Keyed by state so the screen starts fresh from its inputs every time. */}
-        <div key={frame.key} className="grid">
+        <div key={frame.key} className="host-frame grid">
           {render(frame.inputs)}
         </div>
-      </div>
+      </ThemeScope>
       <FocusBar
         frame={frame}
         position={index + 1}
@@ -120,7 +136,9 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         onDelete={review.deleteAnnotation}
         onCopy={copyWithState}
       />
-      <Toaster position="top-center" />
+      <ThemeScope>
+        <Toaster position="top-center" icons={toastIcons} toastOptions={{ unstyled: true, classNames: toastClassNames }} />
+      </ThemeScope>
     </>
   );
 }
@@ -143,12 +161,16 @@ function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>) 
 
 function UnknownState({ id }: { id: string | null }) {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-prose flex-col justify-center gap-3 px-6">
-      <h1 className="text-xl font-semibold text-balance">{id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}</h1>
-      <p className="text-muted-foreground">The review may have changed since this link was made. The hub lists every state.</p>
-      <Link href={HUB_HREF} className={cn(buttonVariants(), "w-fit")}>
-        Go to the hub
-      </Link>
-    </main>
+    <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
+      <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
+        <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
+          {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
+        </h1>
+        <p className="text-gui-neutral-7">The review may have changed since this link was made. The hub lists every state.</p>
+        <Link href={HUB_HREF} className={buttonVariants({ className: "w-fit" })}>
+          Go to the hub
+        </Link>
+      </div>
+    </ThemeScope>
   );
 }
