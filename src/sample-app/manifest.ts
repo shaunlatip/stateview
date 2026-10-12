@@ -12,7 +12,7 @@ export const membersManifest: Manifest<MembersState> = {
   version: 1,
   route: "/app/members",
   screen: "Team settings › Members",
-  scope: { repo: "halcyon-web", branch: "feat/member-management", base: "main" },
+  scope: { repo: "halcyon-web", icon: "/halcyon/favicon.svg", branch: "feat/member-management", base: "main" },
   baseline: {
     role: "owner",
     plan: "pro",

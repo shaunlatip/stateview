@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useState, type Ref } from "react";
 import {
+  CaretDownIcon,
   CaretLeftIcon,
   CaretRightIcon,
   ChatCircleIcon,
   CopyIcon,
-  DotsThreeVerticalIcon,
   EyeIcon,
   EyeSlashIcon,
   LinkSimpleIcon,
@@ -17,7 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import type { Frame, Inputs } from "./manifest";
 import { Logo } from "./logo";
-import { Badge, Button, IconButton, Menu, MenuItem, MenuPopup, MenuTrigger, ThemeScope, ToolbarSeparator, Tooltip, buttonVariants } from "./ui";
+import { Badge, Button, Menu, MenuItem, MenuPopup, MenuTrigger, ThemeScope, ToolbarSeparator, Tooltip, buttonVariants } from "./ui";
 
 type FocusBarProps<T extends Inputs> = {
   frame: Frame<T>;
@@ -83,9 +83,9 @@ export function FocusBar<T extends Inputs>({
       className="dark fixed inset-x-0 top-0 z-40 flex h-(--viewer-bar) items-center gap-gui-xxs bg-gui-toolbar p-gui-xxs text-gui-neutral-10 shadow-gui-s ring-1 ring-gui-neutral-4-transparent"
     >
       <Tooltip label="All states" shortcut="Esc" side="bottom">
-        <Link href={hubHref} scroll={false} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "toolbar" })}>
-          <Logo className="h-5 w-auto max-sm:hidden" />
-          <Logo mark className="h-5 w-auto sm:hidden" />
+        <Link href={hubHref} scroll={false} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
+          {/* Fills the control's content box, so its left edge is the bar's XXS padding plus the control's XS: the filmstrip's inset. */}
+          <Logo className="h-auto w-(--line-m)" />
         </Link>
       </Tooltip>
       <Tooltip label={strip.open ? "Hide states" : "Show states"} side="bottom">
@@ -93,55 +93,67 @@ export function FocusBar<T extends Inputs>({
           <SidebarSimpleIcon aria-hidden />
         </Button>
       </Tooltip>
-      <Tooltip label="Comment" shortcut="C" side="bottom">
-        <Button
-          variant="toolbar"
-          size={commentCount > 0 ? "toolbar" : "icon"}
-          aria-label={commentCount > 0 ? `Comment, ${commentCount} open` : "Comment"}
-          aria-pressed={commenting}
-          aria-keyshortcuts="C"
-          onClick={onToggleCommenting}
-        >
-          <ChatCircleIcon aria-hidden />
-          {commentCount > 0 ? (
-            <Badge variant="strong" aria-hidden className="tabular-nums">
-              {commentCount}
-            </Badge>
-          ) : null}
-        </Button>
-      </Tooltip>
-      <Menu open={menuOpen} onOpenChange={setMenuOpen}>
-        <MenuTrigger
-          render={
-            <IconButton label="More">
-              <DotsThreeVerticalIcon aria-hidden />
-            </IconButton>
-          }
-        />
-        <MenuPopup side="bottom" align="start" scheme="dark">
-          <MenuItem onClick={onTogglePins}>
-            {pins.icon}
-            {pins.label}
-          </MenuItem>
-          <MenuItem disabled={!onCopyComments} onClick={onCopyComments ?? undefined}>
-            <CopyIcon aria-hidden />
-            Copy comments for your agent
-          </MenuItem>
-          <MenuItem onClick={onCopyLink}>
-            <LinkSimpleIcon aria-hidden />
-            Copy link to this state
-          </MenuItem>
-          <MenuItem disabled={!onDeleteComments} onClick={onDeleteComments ?? undefined}>
-            <TrashIcon aria-hidden />
-            Delete all comments in this state
-          </MenuItem>
-        </MenuPopup>
-      </Menu>
+      {/* A split button: Comment, and joined to it a caret for the comment actions. */}
+      <div className="flex">
+        <Tooltip label="Comment" shortcut="C" side="bottom">
+          <Button
+            variant="toolbar"
+            size={commentCount > 0 ? "toolbar" : "icon"}
+            aria-label={commentCount > 0 ? `Comment, ${commentCount} open` : "Comment"}
+            aria-pressed={commenting}
+            aria-keyshortcuts="C"
+            onClick={onToggleCommenting}
+            className="rounded-r-none"
+          >
+            <ChatCircleIcon aria-hidden />
+            {commentCount > 0 ? (
+              <Badge variant="strong" aria-hidden className="tabular-nums">
+                {commentCount}
+              </Badge>
+            ) : null}
+          </Button>
+        </Tooltip>
+        <ToolbarSeparator />
+        <Menu open={menuOpen} onOpenChange={setMenuOpen}>
+          <Tooltip label="Comment options" side="bottom">
+            <MenuTrigger
+              render={
+                <Button variant="toolbar" size="toolbar" aria-label="Comment options" className="w-6 rounded-l-none px-0">
+                  <CaretDownIcon aria-hidden className="text-gui-xs" />
+                </Button>
+              }
+            />
+          </Tooltip>
+          <MenuPopup side="bottom" align="start" scheme="dark">
+            <MenuItem onClick={onTogglePins}>
+              {pins.icon}
+              {pins.label}
+            </MenuItem>
+            <MenuItem disabled={!onCopyComments} onClick={onCopyComments ?? undefined}>
+              <CopyIcon aria-hidden />
+              Copy comments for your agent
+            </MenuItem>
+            <MenuItem onClick={onCopyLink}>
+              <LinkSimpleIcon aria-hidden />
+              Copy link to this state
+            </MenuItem>
+            <MenuItem disabled={!onDeleteComments} onClick={onDeleteComments ?? undefined}>
+              <TrashIcon aria-hidden />
+              Delete all comments in this state
+            </MenuItem>
+          </MenuPopup>
+        </Menu>
+      </div>
 
-      {/* One line, centred; a long title truncates rather than growing the bar. */}
-      <p className="min-w-0 flex-1 truncate px-gui-xs text-center">
-        <span className="font-gui-medium">{frame.item.title}</span>
-        {frame.step ? <span className="text-gui-s text-gui-neutral-7">{` · ${frame.step}/${frame.stepCount} ${frame.stepTitle}`}</span> : null}
+      {/* One line, centred; the step title truncates first, then the state's, rather than growing the bar. */}
+      <p className="flex min-w-0 flex-1 items-center justify-center gap-gui-xs px-gui-xs whitespace-nowrap">
+        <span className="min-w-0 truncate font-gui-medium">{frame.item.title}</span>
+        {frame.step ? (
+          <>
+            <Badge className="font-gui-data tabular-nums">{`${frame.step}/${frame.stepCount}`}</Badge>
+            <span className="min-w-0 shrink-1000 truncate text-gui-neutral-7">{frame.stepTitle}</span>
+          </>
+        ) : null}
       </p>
 
       <Tooltip label={panel.open ? "Hide state" : "Show state"} shortcut="S" side="bottom">

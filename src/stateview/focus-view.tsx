@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { FocusBar } from "./focus-bar";
 import { findFrameIndex, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
 import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
+import { setStripWidth, useStripWidth } from "./strip-width";
 import { ThemeScope, buttonVariants } from "./ui";
 
 // Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
@@ -79,6 +80,11 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   const [stripChoice, setStripChoice] = useState<boolean | null>(null);
   const stripOpen = stripChoice ?? wide;
   const stripId = useId();
+  const stripWidth = useStripWidth();
+  // While the strip is dragged the app's edge follows the pointer instead of easing after it.
+  const [stripResizing, setStripResizing] = useState(false);
+  // Every surface that reads the strip's width re-declares the theme, so each one gets it.
+  const stripWidthStyle = { "--thumb-strip-chosen": stripWidth } as CSSProperties;
 
   const markViewed = review.markViewed;
   const itemId = frame?.item.id;
@@ -201,6 +207,11 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         currentId={frame.item.id}
         open={stripOpen}
         auto={stripChoice === null}
+        width={stripWidth}
+        onResize={(width, settled) => {
+          setStripResizing(!settled);
+          setStripWidth(width, settled);
+        }}
         viewed={review.viewed}
         commentsOn={commentsOn}
         render={render}
@@ -216,9 +227,11 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
        * and the app scrolls inside it rather than the page.
        */}
       <ThemeScope
+        style={stripWidthStyle}
         className={cn(
           "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center transition-all duration-gui-large ease-gui-large motion-reduce:transition-none",
           stripOpen && "md:left-(--viewer-strip)",
+          stripResizing && "transition-none",
         )}
       >
         <div className={cn("w-full transform-gpu overflow-hidden", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}>
