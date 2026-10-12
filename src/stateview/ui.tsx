@@ -3,6 +3,7 @@
 import type { ComponentProps, ElementType, ReactElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { IconContext, type IconProps } from "@phosphor-icons/react";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -132,7 +133,12 @@ export function Tooltip({
   );
 }
 
-type IconButtonProps = Omit<ButtonPrimitive.Props, "aria-label"> & {
+/** Graphical Toolbar separator. */
+export function ToolbarSeparator() {
+  return <SeparatorPrimitive orientation="vertical" className="gui-divider-vertical my-gui-xxs self-stretch" />;
+}
+
+type IconButtonProps =Omit<ButtonPrimitive.Props, "aria-label"> & {
   /** Accessible name, also shown as the tooltip. */
   label: string;
   /** Shortcut shown in the tooltip. Pass `aria-keyshortcuts` separately. */
