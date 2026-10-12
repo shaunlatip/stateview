@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
  * browser until it scrolls near the viewport. The screen inside starts from
  * the host app's own typography, not Stateview's.
  *
- * 18rem wide, the hub card's inner width (the grid track in theme.css is
- * measured from it): a 1152px desktop render at 0.25, or a 375px phone
- * render at 0.5, centred.
+ * 17rem wide (--hub-thumb in theme.css), sized so two two-card sections fit
+ * side by side in the hub's 1200px column: a 1088px desktop render at 0.25,
+ * or a 375px phone render at 0.5, centred.
  */
 export function Thumbnail({ children, viewport }: { children: ReactNode; viewport: "desktop" | "mobile" }) {
   return (
@@ -17,7 +17,7 @@ export function Thumbnail({ children, viewport }: { children: ReactNode; viewpor
       <div
         className={cn(
           "host-frame pointer-events-none absolute top-0 origin-top bg-background select-none",
-          viewport === "mobile" ? "left-1/2 h-200 w-93.75 -translate-x-1/2 scale-50" : "left-0 h-200 w-288 origin-top-left scale-25",
+          viewport === "mobile" ? "left-1/2 h-200 w-93.75 -translate-x-1/2 scale-50" : "left-0 h-200 w-272 origin-top-left scale-25",
         )}
       >
         {children}

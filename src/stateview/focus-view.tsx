@@ -70,14 +70,14 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     if (!frame || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
     if (event.target instanceof Element && event.target.closest(OWNS_KEYS)) return;
     switch (event.key) {
-      case "j":
-      case "J":
+      case "k":
+      case "K":
       case "ArrowRight":
         event.preventDefault();
         goTo(index + 1);
         break;
-      case "k":
-      case "K":
+      case "j":
+      case "J":
       case "ArrowLeft":
         event.preventDefault();
         goTo(index - 1);
