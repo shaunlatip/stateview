@@ -49,3 +49,21 @@ for (const route of routes) {
     });
   });
 }
+
+// The state panel only exists once opened, so the route scans above never see it.
+for (const width of [1440, 375]) {
+  test(`state panel at ${width}px has no WCAG A/AA violations and fits`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 812 });
+    await open(page, "/app/members?sv=viewer-view");
+    await page.keyboard.press("s");
+    const panel = page.locator("[data-state-panel]");
+    await expect(panel).toBeFocused();
+    const { violations } = await new AxeBuilder({ page })
+      .include("[data-state-panel]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(violations.map((v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+    const overflow = await panel.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}

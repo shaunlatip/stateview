@@ -16,7 +16,10 @@ export type Input<T extends Inputs = Inputs> = {
     label: string;
     class: InputClass;
     source: InputSource;
+    /** In the order the state panel shows them. */
     values: readonly T[K][];
+    /** Display names where sentence-casing the value isn't enough ("many-long" → "Many"). */
+    labels?: Partial<Record<T[K], string>>;
   };
 }[keyof T & string];
 
@@ -134,6 +137,14 @@ export function listItems<T extends Inputs>(manifest: Manifest<T>) {
 /** Input ids whose value differs from the baseline. */
 export function changedInputs<T extends Inputs>(manifest: Manifest<T>, inputs: T) {
   return manifest.inputs.filter((input) => inputs[input.id] !== manifest.baseline[input.id]).map((input) => input.id);
+}
+
+/** A value as the reviewer reads it: the input's own label, or the id in sentence case. */
+export function valueLabel(input: { labels?: Partial<Record<string, string>> }, value: string) {
+  const label = input.labels?.[value];
+  if (label) return label;
+  const words = value.replaceAll("-", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** Width to render a frame at, from the manifest's environment input ("mobile" → 375px). */

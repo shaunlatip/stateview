@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { CaretLeftIcon, CaretRightIcon, SquaresFourIcon } from "@phosphor-icons/react";
+import { useRef, type Ref } from "react";
+import { CaretLeftIcon, CaretRightIcon, SlidersIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { Frame, Inputs } from "./manifest";
 import { Button, ThemeScope, Tooltip, buttonVariants } from "./ui";
@@ -16,6 +16,10 @@ type FocusBarProps<T extends Inputs> = {
   hubHref: string;
   onPrevious: (() => void) | null;
   onNext: (() => void) | null;
+  /** The state panel this bar opens and closes. */
+  panel: { id: string; open: boolean; onToggle: () => void };
+  /** Focus returns here when the panel closes from inside. */
+  panelTriggerRef: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -23,7 +27,7 @@ type FocusBarProps<T extends Inputs> = {
  * so the app keeps its full width. Takes the scheme opposite the content
  * behind it, so it stays distinct from any app.
  */
-export function FocusBar<T extends Inputs>({ frame, position, total, hubHref, onPrevious, onNext }: FocusBarProps<T>) {
+export function FocusBar<T extends Inputs>({ frame, position, total, hubHref, onPrevious, onNext, panel, panelTriggerRef }: FocusBarProps<T>) {
   const ref = useRef<HTMLElement>(null);
   const scheme = useBackdropScheme(ref);
   const step = frame.step ? `Step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : null;
@@ -60,6 +64,20 @@ export function FocusBar<T extends Inputs>({ frame, position, total, hubHref, on
       <Tooltip label="Next state" shortcut="J">
         <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
           <CaretRightIcon aria-hidden />
+        </Button>
+      </Tooltip>
+      <Tooltip label={panel.open ? "Hide state" : "Show state"} shortcut="S">
+        <Button
+          ref={panelTriggerRef}
+          variant="toolbar"
+          size="icon"
+          aria-label="State"
+          aria-keyshortcuts="S"
+          aria-expanded={panel.open}
+          aria-controls={panel.open ? panel.id : undefined}
+          onClick={panel.onToggle}
+        >
+          <SlidersIcon aria-hidden />
         </Button>
       </Tooltip>
       <p aria-live="polite" className="sr-only">

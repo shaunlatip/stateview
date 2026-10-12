@@ -223,6 +223,7 @@
   --color-gui-neutral-3-transparent: var(--neutral-3-transparent);
   --color-gui-neutral-4: var(--neutral-4);
   --color-gui-neutral-4-transparent: var(--neutral-4-transparent);
+  --color-gui-neutral-5: var(--neutral-5);
   --color-gui-neutral-6: var(--neutral-6);
   --color-gui-neutral-7: var(--neutral-7);
   --color-gui-neutral-8: var(--neutral-8);
@@ -288,7 +289,7 @@
   outline: var(--focus-ring-outline);
 }
 
-/* Small motion for controls; large for surfaces like the review bar and toasts. */
+/* Small motion for controls; large for surfaces like the review bar and the state panel. */
 @utility duration-gui {
   --tw-duration: var(--motion-duration);
   transition-duration: var(--motion-duration);
@@ -310,6 +311,27 @@
 
 @utility gui-control-square {
   min-width: calc(var(--line-m) + 2 * var(--space-xs));
+}
+
+/* A segment inside a segmented control's track: the track's S radius less its 2px inset, so the corners stay concentric. */
+@utility rounded-gui-segment {
+  border-radius: calc(var(--radius-s) - 2px);
+}
+
+/* A select's list is at least as wide as its trigger (Base UI sets --anchor-width on the positioner). */
+@utility gui-anchor-width {
+  min-width: var(--anchor-width);
+}
+
+/*
+ * The state panel stops above the review bar: the bar is a two-line title
+ * (XS and S lines, XXS padding) inside XXS padding, S from the bottom, with
+ * an S gap above it.
+ */
+@utility gui-panel-height {
+  max-height: calc(
+    100dvh - var(--space-m) - (var(--line-xs) + var(--line-s) + 4 * var(--space-xxs)) - 2 * var(--space-s)
+  );
 }
 
 /* Edges and dividers are drawn with inset shadows, never native borders. */
