@@ -2,6 +2,7 @@
 
 import type { ComponentProps, ElementType, ReactElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { IconContext, type IconProps } from "@phosphor-icons/react";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -128,5 +129,61 @@ export function Tooltip({
         </TooltipPrimitive.Positioner>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
+  );
+}
+
+type IconButtonProps = Omit<ButtonPrimitive.Props, "aria-label"> & {
+  /** Accessible name, also shown as the tooltip. */
+  label: string;
+  /** Shortcut shown in the tooltip. Pass `aria-keyshortcuts` separately. */
+  shortcut?: string;
+};
+
+/** An icon-only toolbar control, named by `label` and explained by a tooltip. */
+export function IconButton({ label, shortcut, ...props }: IconButtonProps) {
+  return (
+    <Tooltip label={label} shortcut={shortcut}>
+      <Button variant="toolbar" size="icon" aria-label={label} {...props} />
+    </Tooltip>
+  );
+}
+
+/** Graphical Menu. Compose `Menu` > `MenuTrigger` + `MenuPopup` > `MenuItem`. */
+export const Menu = MenuPrimitive.Root;
+export const MenuTrigger = MenuPrimitive.Trigger;
+
+export function MenuPopup({
+  className,
+  side = "top",
+  align = "end",
+  ...props
+}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, "side" | "align">) {
+  return (
+    <MenuPrimitive.Portal>
+      {/* Portalled to <body>, so the theme scope is restated inside the portal. */}
+      <ThemeScope>
+        <MenuPrimitive.Positioner side={side} align={align} sideOffset={8} className="z-50">
+          <MenuPrimitive.Popup
+            className={cn(
+              "flex origin-(--transform-origin) flex-col gap-gui-xxs rounded-gui-m bg-gui-neutral-1 p-gui-xxs shadow-gui-m ring-1 ring-gui-border outline-none transition duration-gui ease-gui data-ending-style:opacity-0 data-starting-style:opacity-0 motion-safe:data-ending-style:scale-(--motion-popup-scale) motion-safe:data-starting-style:scale-(--motion-popup-scale) dark:bg-gui-neutral-2",
+              className,
+            )}
+            {...props}
+          />
+        </MenuPrimitive.Positioner>
+      </ThemeScope>
+    </MenuPrimitive.Portal>
+  );
+}
+
+export function MenuItem({ className, ...props }: MenuPrimitive.Item.Props) {
+  return (
+    <MenuPrimitive.Item
+      className={cn(
+        "gui-control flex items-center gap-gui-xs rounded-gui-xs px-gui-xs py-gui-xxs text-gui-m font-gui-regular whitespace-nowrap text-gui-neutral-10 outline-none select-none focus-visible:gui-focus-ring data-disabled:pointer-events-none data-disabled:text-gui-neutral-6 data-highlighted:bg-gui-neutral-4",
+        className,
+      )}
+      {...props}
+    />
   );
 }

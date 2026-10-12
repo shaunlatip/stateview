@@ -22,6 +22,15 @@ function storageKey(manifest: Pick<Manifest, "id" | "version">) {
   return `stateview:${manifest.id}@${manifest.version}`;
 }
 
+// Comments saved by the old Agentation adapter have no element or anchor, so the comment engine can't place them.
+function isPlaceable(annotation: Partial<Annotation>): annotation is Annotation {
+  return isObject(annotation.element) && isObject(annotation.anchor);
+}
+
+function isObject(value: unknown) {
+  return typeof value === "object" && value !== null;
+}
+
 function read(key: string): ReviewRecord {
   const raw = localStorage.getItem(key);
   const cached = snapshots.get(key);
@@ -29,7 +38,7 @@ function read(key: string): ReviewRecord {
   let record = EMPTY;
   try {
     const parsed = raw ? (JSON.parse(raw) as Partial<ReviewRecord>) : null;
-    if (parsed) record = { annotations: parsed.annotations ?? [] };
+    if (parsed) record = { annotations: (parsed.annotations ?? []).filter(isPlaceable) };
   } catch {
     // Unreadable record: start fresh rather than crash the review.
   }

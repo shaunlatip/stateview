@@ -51,6 +51,16 @@
   --navigation-active-background: #f0f0f0;
   --navigation-active-foreground: #000000;
 
+  /*
+   * Comment picker selection: the outline on the picked element and the pins.
+   * A neutral tool blue, not the brand palette, so it never reads as part of
+   * the app under review. Agentation's hue (OKLCH 249), darkened in sRGB to
+   * pass 4.5:1 for white pin numbers and 3:1 for the outline on white.
+   */
+  --selection: #0175c5;
+  --selection-foreground: #ffffff;
+  --selection-fill: #0175c50a;
+
   --space-zero: 0px;
   --space-xxs: 4px;
   --space-xs: 7px;
@@ -190,6 +200,10 @@
   --navigation-active-background: #2b2b2b;
   --navigation-active-foreground: #ffffff;
 
+  --selection: #3aa3ff;
+  --selection-foreground: #000000;
+  --selection-fill: #3aa3ff1a;
+
   --color-3: #f4f83b;
   --color-3-transparent: #f4f83b33;
   --neutral-1: #000000;
@@ -223,6 +237,7 @@
   --color-gui-neutral-3-transparent: var(--neutral-3-transparent);
   --color-gui-neutral-4: var(--neutral-4);
   --color-gui-neutral-4-transparent: var(--neutral-4-transparent);
+  --color-gui-neutral-5: var(--neutral-5);
   --color-gui-neutral-6: var(--neutral-6);
   --color-gui-neutral-7: var(--neutral-7);
   --color-gui-neutral-8: var(--neutral-8);
@@ -235,6 +250,9 @@
   --color-gui-border: var(--border-default-color);
   --color-gui-option-badge: var(--option-badge-background);
   --color-gui-option-badge-foreground: var(--option-badge-foreground);
+  --color-gui-selection: var(--selection);
+  --color-gui-selection-foreground: var(--selection-foreground);
+  --color-gui-selection-fill: var(--selection-fill);
 
   --spacing-gui-zero: var(--space-zero);
   --spacing-gui-xxs: var(--space-xxs);

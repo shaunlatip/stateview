@@ -49,3 +49,29 @@ for (const route of routes) {
     });
   });
 }
+
+test.describe("a11y commenting", () => {
+  test("a comment can be made by keyboard, and the composer passes axe", async ({ page }) => {
+    await open(page, "/app/members?sv=viewer-view");
+    await page.keyboard.press("c");
+    await expect(page.getByRole("button", { name: "Comment", exact: false }).first()).toHaveAttribute("aria-pressed", "true");
+    const remove = page.getByRole("button", { name: "Remove Priya Raman", exact: true });
+    await remove.focus();
+    await page.keyboard.press("Enter");
+    const composer = page.getByRole("dialog");
+    await expect(composer).toBeVisible();
+    await expect(composer.getByRole("textbox", { name: "Comment" })).toBeFocused();
+    // Comment mode stops the screen reacting: Enter opened the composer instead of removing Priya.
+    await expect(remove).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page }).include("[role=dialog]").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+    expect(violations.map((v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+
+    await page.keyboard.type("Viewers shouldn't see this");
+    await page.keyboard.press("Enter");
+    await expect(composer).toBeHidden();
+    await expect(page.getByRole("button", { name: /^Comment 1 on button "Remove Priya Raman"/ })).toBeVisible();
+    // Focus goes back to where the reviewer was.
+    await expect(remove).toBeFocused();
+  });
+});

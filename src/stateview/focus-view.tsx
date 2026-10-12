@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
-import { FeedbackToolbar } from "@/components/dev/feedback-toolbar";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import type { AnnotationLayer } from "./annotations";
+import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { FocusBar } from "./focus-bar";
 import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
 import { useReview } from "./store";
@@ -41,7 +40,7 @@ const OWNS_KEYS = [
   "[role='menu']",
   "[role='radiogroup']",
   "[role='dialog']",
-  "[data-agentation-portal]",
+  "[data-feedback-toolbar]",
 ].join(",");
 
 type FocusViewProps<T extends Inputs> = {
@@ -56,9 +55,20 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   const router = useRouter();
   const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
   const review = useReview(manifest);
+  const [commenting, setCommenting] = useState(false);
+  const [pinsVisible, setPinsVisible] = useState(true);
+  const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const frames = listFrames(manifest);
   const index = findFrameIndex(frames, sv, step);
   const frame = index === -1 ? null : frames[index];
+  const annotations = frame ? review.annotations.filter((a) => a.stateId === frame.key) : [];
+  const openCount = annotations.filter((a) => a.status === "open").length;
+
+  const toggleCommenting = () => {
+    setCommenting(!commenting);
+    // A new comment's pin should be visible once it's saved.
+    if (!commenting) setPinsVisible(true);
+  };
 
   const goTo = (target: number) => {
     const next = frames[target];
@@ -82,6 +92,11 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         event.preventDefault();
         goTo(index - 1);
         break;
+      case "c":
+      case "C":
+        event.preventDefault();
+        toggleCommenting();
+        break;
       case "Escape":
         router.push(HUB_HREF);
         break;
@@ -96,11 +111,24 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
 
   if (!frame) return <UnknownState id={sv} />;
 
-  const copyWithState = (markdown: string) => {
+  const copyComments = () => {
     void navigator.clipboard
-      .writeText(stateContext(manifest, frame) + markdown)
+      .writeText(stateContext(manifest, frame) + formatAnnotations(annotations))
       .then(() => toast.success("Comments copied with this state’s URL and inputs"))
       .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+  };
+
+  const deleteComments = () => {
+    const deleted = annotations;
+    for (const annotation of deleted) review.deleteAnnotation(annotation.id);
+    toast.success(`Deleted ${deleted.length} ${deleted.length === 1 ? "comment" : "comments"}`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          for (const annotation of deleted) review.addAnnotation(annotation);
+        },
+      },
+    });
   };
 
   return (
@@ -112,7 +140,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
          * Bottom padding on the app's root keeps the end of the page clear of
          * the review bar, painted in the app's own background.
          */}
-        <div key={frame.key} className="host-frame grid *:pb-24">
+        <div key={frame.key} ref={setScreen} className={cn("host-frame grid *:pb-24", commenting && "cursor-crosshair **:cursor-crosshair")}>
           {render(frame.inputs)}
         </div>
       </ThemeScope>
@@ -123,15 +151,27 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         hubHref={HUB_HREF}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
+        commenting={commenting}
+        onToggleCommenting={toggleCommenting}
+        commentCount={openCount}
+        pinsVisible={pinsVisible}
+        onTogglePins={() => setPinsVisible(!pinsVisible)}
+        onCopyComments={openCount > 0 ? copyComments : null}
+        onDeleteComments={annotations.length > 0 ? deleteComments : null}
       />
+      {/* Keyed by state so a half-written comment never carries over to another state. */}
       <Layer
+        key={frame.key}
         stateId={frame.key}
         inputs={frame.inputs}
-        annotations={review.annotations.filter((a) => a.stateId === frame.key)}
+        annotations={annotations}
+        root={screen}
+        active={commenting}
+        onActiveChange={setCommenting}
+        pinsVisible={pinsVisible}
         onAdd={review.addAnnotation}
         onUpdate={review.updateAnnotation}
         onDelete={review.deleteAnnotation}
-        onCopy={copyWithState}
       />
       <ThemeScope>
         <Toaster position="top-center" icons={toastIcons} toastOptions={{ unstyled: true, classNames: toastClassNames }} />
@@ -168,8 +208,6 @@ function UnknownState({ id }: { id: string | null }) {
           See all states
         </Link>
       </div>
-      {/* TEMPORARY: feedback while building; remove before the final build. */}
-      <FeedbackToolbar />
     </ThemeScope>
   );
 }

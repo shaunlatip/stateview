@@ -6,7 +6,8 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 - `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
 - Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states and `Esc` goes back to the hub; hover a control to see its shortcut.
-- Comment on any element with the toolbar in the bottom-right corner (or `⌘⇧F`). Each comment is saved with the state it was made in.
+- `C` (or Comment in the review bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
+- Each comment is saved with the state it was made in, as a numbered pin that stays on its element. Hover a pin to read it; click it to edit, resolve or delete it. The review bar can hide pins, copy the state's open comments as Markdown for a coding agent (state URL, inputs, and each element's selector, React components and HTML), or delete them all (with undo).
 
 The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
 
@@ -30,7 +31,7 @@ CI runs lint, typecheck and build on every push (`.github/workflows/ci.yml`).
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Agentation · Phosphor icons
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Phosphor icons
 
 ## Design language
 
@@ -39,13 +40,13 @@ Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview
 **Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/stateview/theme.css`. Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
 
 1. Get the family at [timeless.co/type](https://timeless.co/type) ("Get access"; they email the files).
-2. Copy `TimelessSans-GroteskLight.woff2`, `TimelessSans-GroteskRegular.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
+2. Copy `TimelessSans-GroteskRegular.woff2`, `TimelessSans-GroteskMedium.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
 
 Without them, Stateview's UI falls back to the system sans-serif and nothing else changes.
 
 ## Where to look
 
-- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (comments in localStorage), `annotations.ts` (the comment interface) and `agentation-layer.tsx` (the one adapter behind it).
+- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (comments in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer) and `describe-element.ts` (an element's name, selector, HTML and React components).
 - `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `manifest.ts` lists the states for this change.
 - `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state).
 
@@ -55,8 +56,8 @@ The Team members screen takes all of its state through one object (`MembersState
 
 ## Dependencies worth naming
 
-- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) provides element picking and the comment popover. It is used as an npm dependency through its public props and exports only; none of its source is copied into this repo. Everything else depends on Stateview's own `AnnotationLayer` interface (`src/stateview/annotations.ts`), so the engine can be replaced with an in-house picker by swapping one file. Agentation keeps one comment list per pathname, and every state shares `/app/members`, so the adapter seeds Agentation's storage with the current state's comments and remounts it when the state changes. Stateview's copy is the one that counts.
-- **Temporary:** while building, a plain Agentation toolbar also sits on the hub and the unknown-state page (`src/components/dev/feedback-toolbar.tsx`) for feedback on Stateview's own UI. It will be removed before the final build.
+- **Comments** are Stateview's own engine (`src/stateview/comment-layer.tsx`), written from scratch. Everything else depends on the `AnnotationLayer` interface in `src/stateview/annotations.ts`, so the engine could be swapped for another one by changing one file. React component names come from React's development build, so production builds show the selector and HTML without them.
+- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) is a dev dependency only, for commenting on Stateview's own UI while building it (`src/components/dev/feedback-toolbar.tsx`, synced to the local Agentation server). It renders only under `next dev`; production builds contain none of it. None of its source is copied into this repo.
 - **nuqs** keeps the current state (`?sv=`, `?step=`) in the URL, so every state has a link and the back button steps back.
 
 ## Credits
