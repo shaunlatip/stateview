@@ -42,27 +42,33 @@ export function FocusBar<T extends Inputs>({ frame, position, total, hubHref, on
       )}
     >
       <Tooltip label="All states" shortcut="Esc">
-        <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
+        <Link href={hubHref} scroll={false} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
           <SquaresFourIcon aria-hidden />
         </Link>
       </Tooltip>
       {/* Wraps rather than truncates: on a phone the step is the part that would be cut. */}
-      <div className="flex min-w-0 flex-1 flex-col px-gui-xs py-gui-xxs">
-        <p className="text-gui-xs text-gui-neutral-7 tabular-nums">
-          {frame.section.title} · {position} of {total}
-        </p>
-        <p className="text-gui-s font-gui-medium">
-          {frame.item.title}
-          {step ? <span className="font-gui-regular text-gui-neutral-7"> · {step}</span> : null}
+      <div className="flex min-w-0 flex-1 items-center gap-gui-s px-gui-xs py-gui-xxs">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="text-gui-xs text-gui-neutral-7">{frame.section.title}</p>
+          <p className="text-gui-s font-gui-medium">
+            {frame.item.title}
+            {step ? <span className="font-gui-regular text-gui-neutral-7"> · {step}</span> : null}
+          </p>
+        </div>
+        <p className="shrink-0 text-gui-xs text-gui-neutral-7 tabular-nums">
+          <span aria-hidden>
+            {position}/{total}
+          </span>
+          <span className="sr-only">{`State ${position} of ${total}`}</span>
         </p>
       </div>
-      <Tooltip label="Previous state" shortcut="K">
-        <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
+      <Tooltip label="Previous state" shortcut="J">
+        <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="J ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
           <CaretLeftIcon aria-hidden />
         </Button>
       </Tooltip>
-      <Tooltip label="Next state" shortcut="J">
-        <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
+      <Tooltip label="Next state" shortcut="K">
+        <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="K ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
           <CaretRightIcon aria-hidden />
         </Button>
       </Tooltip>

@@ -5,7 +5,7 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 ## Try it
 
 - `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
-- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states and `Esc` goes back to the hub; hover a control to see its shortcut.
+- Open a state to see the real page in that state. `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut.
 - Comment on any element with the toolbar in the bottom-right corner (or `⌘⇧F`). Each comment is saved with the state it was made in.
 
 The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
@@ -39,7 +39,7 @@ Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview
 **Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/stateview/theme.css`. Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
 
 1. Get the family at [timeless.co/type](https://timeless.co/type) ("Get access"; they email the files).
-2. Copy `TimelessSans-GroteskLight.woff2`, `TimelessSans-GroteskRegular.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
+2. Copy `TimelessSans-GroteskRegular.woff2`, `TimelessSans-GroteskMedium.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
 
 Without them, Stateview's UI falls back to the system sans-serif and nothing else changes.
 
@@ -78,8 +78,10 @@ A running list of interaction and visual details, kept while building.
 - Thumbnails are the real screen rendered at 1152 px and scaled to a quarter, so they always match the build. They are inert and hidden from assistive tech, and `content-visibility: auto` skips the ones far off screen.
 - The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
 - The whole state card is one link, named by its title and described by its why line and chips, so element pickers and screen readers each get one clear target.
-- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors, with the title on a tab whose edge steps down into the body through an SVG tail glued to the tab, after Rauno's Next.js dev tools notch. The tab grows with its title.
-- The hub is a bento grid of fixed one-card tracks; a section spans as many tracks as it has cards, so one-card sections share a row.
+- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors: a light fill and outline in the section's hue, cards in a stronger tint of the same hue, and the title in a bold chip with black or white text, whichever reads on it.
+- Sections hug their cards and wrap inside a 1200 px column, so one-card sections share a row and every section has even padding.
+- What the review leaves out sits behind a "combinations not covered" popover in the header, so the header stays one row.
+- Coming back to the hub (Escape, All states or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
 - The review bar floats over the page instead of framing it, so the app keeps its full width. It samples the colour behind it and takes the opposite scheme, so it stays distinct from any app. On phones it leaves room for the comment toolbar, and its text wraps instead of truncating.
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.

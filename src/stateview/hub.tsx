@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { ChatCircleIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { useEffect, type ReactNode } from "react";
+import { Popover } from "@base-ui/react/popover";
+import { CaretDownIcon, ChatCircleIcon } from "@phosphor-icons/react";
 import { frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
@@ -15,7 +15,42 @@ type HubProps<T extends Inputs> = {
   thumbnails: Record<string, ReactNode>;
 };
 
+/*
+ * Where the reviewer was on the hub, so coming back from a state lands on the
+ * same row. Saved when a card is opened (not on every scroll, which would also
+ * catch the jump to the top during navigation) and restored on the way back,
+ * retrying for a few frames until the page is tall enough to reach it.
+ */
+const SCROLL_KEY = "stateview:hub-scroll";
+
+function rememberScroll() {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  } catch {
+    // Storage blocked: nothing to remember.
+  }
+}
+
+function useRestoredScroll() {
+  useEffect(() => {
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(SCROLL_KEY)) || 0;
+    } catch {
+      // Storage blocked: start at the top.
+    }
+    if (saved <= 0) return;
+    let tries = 0;
+    let frame = requestAnimationFrame(function restore() {
+      window.scrollTo(0, saved);
+      if (Math.abs(window.scrollY - saved) > 1 && ++tries < 10) frame = requestAnimationFrame(restore);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+}
+
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
+  useRestoredScroll();
   const { annotations } = useReview(manifest);
   const frames = listFrames(manifest);
   const items = listItems(manifest);
@@ -24,46 +59,27 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
 
   return (
-    <ThemeScope as="main" className="flex-1 bg-gui-neutral-1">
-      <div className="flex w-full flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
-        <header className="flex flex-col gap-gui-m">
-          <p className="font-gui-brand text-gui-s font-gui-medium text-gui-neutral-7">Stateview</p>
-          <div className="flex flex-col gap-gui-xs">
+    <ThemeScope as="main" className="flex-1 bg-gui-neutral-2">
+      <div className="mx-auto box-content flex max-w-300 flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
+        <header className="flex flex-wrap items-end justify-between gap-x-gui-xl gap-y-gui-s">
+          <div className="flex flex-col gap-gui-xxs">
+            <p className="font-gui-brand text-gui-s font-gui-medium text-gui-neutral-7">Stateview</p>
             <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">{manifest.screen}</h1>
             <p className="text-gui-neutral-7">
               Reviewing <code className="font-gui-data text-gui-neutral-10">{manifest.scope.branch}</code> against{" "}
               <code className="font-gui-data text-gui-neutral-10">{manifest.scope.base}</code> · {manifest.scope.files} files changed
             </p>
-            <p className="tabular-nums">
-              {items.length} states in {manifest.sections.length} sections · {manifest.uncovered.length} combinations not covered
-            </p>
           </div>
-          <Link href={frameHref(manifest, frames[0])} className={buttonVariants({ className: "w-fit" })}>
-            Start review
-          </Link>
-          <details className="group flex max-w-prose flex-col gap-gui-s">
-            <summary className="-mx-gui-xs w-fit cursor-pointer rounded-gui-s px-gui-xs py-gui-xs font-gui-medium outline-none transition-colors duration-gui ease-gui marker:text-gui-neutral-7 hover:bg-gui-neutral-3 focus-visible:gui-focus-ring motion-reduce:transition-none">
-              What this review doesn’t cover
-            </summary>
-            <div className="flex flex-col gap-gui-xs rounded-gui-s bg-gui-neutral-2 p-gui-s text-gui-neutral-8 ring-1 ring-gui-neutral-4-transparent">
-              <p>Combinations no state shows:</p>
-              <ul className="list-disc pl-gui-l">
-                {manifest.uncovered.map((combination) => (
-                  <li key={combination}>{combination}</li>
-                ))}
-              </ul>
-              <p>Left out because no real account can be in them:</p>
-              <ul className="list-disc pl-gui-l">
-                {manifest.excluded.map((combination) => (
-                  <li key={combination}>{combination}</li>
-                ))}
-              </ul>
-            </div>
-          </details>
+          <div className="flex flex-wrap items-center gap-gui-s">
+            <p className="text-gui-neutral-7 tabular-nums">
+              {items.length} states in {manifest.sections.length} sections
+            </p>
+            <Coverage uncovered={manifest.uncovered} excluded={manifest.excluded} />
+          </div>
         </header>
 
-        {/* Bento: fixed one-card tracks; dense packing lets one-card sections share a row. */}
-        <div className="gui-section-grid grid grid-flow-dense items-start gap-gui-m">
+        {/* Sections hug their cards and wrap, so one-card sections share a row and padding stays even. */}
+        <div className="flex flex-wrap items-start gap-gui-m">
           {manifest.sections.map((section) => (
             <HubSection
               key={section.id}
@@ -86,34 +102,53 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   );
 }
 
-/** Columns a section spans, by card count. Capped per breakpoint so a span never asks for more tracks than fit. */
-function spanFor(count: number) {
-  if (count >= 3) return "md:col-span-2 xl:col-span-3";
-  if (count === 2) return "md:col-span-2";
-  return undefined;
+/** What the review leaves out, behind a count so the header stays one line. */
+function Coverage({ uncovered, excluded }: { uncovered: string[]; excluded: string[] }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger className={buttonVariants({ variant: "outline", size: "toolbar" })}>
+        <span className="tabular-nums">{uncovered.length} combinations not covered</span>
+        <CaretDownIcon aria-hidden />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
+          <Popover.Popup className="stateview-theme flex max-w-sm flex-col gap-gui-xs rounded-gui-m bg-gui-neutral-1 p-gui-m shadow-gui-m ring-1 ring-gui-neutral-4-transparent outline-none duration-gui ease-gui motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-closed:animate-out motion-safe:data-closed:fade-out-0">
+            <Popover.Title className="font-gui-medium">Combinations no state shows</Popover.Title>
+            <ul className="list-disc pl-gui-l text-gui-neutral-8">
+              {uncovered.map((combination) => (
+                <li key={combination}>{combination}</li>
+              ))}
+            </ul>
+            <p className="pt-gui-xs font-gui-medium">Left out because no real account can be in them</p>
+            <ul className="list-disc pl-gui-l text-gui-neutral-8">
+              {excluded.map((combination) => (
+                <li key={combination}>{combination}</li>
+              ))}
+            </ul>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
 }
 
 /**
- * A titled container of screens, after Figma's sections: a tinted body with
- * an outline, and the title on a tab at the top-left whose edge steps down
- * into the body's through a curved tail (Rauno's Next.js dev tools notch).
+ * A titled group of screens, after Figma's sections: a light fill and outline
+ * in the section's hue, with the title in a bold chip just above the
+ * section's top-left corner, outside it.
  */
 function HubSection<T extends Inputs>({ section, renderCard }: { section: Section<T>; renderCard: (item: Item<T>) => ReactNode }) {
   const headingId = `section-${section.id}`;
   return (
-    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className={cn("flex flex-col", spanFor(section.items.length))}>
-      {/* Overlaps the body by one edge width and paints over it, hiding the body's top edge under the tab and tail. */}
-      <div className="gui-section-tab-edge relative z-10 -mb-px self-start rounded-tl-gui-l bg-gui-section-fill px-gui-s pt-gui-xs pb-gui-xxs">
-        <h2 id={headingId} className="font-gui-heavy">
-          {section.title}
-        </h2>
-        <svg aria-hidden className="gui-notch-tail w-gui-l" viewBox="0 0 24 24" preserveAspectRatio="none">
-          <path d="M0 0C12 0 12 24 24 24V25H0Z" className="fill-gui-section-fill" />
-          <path d="M0 0C12 0 12 24 24 24" vectorEffect="non-scaling-stroke" className="gui-stroke-edge fill-none stroke-gui-section-edge" />
-        </svg>
-      </div>
-      {/* L radius: the cards' M radius plus the body's S padding, so the corners stay concentric. */}
-      <ul className="flex flex-wrap gap-gui-s rounded-gui-l rounded-tl-none bg-gui-section-fill p-gui-s inset-ring inset-ring-gui-section-edge">
+    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className="flex max-w-full flex-col gap-gui-xxs">
+      <h2
+        id={headingId}
+        className="w-fit rounded-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text"
+      >
+        {section.title}
+      </h2>
+      {/* M padding and gap leave room for a hovered card's fill, which extends XS past the card. */}
+      <ul className="flex flex-wrap gap-gui-m rounded-gui-s bg-gui-section-fill p-gui-m inset-ring inset-ring-gui-section-edge">
         {section.items.map(renderCard)}
       </ul>
     </section>
@@ -134,38 +169,53 @@ function StateCard<T extends Inputs>({
   comments: number;
   thumbnail: ReactNode;
 }) {
+  const chips = [item.kind === "sequence" ? `${item.steps.length} steps` : null, item.origin === "code-only" ? "Not in designs" : null].filter(
+    (chip): chip is string => chip !== null,
+  );
   return (
     <li className="flex">
-      {/* Named by the title alone; the description and chips are its description. */}
+      {/*
+        Named by the title alone; the description and chips are its description.
+        At rest it's just the image and text. The hover and focus fill is a
+        pseudo-element extending XS past the card on every side, so nothing moves.
+      */}
       <Link
         href={href}
         aria-labelledby={`card-${item.id}-title`}
         aria-describedby={`card-${item.id}-details`}
-        className="relative flex w-min flex-col rounded-gui-m bg-gui-card p-gui-xxs outline-none transition duration-gui ease-gui hover:bg-gui-card-hover focus-visible:gui-focus-ring active:gui-press motion-reduce:transition-none"
+        onClick={rememberScroll}
+        className="relative isolate flex w-min flex-col gap-gui-xs outline-none before:absolute before:-inset-gui-xs before:-z-10 before:rounded-gui-m before:transition-colors before:duration-gui before:ease-gui hover:before:bg-gui-section-card focus-visible:before:bg-gui-section-card focus-visible:before:gui-focus-ring active:gui-press active:before:bg-gui-section-card-hover motion-reduce:before:transition-none"
       >
         <Thumbnail viewport={viewport}>{thumbnail}</Thumbnail>
         {comments > 0 ? (
-          <Badge className="absolute top-gui-s right-gui-s">
+          <Badge className="absolute top-gui-xs right-gui-xs">
             <ChatCircleIcon aria-hidden />
             <span className="tabular-nums">{comments}</span>
             <span className="sr-only">{comments === 1 ? "open comment" : "open comments"}</span>
           </Badge>
         ) : null}
-        <div className="flex flex-1 flex-col gap-gui-xxs px-gui-xs pt-gui-xs pb-gui-xxs">
-          <h3 id={`card-${item.id}-title`} className="text-gui-s font-gui-medium">
-            {item.title}
-          </h3>
-          <div id={`card-${item.id}-details`} className="flex flex-col gap-gui-xs">
-            {/* Neutral 8, not 7: Neutral 7 drops under 4.5:1 on the tinted sections once the card shade is added. */}
-            <p className="text-gui-s text-gui-neutral-8">{item.why}</p>
-            {item.origin === "code-only" || item.kind === "sequence" ? (
-              <div className="flex flex-wrap gap-gui-xxs">
-                {item.kind === "sequence" ? <Badge variant="surface">{item.steps.length} steps</Badge> : null}
-                {/* Code-only states are flag-, entitlement- or loading-gated, so no design shows them. */}
-                {item.origin === "code-only" ? <Badge variant="surface">Not in designs</Badge> : null}
-              </div>
+        <div className="flex flex-1 flex-col gap-gui-xxs">
+          <div className="flex items-start justify-between gap-gui-xs">
+            <h3 id={`card-${item.id}-title`} className="text-gui-s font-gui-medium">
+              {item.title}
+            </h3>
+            {chips.length > 0 ? (
+              // Code-only states are flag-, entitlement- or loading-gated, so no design shows them.
+              // Hidden here because the description below already reads them out.
+              <span aria-hidden className="flex shrink-0 gap-gui-xxs pt-gui-xxs">
+                {chips.map((chip) => (
+                  <Badge key={chip} variant="surface">
+                    {chip}
+                  </Badge>
+                ))}
+              </span>
             ) : null}
           </div>
+          {/* Neutral 8, not 7: Neutral 7 drops under 4.5:1 on the tinted cards. */}
+          <p id={`card-${item.id}-details`} className="text-gui-s text-gui-neutral-8">
+            {item.why}
+            {chips.length > 0 ? <span className="sr-only">{` ${chips.join(", ")}.`}</span> : null}
+          </p>
         </div>
       </Link>
     </li>
