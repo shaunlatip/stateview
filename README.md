@@ -2,6 +2,14 @@
 
 A review layer for web apps. Instead of clicking around a build from a cold start, the reviewer steps through a small set of named states for a change (role, plan, feature flag, data shape, loading and error, breakpoint), comments on elements, marks each state reviewed, and ends with a prompt for their coding agent.
 
+## Try it
+
+- `/` is the hub: every state for the change, grouped into sections, with live thumbnails and reviewed counts.
+- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states, `R` marks the state reviewed, `Esc` goes back to the hub.
+- Comment on any element with the toolbar in the bottom-right corner (or `⌘⇧F`). Each comment is saved with the state it was made in.
+
+The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
+
 ## Run
 
 ```sh
@@ -22,12 +30,26 @@ CI runs lint, typecheck and build on every push (`.github/workflows/ci.yml`).
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Agentation
 
 ## Where to look
 
-- `src/app/` — routes
-- `src/components/` — UI (`ui/` is shadcn output)
+- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (review progress in localStorage), `annotations.ts` (the comment interface) and `agentation-layer.tsx` (the one adapter behind it).
+- `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `manifest.ts` lists the states for this change.
+- `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state).
+
+## How a state reaches the screen
+
+The Team members screen takes all of its state through one object (`MembersState`: role, plan, SSO beta flag, member data, pending invites, request states, the invite form, breakpoint). Each state in the manifest sets a few of those inputs on top of a baseline, and the screen's own logic derives everything else. Actions on the page (remove, revoke, invite) answer from canned responses after a short delay, so every state is the live, clickable page rather than a picture of it.
+
+## Dependencies worth naming
+
+- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) provides element picking and the comment popover. It is used as an npm dependency through its public props and exports only; none of its source is copied into this repo. Everything else depends on Stateview's own `AnnotationLayer` interface (`src/stateview/annotations.ts`), so the engine can be replaced with an in-house picker by swapping one file. Agentation keeps one comment list per pathname, and every state shares `/app/members`, so the adapter seeds Agentation's storage with the current state's comments and remounts it when the state changes. Stateview's copy is the one that counts.
+- **nuqs** keeps the current state (`?sv=`, `?step=`) in the URL, so every state has a link and the back button steps back.
+
+## Credits
+
+The sample screen's layout follows the Team Settings page of Vercel's [Next.js SaaS Starter](https://github.com/nextjs/saas-starter) (MIT), rebuilt here with shadcn/ui components and without its database, auth or payments.
 
 ## Time log
 
@@ -35,8 +57,16 @@ Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind
 
 | Session | Time (PT) | Hours | Work |
 |---|---|---|---|
-| 1 | Sun Oct 11, 23:48– | | Scaffold, deploy |
+| 1 | Sun Oct 11, 23:48– | | Scaffold, deploy, sample screen, manifest, hub, focus view, comments |
 
 ## UI details
 
 A running list of interaction and visual details, kept while building.
+
+- Thumbnails are the real screen rendered at 1152 px and scaled to a quarter, so they always match the build. They are inert and hidden from assistive tech, and `content-visibility: auto` skips the ones far off screen.
+- The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
+- Each state card's title is the link; its hit area stretches over the whole card, and the focus ring is drawn on the card.
+- The review bar floats over the page instead of framing it, so the app keeps its full width. On phones it leaves room for the comment toolbar.
+- Step changes are announced to screen readers ("Roles: Viewer checking who's on the team. Not reviewed."), and the page title follows the state.
+- Shortcuts don't fire while typing, inside a radio group or menu, or inside the comment popover. Escape first closes the comment tools; only a second Escape leaves the state.
+- Comments copied from the toolbar are prefixed with the state's title, URL and inputs, so an agent can open exactly what the reviewer saw.
