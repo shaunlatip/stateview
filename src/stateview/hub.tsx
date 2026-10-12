@@ -99,20 +99,23 @@ function Coverage({ uncovered, excluded }: { uncovered: string[]; excluded: stri
 
 /**
  * A titled group of screens, after Figma's sections: a light fill and outline
- * in the section's hue, with the title in a bold chip at the top-left.
+ * in the section's hue, with the title in a bold chip sitting on top of the
+ * section's top-left corner, outside it.
  */
 function HubSection<T extends Inputs>({ section, renderCard }: { section: Section<T>; renderCard: (item: Item<T>) => ReactNode }) {
   const headingId = `section-${section.id}`;
   return (
-    <section
-      aria-labelledby={headingId}
-      data-tone={section.tone ?? "base"}
-      className="flex max-w-full flex-col gap-gui-s rounded-gui-s bg-gui-section-fill p-gui-s inset-ring inset-ring-gui-section-edge"
-    >
-      <h2 id={headingId} className="w-fit rounded-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text">
+    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className="flex max-w-full flex-col">
+      <h2
+        id={headingId}
+        className="w-fit rounded-t-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text"
+      >
         {section.title}
       </h2>
-      <ul className="flex flex-wrap gap-gui-s">{section.items.map(renderCard)}</ul>
+      {/* M padding and gap leave room for a hovered card's fill, which extends XS past the card. */}
+      <ul className="flex flex-wrap gap-gui-m rounded-gui-s rounded-tl-none bg-gui-section-fill p-gui-m inset-ring inset-ring-gui-section-edge">
+        {section.items.map(renderCard)}
+      </ul>
     </section>
   );
 }
@@ -136,22 +139,26 @@ function StateCard<T extends Inputs>({
   );
   return (
     <li className="flex">
-      {/* Named by the title alone; the description and chips are its description. */}
+      {/*
+        Named by the title alone; the description and chips are its description.
+        At rest it's just the image and text. The hover and focus fill is a
+        pseudo-element extending XS past the card on every side, so nothing moves.
+      */}
       <Link
         href={href}
         aria-labelledby={`card-${item.id}-title`}
         aria-describedby={`card-${item.id}-details`}
-        className="relative flex w-min flex-col rounded-gui-s bg-gui-section-card p-gui-xxs outline-none transition duration-gui ease-gui hover:bg-gui-section-card-hover focus-visible:gui-focus-ring active:gui-press motion-reduce:transition-none"
+        className="relative isolate flex w-min flex-col gap-gui-xs outline-none before:absolute before:-inset-gui-xs before:-z-10 before:rounded-gui-m before:transition-colors before:duration-gui before:ease-gui hover:before:bg-gui-section-card focus-visible:before:bg-gui-section-card focus-visible:before:gui-focus-ring active:gui-press active:before:bg-gui-section-card-hover motion-reduce:before:transition-none"
       >
         <Thumbnail viewport={viewport}>{thumbnail}</Thumbnail>
         {comments > 0 ? (
-          <Badge className="absolute top-gui-s right-gui-s">
+          <Badge className="absolute top-gui-xs right-gui-xs">
             <ChatCircleIcon aria-hidden />
             <span className="tabular-nums">{comments}</span>
             <span className="sr-only">{comments === 1 ? "open comment" : "open comments"}</span>
           </Badge>
         ) : null}
-        <div className="flex flex-1 flex-col gap-gui-xxs px-gui-xs pt-gui-xs pb-gui-xxs">
+        <div className="flex flex-1 flex-col gap-gui-xxs">
           <div className="flex items-start justify-between gap-gui-xs">
             <h3 id={`card-${item.id}-title`} className="text-gui-s font-gui-medium">
               {item.title}

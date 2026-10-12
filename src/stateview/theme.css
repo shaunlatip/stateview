@@ -338,9 +338,10 @@
 /*
  * Hub sections, color-coded by the family of question they answer, after
  * Figma's section colors: a light fill and an outline in the section's hue,
- * cards in a stronger tint of the same hue, and the title in a bold chip with
- * black or white text, whichever reads on it. Fills mix with Neutral 1, so
- * they flip with dark mode.
+ * a stronger tint of it behind a hovered card, and the title in a bold chip
+ * above the section. Chips are dark enough for white text (purple and teal,
+ * mixed 40% toward black: about 6.6:1 and 5.3:1) or light enough for black
+ * (lime, greys). Fills mix with Neutral 1, so they flip with dark mode.
  */
 .stateview-theme [data-tone="base"] {
   --section-fill: var(--neutral-1);
@@ -356,8 +357,8 @@
   --section-edge: color-mix(in srgb, var(--color-4) 55%, var(--neutral-1));
   --section-card: color-mix(in srgb, var(--color-4) 18%, var(--neutral-1));
   --section-card-hover: color-mix(in srgb, var(--color-4) 30%, var(--neutral-1));
-  --section-chip: var(--color-4);
-  --section-chip-text: #000000;
+  --section-chip: color-mix(in srgb, var(--color-4) 60%, #000000);
+  --section-chip-text: #ffffff;
 }
 
 .stateview-theme [data-tone="system"] {
@@ -365,8 +366,8 @@
   --section-edge: color-mix(in srgb, var(--color-2) 55%, var(--neutral-1));
   --section-card: color-mix(in srgb, var(--color-2) 18%, var(--neutral-1));
   --section-card-hover: color-mix(in srgb, var(--color-2) 30%, var(--neutral-1));
-  --section-chip: var(--color-2);
-  --section-chip-text: #000000;
+  --section-chip: color-mix(in srgb, var(--color-2) 60%, #000000);
+  --section-chip-text: #ffffff;
 }
 
 .stateview-theme [data-tone="data"] {
