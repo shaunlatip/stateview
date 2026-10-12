@@ -15,7 +15,7 @@ Your job is the part only an agent can do from the code: find what the screen re
 
 Check, and stop with a one-line reason if any fails:
 
-- A Next.js App Router app (`app/` or `src/app/`), React 19 and Tailwind CSS v4.
+- A Next.js app on the App Router (Next 15 or later) or the Pages Router (Next 13.4 or later), React 18 or 19, and Tailwind CSS v4. The installer detects the router and writes routes for it.
 - A git repo on a branch with changes against its base. With no changes, ask whether to review a screen as a whole; the scope line then reads the branch against itself.
 - The change touches UI. Stateview reviews screens; a backend-only change has nothing to show.
 
@@ -29,7 +29,7 @@ Ask the user only for what you can't work out: which screen, if the change touch
 node <skill>/scripts/install.mjs
 ```
 
-It copies the engine into `src/stateview/` (vendored; don't edit the copy), imports its theme into the Tailwind stylesheet, and writes the routes (`app/stateview/…`) and an empty registry (`stateview-reviews/index.ts`). It never overwrites route or registry files that exist. Install the packages it lists with the command it prints.
+It copies the engine into `src/stateview/` (vendored; don't edit the copy), imports its theme into the Tailwind stylesheet, and writes the routes (`app/stateview/…`, or `pages/stateview/…` on the Pages Router) and an empty registry (`stateview-reviews/index.ts`). It never overwrites route or registry files that exist. Install the packages it lists with the command it prints.
 
 ### 2. Start a review for each changed screen
 
@@ -107,4 +107,4 @@ When the branch changes, re-read the diff, update inputs, fixtures and states, b
 
 ## Removing Stateview from an app
 
-Delete `src/stateview/`, `src/stateview-reviews/` and `app/stateview/`, and remove the theme import from the stylesheet. The optional boundary props can stay; they default to the app's normal behavior.
+Delete `src/stateview/`, `src/stateview-reviews/` and `app/stateview/` (or `pages/stateview/`), and remove the theme import from the stylesheet. The optional boundary props can stay; they default to the app's normal behavior.

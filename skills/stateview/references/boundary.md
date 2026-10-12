@@ -156,6 +156,8 @@ Never patch global `fetch` or `XMLHttpRequest`. Never call real APIs, and never 
 
 ## 5. Server components and server data
 
+On the Pages Router, the same applies to `getServerSideProps` and `getStaticProps`: the review route doesn't run the page's data functions, so the screen takes that data as props and the review passes fixtures.
+
 A review route renders on the client from manifest inputs, so server-side data has to arrive as props.
 
 - **Fetch on the server, render on the client.** If `page.tsx` is a server component that queries the database, keep the query in the page and pass the result to a client screen. The review renders that client screen with fixture props.

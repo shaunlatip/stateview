@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps, ElementType, ReactElement } from "react";
+import { forwardRef, type ComponentProps, type ElementType, type ReactElement, type Ref } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { IconContext, type IconProps } from "@phosphor-icons/react";
@@ -17,19 +17,22 @@ import { cn } from "./cn";
 // The context replaces Phosphor's defaults wholesale, so restate them alongside the theme's weight.
 const iconDefaults: IconProps = { size: "1em", color: "currentColor", mirrored: false, weight: "light" };
 
-/** Root of any Stateview surface: theme tokens, base typography and icon weight. */
-export function ThemeScope<T extends ElementType = "div">({
-  as,
-  className,
-  ...props
-}: { as?: T } & ComponentProps<T>) {
+/**
+ * Root of any Stateview surface: theme tokens, base typography and icon weight.
+ * Wrapped in forwardRef so a ref reaches the element on React 18 too, where a
+ * ref isn't an ordinary prop; the cast restores the generic `as` signature.
+ */
+export const ThemeScope = forwardRef(function ThemeScope(
+  { as, className, ...props }: { as?: ElementType; className?: string },
+  ref: Ref<Element>,
+) {
   const Tag: ElementType = as ?? "div";
   return (
     <IconContext.Provider value={iconDefaults}>
-      <Tag className={cn("stateview-theme", className)} {...props} />
+      <Tag ref={ref} className={cn("stateview-theme", className)} {...props} />
     </IconContext.Provider>
   );
-}
+}) as <T extends ElementType = "div">(props: { as?: T } & ComponentProps<T>) => ReactElement;
 
 /**
  * Graphical Button (primary, outline, ghost) and Toolbar control. Disabled

@@ -32,7 +32,7 @@ CI runs lint, typecheck, the manifest check, the checker's tests and the build o
 
 ## Use it on your own app: the `/stateview` skill
 
-The sample screen's review is written by hand. The `/stateview` skill (`skills/stateview/`) has a coding agent write one for any Next.js App Router app with Tailwind v4: it reads the branch's diff, finds the inputs the changed screen reads, gives the screen one boundary where a state can be injected, writes the manifest, checks it, and wires the review routes.
+The sample screen's review is written by hand. The `/stateview` skill (`skills/stateview/`) has a coding agent write one for any Next.js app with Tailwind v4, on the App Router (Next 15+) or the Pages Router (Next 13.4+), React 18 or 19: it reads the branch's diff, finds the inputs the changed screen reads, gives the screen one boundary where a state can be injected, writes the manifest, checks it, and wires the review routes.
 
 To make it available to Claude Code, link the folder into your skills directory, then run `/stateview` in the app's repo:
 
@@ -55,7 +55,7 @@ In the app, the review lives at `/stateview/<review>` (hub) and `/stateview/<rev
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Agentation · Phosphor icons
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Agentation · Phosphor icons
 
 ## Design language
 
@@ -83,7 +83,7 @@ The Team members screen takes all of its state through one object (`MembersState
 
 - **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) provides element picking and the comment popover. It is used as an npm dependency through its public props and exports only; none of its source is copied into this repo. Everything else depends on Stateview's own `AnnotationLayer` interface (`src/stateview/annotations.ts`), so the engine can be replaced with an in-house picker by swapping one file. Agentation keeps one comment list per pathname, and every state shares `/app/members`, so the adapter seeds Agentation's storage with the current state's comments and remounts it when the state changes. Stateview's copy is the one that counts.
 - **Temporary:** while building, a plain Agentation toolbar also sits on the hub and the unknown-state page (`src/components/dev/feedback-toolbar.tsx`) for feedback on Stateview's own UI. It will be removed before the final build.
-- **nuqs** keeps the current state (`?sv=`, `?step=`) in the URL, so every state has a link and the back button steps back.
+- The current state (`?sv=`, `?step=`) lives in the URL, so every state has a link and the back button steps back. It's read and written through the History API (`src/stateview/use-frame-query.ts`) rather than a router library, so the same engine runs under the App Router and the Pages Router.
 
 ## Credits
 

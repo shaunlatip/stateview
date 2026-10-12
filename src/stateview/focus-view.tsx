@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, type ReactNode } from "react";
-import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Toaster, toast } from "sonner";
 import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
 import { cn } from "./cn";
@@ -12,6 +11,7 @@ import { FocusBar } from "./focus-bar";
 import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
 import { useReview } from "./store";
 import { ThemeScope, buttonVariants } from "./ui";
+import { pushFrame, useFrameQuery } from "./use-frame-query";
 
 // Graphical Toast: the shared Toaster's default look is replaced, not layered over.
 const toastClassNames = {
@@ -52,19 +52,18 @@ type FocusViewProps<T extends Inputs> = {
 /** The real screen in one state, with Stateview's review bar on top. */
 export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer, hubHref = "/" }: FocusViewProps<T>) {
   const router = useRouter();
-  const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
+  const query = useFrameQuery();
   const review = useReview(manifest);
   const frames = listFrames(manifest);
-  const index = findFrameIndex(frames, sv, step);
+  const index = query ? findFrameIndex(frames, query.sv, query.step) : -1;
   const frame = index === -1 ? null : frames[index];
 
   const goTo = (target: number) => {
     const next = frames[target];
-    if (!next) return;
-    void setQuery({ sv: next.item.id, step: next.step && next.step > 1 ? next.step : null });
+    if (next) pushFrame(frameHref(manifest, next));
   };
 
-  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+  const onKeyDown = (event: KeyboardEvent) => {
     if (!frame || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
     if (event.target instanceof Element && event.target.closest(OWNS_KEYS)) return;
     switch (event.key) {
@@ -84,15 +83,28 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         router.push(hubHref);
         break;
     }
-  });
+  };
 
+  // One listener for the page's lifetime that always calls this render's handler (useEffectEvent, but React 18 has none).
+  const keyHandler = useRef(onKeyDown);
   useEffect(() => {
-    const listener = (event: KeyboardEvent) => onKeyDown(event);
+    keyHandler.current = onKeyDown;
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => keyHandler.current(event);
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  if (!frame) return <UnknownState id={sv} hubHref={hubHref} />;
+  // Set in an effect rather than with <title>, which React 18 doesn't hoist into <head>.
+  const title = frame ? `${frame.item.title} · Stateview` : null;
+  useEffect(() => {
+    if (title) document.title = title;
+  }, [title]);
+
+  // The URL is only known once the page is in the browser.
+  if (!query) return null;
+  if (!frame) return <UnknownState id={query.sv} hubHref={hubHref} />;
 
   const copyWithState = (markdown: string) => {
     void navigator.clipboard
@@ -103,7 +115,6 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
 
   return (
     <>
-      <title>{`${frame.item.title} · Stateview`}</title>
       {/* Bottom padding keeps the end of the page clear of the review bar. */}
       <ThemeScope className={cn("grid min-h-dvh pb-24", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
         {/* Keyed by state so the screen starts fresh from its inputs every time. */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { AgentationProps, Annotation as AgentationAnnotation } from "agentation";
 import type { Annotation, AnnotationLayerProps } from "./annotations";
 
@@ -19,17 +19,16 @@ function AgentationForState({ stateId, inputs, annotations, onAdd, onUpdate, onD
   const [Toolbar, setToolbar] = useState<ComponentType<AgentationProps> | null>(null);
   const [portal, setPortal] = useState<HTMLDivElement | null>(null);
 
-  // Replace Agentation's stored copy with this state's comments before it mounts and reads it.
-  const seed = useEffectEvent((engine: typeof import("agentation")) => {
-    engine.saveAnnotations(window.location.pathname, annotations.flatMap(toEngine));
-  });
+  // The comments as this state opened: what Agentation is seeded with. Later changes come from Agentation itself.
+  const initial = useRef(annotations);
 
   useEffect(() => {
     let active = true;
     // Loaded after the page, so the comment engine never delays the app.
     void import("agentation").then((engine) => {
       if (!active) return;
-      seed(engine);
+      // Replace Agentation's stored copy with this state's comments before it mounts and reads it.
+      engine.saveAnnotations(window.location.pathname, initial.current.flatMap(toEngine));
       setToolbar(() => engine.Agentation);
     });
     return () => {

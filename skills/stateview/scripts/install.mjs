@@ -8,7 +8,8 @@
 //      The copy is vendored like a shadcn component: the app owns it, re-running updates it.
 //      The engine imports nothing from the app it's in, only npm packages.
 //   2. Imports the engine's theme into the app's Tailwind stylesheet.
-//   3. Writes the review routes and an empty review registry, unless they already exist:
+//   3. Writes the review routes (App Router or Pages Router, whichever the app uses) and an
+//      empty review registry, unless they already exist:
 //        /stateview                     every review
 //        /stateview/<review>            the hub
 //        /stateview/<review>/state?sv=  one state, with the review bar
@@ -24,7 +25,7 @@ const { options } = parseArgs(process.argv.slice(2), { app: "string", from: "str
 const appRoot = options.app ?? process.cwd();
 const dryRun = Boolean(options["dry-run"]);
 const source = stateviewRoot(options.from);
-const { deps, srcDir, appDir } = appLayout(appRoot);
+const { deps, srcDir, router, routesDir } = appLayout(appRoot);
 const engineDir = join(srcDir, "stateview");
 const reviewsDir = join(srcDir, "stateview-reviews");
 const report = [];
@@ -81,7 +82,8 @@ function missingPackages() {
 
 /** Adds `@import "<engine>/theme.css"` to the stylesheet that imports Tailwind. */
 function importTheme() {
-  const stylesheet = findStylesheet(appDir) ?? findStylesheet(srcDir);
+  // Where Tailwind's entry stylesheet usually is: beside the routes, the source root, or a styles folder.
+  const stylesheet = [routesDir, srcDir, join(srcDir, "styles"), join(appRoot, "styles")].map(findStylesheet).find(Boolean);
   if (!stylesheet) {
     report.push(`skipped  theme: no stylesheet imports Tailwind v4 (\`@import "tailwindcss"\`). Stateview's UI needs Tailwind v4.`);
     return;
@@ -109,23 +111,28 @@ function findStylesheet(dir) {
 }
 
 function writeRoutes() {
-  const routeDir = join(appDir, "stateview");
-  const files = {
-    [join(routeDir, "layout.tsx")]: () => `import type { ReactNode } from "react";
+  const routeDir = join(routesDir, "stateview");
+  const files = { ...(router === "app" ? appRoutes(routeDir) : pagesRoutes(routeDir)), ...registry() };
+  for (const [path, content] of Object.entries(files)) {
+    const result = writeOnce(path, content(path), { force: Boolean(options.force), dryRun });
+    report.push(`${result.padEnd(8)} ${relative(appRoot, path)}`);
+  }
+}
+
+/** App Router (Next 15+): async params, static params from the registry, the focus view as a client component. */
+function appRoutes(routeDir) {
+  return {
+    [join(routeDir, "layout.tsx")]: (file) => `import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { reviewRoutesServed } from "${importPath(file, join(engineDir, "served"))}";
 
 /**
  * Stateview's review routes. They're served in development and on preview
  * deployments; on a production deployment they 404 unless STATEVIEW=1.
  */
 export default function StateviewLayout({ children }: { children: ReactNode }) {
-  if (process.env.VERCEL_ENV === "production" && process.env.STATEVIEW !== "1") notFound();
-  return (
-    <NuqsAdapter>
-      <div className="flex min-h-dvh flex-col">{children}</div>
-    </NuqsAdapter>
-  );
+  if (!reviewRoutesServed()) notFound();
+  return <div className="flex min-h-dvh flex-col">{children}</div>;
 }
 `,
     [join(routeDir, "page.tsx")]: (file) => `import { ReviewIndex } from "${importPath(file, join(engineDir, "review"))}";
@@ -177,6 +184,83 @@ export function FocusRoute({ id }: { id: string }) {
   return <ReviewFocus review={review} hubHref={\`/stateview/\${id}\`} />;
 }
 `,
+  };
+}
+
+/**
+ * Pages Router (Next 13.4+): static paths from the registry, so each review is
+ * prerendered and an unknown id 404s; production deployments 404 unless STATEVIEW=1.
+ */
+function pagesRoutes(routeDir) {
+  const paths = `export const getStaticPaths: GetStaticPaths = () => ({
+  paths: Object.keys(reviews).map((review) => ({ params: { review } })),
+  fallback: false,
+});
+
+export const getStaticProps: GetStaticProps<Props, { review: string }> = ({ params }) =>
+  reviewRoutesServed() && params ? { props: { id: params.review } } : { notFound: true };`;
+  return {
+    [join(routeDir, "index.tsx")]: (file) => `import type { GetStaticProps } from "next";
+import { ReviewIndex } from "${importPath(file, join(engineDir, "review"))}";
+${served(file)}
+import { reviews } from "${importPath(file, reviewsDir)}";
+
+export const getStaticProps: GetStaticProps = () => (reviewRoutesServed() ? { props: {} } : { notFound: true });
+
+export default function StateviewIndexPage() {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <ReviewIndex reviews={Object.values(reviews)} basePath="/stateview" />
+    </div>
+  );
+}
+`,
+    [join(routeDir, "[review]", "index.tsx")]: (file) => `import type { GetStaticPaths, GetStaticProps } from "next";
+import { ReviewHub } from "${importPath(file, join(engineDir, "review"))}";
+${served(file)}
+import { reviews } from "${importPath(file, reviewsDir)}";
+
+type Props = { id: string };
+
+${paths}
+
+export default function ReviewHubPage({ id }: Props) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <ReviewHub review={reviews[id]} />
+    </div>
+  );
+}
+`,
+    [join(routeDir, "[review]", "state.tsx")]: (file) => `import type { GetStaticPaths, GetStaticProps } from "next";
+import { ReviewFocus } from "${importPath(file, join(engineDir, "review-focus"))}";
+${served(file)}
+import { reviews } from "${importPath(file, reviewsDir)}";
+
+type Props = { id: string };
+
+${paths}
+
+// The state comes from \`?sv=\`, which the focus view reads once the page is in the browser.
+export default function ReviewStatePage({ id }: Props) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <ReviewFocus review={reviews[id]} hubHref={\`/stateview/\${id}\`} />
+    </div>
+  );
+}
+`,
+  };
+}
+
+/** The import line for the production gate, relative to the file it goes in. */
+function served(file) {
+  return `import { reviewRoutesServed } from "${importPath(file, join(engineDir, "served"))}";`;
+}
+
+/** The registry new-review.mjs adds each review to. */
+function registry() {
+  return {
     [join(reviewsDir, "index.ts")]: (file) => `import type { Review } from "${importPath(file, join(engineDir, "review"))}";
 
 /**
@@ -196,10 +280,6 @@ export function reviewParams() {
 }
 `,
   };
-  for (const [path, content] of Object.entries(files)) {
-    const result = writeOnce(path, content(path), { force: Boolean(options.force), dryRun });
-    report.push(`${result.padEnd(8)} ${relative(appRoot, path)}`);
-  }
 }
 
 function printReport() {

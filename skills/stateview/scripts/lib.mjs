@@ -15,18 +15,23 @@ export function stateviewRoot(from) {
   return root;
 }
 
-/** The app's source root (`src/` or the project root) and its App Router folder. */
+/**
+ * The app's source root (`src/` or the project root), which router it uses,
+ * and the folder its routes live in. The App Router wins when an app has both.
+ */
 export function appLayout(appRoot) {
   const pkgPath = join(appRoot, "package.json");
   if (!existsSync(pkgPath)) fail(`No package.json in ${appRoot}. Run this from the app's root or pass --app <dir>.`);
   const pkg = readJson(pkgPath);
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  if (!deps.next) fail("This isn't a Next.js app (no `next` dependency). Stateview's routes need the App Router.");
-  for (const srcDir of [join(appRoot, "src"), appRoot]) {
-    const appDir = join(srcDir, "app");
-    if (existsSync(appDir)) return { pkg, deps, srcDir, appDir };
+  if (!deps.next) fail("This isn't a Next.js app (no `next` dependency).");
+  for (const router of ["app", "pages"]) {
+    for (const srcDir of [join(appRoot, "src"), appRoot]) {
+      const routesDir = join(srcDir, router);
+      if (existsSync(routesDir)) return { pkg, deps, srcDir, router, routesDir };
+    }
   }
-  fail("No App Router folder (`app/` or `src/app/`) found. Stateview doesn't support the Pages Router.");
+  fail("No `app/` or `pages/` folder (or `src/app/`, `src/pages/`) found.");
 }
 
 /** A relative module specifier from one file to another path, with forward slashes. */

@@ -17,7 +17,7 @@ if (!id || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) fail("Give the review a kebab-c
 if (!options.screen) fail('Name the screen with --screen, e.g. --screen "Team settings › Members".', 2);
 
 const appRoot = options.app ?? process.cwd();
-const { srcDir, appDir } = appLayout(appRoot);
+const { srcDir, routesDir } = appLayout(appRoot);
 const reviewsDir = join(srcDir, "stateview-reviews");
 const registry = join(reviewsDir, "index.ts");
 if (!existsSync(registry)) fail("No review registry yet. Run install.mjs first.");
@@ -75,7 +75,7 @@ function branchScope() {
   if (!mergeBase) return { branch, base, files: [], found: false };
   const changed = git(appRoot, ["diff", "--name-only", mergeBase]) ?? "";
   const untracked = git(appRoot, ["ls-files", "--others", "--exclude-standard"]) ?? "";
-  const own = [join(srcDir, "stateview"), reviewsDir, join(appDir, "stateview")].map((dir) => `${relative(appRoot, dir)}/`);
+  const own = [join(srcDir, "stateview"), reviewsDir, join(routesDir, "stateview")].map((dir) => `${relative(appRoot, dir)}/`);
   const files = [...new Set(`${changed}\n${untracked}`.split("\n").filter(Boolean))]
     .filter((file) => !own.some((dir) => file.startsWith(dir)))
     .toSorted();

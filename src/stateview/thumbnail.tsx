@@ -13,7 +13,8 @@ import { cn } from "./cn";
  */
 export function Thumbnail({ children, viewport }: { children: ReactNode; viewport: "desktop" | "mobile" }) {
   return (
-    <div aria-hidden inert className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2">
+    // inert set through a ref: React 18 drops the boolean attribute, React 19 ignores the string form.
+    <div aria-hidden ref={makeInert} className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2">
       <div
         className={cn(
           "host-frame pointer-events-none absolute top-0 origin-top bg-background select-none",
@@ -24,6 +25,10 @@ export function Thumbnail({ children, viewport }: { children: ReactNode; viewpor
       </div>
     </div>
   );
+}
+
+function makeInert(element: HTMLDivElement | null) {
+  element?.setAttribute("inert", "");
 }
 
 /**
