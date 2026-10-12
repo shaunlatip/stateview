@@ -1,0 +1,125 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "jsx-a11y",
+    "nextjs"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/aria-role": [
+      "error",
+      {
+        "ignoreNonDOM": true
+      }
+    ],
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "unicorn/no-useless-spread": "off",
+    "react/jsx-no-target-blank": "error",
+    "react/button-has-type": "warn",
+    "shadcn/no-unknown-classes": [
+      "error",
+      {
+        "allow": [
+          "nodrag",
+          "nopan",
+          "nowheel"
+        ]
+      }
+    ],
+    "shadcn/no-raw-colors": "error",
+    "shadcn/no-arbitrary-values": "error",
+    "shadcn/no-restyle": [
+      "error",
+      {
+        "allow": [
+          "layout"
+        ],
+        "contracts": [
+          {
+            "pattern": "^Table(Head|Cell)$",
+            "allow": [
+              "layout",
+              "spacing",
+              "typography",
+              "color"
+            ]
+          },
+          {
+            "pattern": "^Skeleton$",
+            "allow": [
+              "layout",
+              "shape"
+            ]
+          }
+        ]
+      }
+    ],
+    "shadcn/no-inline-styles": "warn",
+    "shadcn/require-static-classes": "warn"
+  },
+  "ignorePatterns": [
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "out/**",
+    "coverage/**",
+    "node_modules/**",
+    ".harden/**",
+    "public/**",
+    "**/*.d.ts",
+    "test-results/**",
+    "playwright-report/**"
+  ],
+  "jsPlugins": [
+    "@shadcn/lint"
+  ],
+  "settings": {
+    "jsx-a11y": {
+      "components": {
+        "Label": "label",
+        "Input": "input",
+        "Textarea": "textarea",
+        "Button": "button",
+        "Checkbox": "input"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/components/ui/**"
+      ],
+      "rules": {
+        "shadcn/no-restyle": "off",
+        "shadcn/no-arbitrary-values": "off",
+        "shadcn/no-raw-colors": "off",
+        "shadcn/no-inline-styles": "off",
+        "shadcn/require-static-classes": "off",
+        "shadcn/no-unknown-classes": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-static-element-interactions": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/anchor-has-content": "off",
+        "jsx-a11y/heading-has-content": "off",
+        "jsx-a11y/control-has-associated-label": "off",
+        "react/only-export-components": "off"
+      }
+    }
+  ]
+}
