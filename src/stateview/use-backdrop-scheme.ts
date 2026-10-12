@@ -73,8 +73,9 @@ function toRgba(color: string): Rgba | null {
   probe.fillStyle = "transparent";
   probe.fillStyle = color;
   probe.fillRect(0, 0, 1, 1);
-  const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
-  return [r, g, b, a];
+  // Indexed, not destructured: apps on an es5 target can't destructure a typed array without downlevelIteration.
+  const { data } = probe.getImageData(0, 0, 1, 1);
+  return [data[0], data[1], data[2], data[3]];
 }
 
 /** WCAG relative luminance of an sRGB color, 0 (black) to 1 (white). */

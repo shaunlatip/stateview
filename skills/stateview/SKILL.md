@@ -15,7 +15,7 @@ Your job is the part only an agent can do from the code: find what the screen re
 
 Check, and stop with a one-line reason if any fails:
 
-- A Next.js app on the App Router (Next 15 or later) or the Pages Router (Next 13.4 or later), React 18 or 19, and Tailwind CSS v4. The installer detects the router and writes routes for it.
+- A Next.js app on the App Router (Next 15 or later) or the Pages Router (Next 13.4 or later), React 18 or 19, and Tailwind CSS v4. The installer detects the router and writes routes for it. The scripts need Node 20 or later.
 - A git repo on a branch with changes against its base. With no changes, ask whether to review a screen as a whole; the scope line then reads the branch against itself.
 - The change touches UI. Stateview reviews screens; a backend-only change has nothing to show.
 
@@ -54,7 +54,8 @@ Make the screen renderable from a plain object of string inputs, then write the 
 - Prefer splitting a container (gathers real state, unchanged behavior) from a screen (takes everything as props). Use an override context only for state read deep in the tree.
 - Request states are inputs: canned data for ready, a promise that never resolves for loading, a rejection for error. Actions answer from canned responses after a short delay, so every state is live and clickable. Never call real APIs or write real data from a review.
 - Moments (open sheet, typed draft, selected row) become optional `initial*` props.
-- The review narrows the frame to 375 px for the `mobile` value of the environment input, but the window stays desktop-sized: CSS media queries (Tailwind `sm:`), `100vw`, `matchMedia` and `innerWidth` all still see desktop. Convert the changed screen's breakpoint classes to container queries and pass an `isMobile` override for JavaScript checks. Fixed-position sheets need a `contain: layout` wrapper to stay in the frame.
+- The review narrows the frame to 375 px for the `mobile` value of the environment input, but the window stays desktop-sized: CSS media queries (Tailwind `sm:`), `100vw`, `matchMedia` and `innerWidth` all still see desktop. Convert the changed screen's breakpoint classes to container queries (after checking the root is as wide as the window; a space-taking scrollbar makes it narrower) and pass an `isMobile` override for JavaScript checks. Fixed-position sheets need a `contain: layout paint` wrapper to stay in the frame.
+- The app's shell (`_app.tsx` or the root layout) wraps the review routes too: skip its global nav, analytics and dev toolbars under `/stateview`.
 - The review bar covers the bottom 6rem of the window. Full-height screens (maps, editors, anything `h-dvh`) need to be rendered in a box that stops above it.
 - Production behavior doesn't change: every prop and override you add is optional and defaults to today's behavior. Keep a list of every production file you edit; it goes in your report.
 - For WebGL, canvas or video screens, pass `{ thumbnails: "off" }` to `defineReview`: the hub shows each state's changed inputs instead of a live render, since browsers cap active WebGL contexts at about 16.
@@ -77,7 +78,7 @@ Keep `route` as `/stateview/<id>/state`. Bump `version` whenever you change stat
 node <skill>/scripts/check.mjs src/stateview-reviews
 ```
 
-(Pass `stateview-reviews` instead in apps without `src/`.) Fix every error. For each warning, fix it or keep it on purpose and say why in your report. Then run the app's own typecheck and lint, and fix what they find in files you wrote or changed. If the app has no typecheck script, run `tsc --noEmit` from its own `node_modules`.
+(Pass `stateview-reviews` instead in apps without `src/`.) Fix every error. For each warning, fix it or keep it on purpose and say why in your report. Then run the app's own typecheck and lint, and fix what they find in files you wrote or changed. If the app has no typecheck script, run `tsc --noEmit --incremental false` from its own `node_modules` (an incremental cache can repeat errors you've already fixed). If it has no lint config, say so rather than letting `next lint` create one.
 
 ### 7. Verify it in the browser
 

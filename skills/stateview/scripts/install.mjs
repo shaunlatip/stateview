@@ -32,6 +32,7 @@ const report = [];
 if (resolve(engineDir) === resolve(source, "src/stateview")) fail("That's Stateview's own repo; the engine can't be installed into itself.");
 
 copyEngine();
+declareSubpaths();
 const missing = missingPackages();
 importTheme();
 writeRoutes();
@@ -64,7 +65,11 @@ function copyEngine() {
   report.push(`${(dryRun ? "would copy" : "copied").padEnd(8)} engine → ${relative(appRoot, engineDir)}/`);
 }
 
-/** Packages the engine imports that the app doesn't depend on yet, with Stateview's version ranges. */
+/**
+ * Packages the engine imports that the app doesn't have, or has at a version
+ * older than Stateview's range allows (an older agentation, say, lacks props
+ * the engine passes), with Stateview's version ranges.
+ */
 function missingPackages() {
   const ours = readJson(join(source, "package.json"));
   const ourVersions = { ...ours.dependencies, ...ours.devDependencies };
@@ -77,7 +82,49 @@ function missingPackages() {
       if (!HOST_PACKAGES.has(name) && name !== "@") needed.add(name);
     }
   }
-  return [...needed].filter((name) => !deps[name]).map((name) => (ourVersions[name] ? `${name}@${ourVersions[name]}` : name));
+  return [...needed]
+    .filter((name) => !deps[name] || olderThan(installedVersion(name), ourVersions[name]))
+    .map((name) => (ourVersions[name] ? `${name}@${ourVersions[name]}` : name));
+}
+
+function installedVersion(name) {
+  const manifest = join(appRoot, "node_modules", name, "package.json");
+  return existsSync(manifest) ? readJson(manifest).version : null;
+}
+
+/**
+ * Whether an installed version's major.minor is below the lowest a `^x.y.z` /
+ * `~x.y.z` / `x.y.z` range allows. Patch is ignored: Stateview's ranges start
+ * at whatever was current when it installed them, and a patch behind is fine.
+ */
+function olderThan(installed, range) {
+  const minimum = range?.match(/^[\^~]?(\d+)\.(\d+)/);
+  const actual = installed?.match(/^(\d+)\.(\d+)/);
+  if (!minimum || !actual) return false;
+  for (let part = 1; part <= 2; part++) {
+    const difference = Number(actual[part]) - Number(minimum[part]);
+    if (difference !== 0) return difference < 0;
+  }
+  return false;
+}
+
+/**
+ * The engine imports `cn/config`, a subpath only package `exports` declare.
+ * TypeScript's older `"moduleResolution": "node"` doesn't read `exports`, so
+ * for those apps the engine gets a declaration pointing at the file itself.
+ * (The bundler resolves the real import either way.)
+ */
+function declareSubpaths() {
+  const tsconfig = join(appRoot, "tsconfig.json");
+  if (!existsSync(tsconfig)) return;
+  if (!/"moduleResolution"\s*:\s*"node(10)?"/i.test(readFileSync(tsconfig, "utf8"))) return;
+  const declaration = `// Written by install.mjs: this app's "moduleResolution": "node" doesn't read package exports.
+declare module "cn/config" {
+  export * from "cn/dist/config";
+}
+`;
+  if (!dryRun) writeFileSync(join(engineDir, "cn-config.d.ts"), declaration);
+  report.push(`${(dryRun ? "would add" : "added").padEnd(8)} ${relative(appRoot, join(engineDir, "cn-config.d.ts"))} (moduleResolution "node" can't see cn/config)`);
 }
 
 /** Adds `@import "<engine>/theme.css"` to the stylesheet that imports Tailwind. */
@@ -286,7 +333,7 @@ function printReport() {
   console.log(`Stateview → ${appRoot}${dryRun ? " (dry run, nothing written)" : ""}\n`);
   for (const line of report) console.log(`  ${line}`);
   if (missing.length > 0) {
-    console.log(`\nThe engine needs packages this app doesn't have. Install them with:\n\n  ${packageManager(appRoot).add} ${missing.join(" ")}`);
+    console.log(`\nThe engine needs packages this app doesn't have, or has at an older version. Install them with:\n\n  ${packageManager(appRoot).add} ${missing.join(" ")}`);
   } else {
     console.log("\nEvery package the engine imports is already installed.");
   }

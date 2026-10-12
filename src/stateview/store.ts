@@ -43,7 +43,8 @@ function write(key: string, update: (record: ReviewRecord) => ReviewRecord) {
   } catch {
     // Storage full or blocked: progress won't persist, but the review keeps working.
   }
-  for (const listener of listeners) listener();
+  // Array.from, not for…of: apps on an es5 target can't iterate a Set without downlevelIteration.
+  for (const listener of Array.from(listeners)) listener();
 }
 
 function subscribe(listener: () => void) {

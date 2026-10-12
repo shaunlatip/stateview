@@ -96,10 +96,19 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  // Set in an effect rather than with <title>, which React 18 doesn't hoist into <head>.
+  // Set in an effect rather than with <title>, which React 18 doesn't hoist into
+  // <head>. The screen under review may set its own title (next/head applies it
+  // after this effect runs), so put the state's title back whenever <head> changes.
   const title = frame ? `${frame.item.title} · Stateview` : null;
   useEffect(() => {
-    if (title) document.title = title;
+    if (!title) return;
+    const keepTitle = () => {
+      if (document.title !== title) document.title = title;
+    };
+    keepTitle();
+    const observer = new MutationObserver(keepTitle);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [title]);
 
   // The URL is only known once the page is in the browser.

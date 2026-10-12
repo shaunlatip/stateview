@@ -158,6 +158,8 @@ Never patch global `fetch` or `XMLHttpRequest`. Never call real APIs, and never 
 
 On the Pages Router, the same applies to `getServerSideProps` and `getStaticProps`: the review route doesn't run the page's data functions, so the screen takes that data as props and the review passes fixtures.
 
+**The app's shell wraps the review routes too.** `_app.tsx` (Pages Router) or the root `layout.tsx` puts its global nav, page transitions, intro loaders, analytics and dev toolbars around `/stateview/…` as well. Analytics scripts fail in the headless browser `verify.mjs` uses, and a second feedback toolbar fights Stateview's. Skip them when the pathname starts with `/stateview` (a short edit to the shell; list it in your report). Components that read the route (`useRouter().pathname`, `usePathname()`) see `/stateview/<id>/state`; if the changed screen branches on its own path, pass the path in as a prop, or on the Pages Router wrap the render in `RouterContext.Provider` with a router whose `pathname` is the screen's (the context is exported from `next/dist/shared/lib/router-context` on Next 13.4 and `router-context.shared-runtime` from 13.5).
+
 A review route renders on the client from manifest inputs, so server-side data has to arrive as props.
 
 - **Fetch on the server, render on the client.** If `page.tsx` is a server component that queries the database, keep the query in the page and pass the result to a client screen. The review renders that client screen with fixture props.
@@ -192,7 +194,8 @@ Review pages are server-rendered like any other route. A moment that renders dif
 
 When the environment input's value is `mobile`, the viewer narrows the frame to 375 px. The browser window stays desktop-sized, so everything that measures the window still reports desktop: CSS media queries (Tailwind's `sm:`, `md:` and so on), `100vw`, `window.matchMedia`, `window.innerWidth`/`innerHeight`, and hooks and helpers built on them. Search the changed files for all of these before writing the mobile state.
 
-- **Prefer container queries.** Layout written with `@container` (Tailwind `@container` on the screen's root, then `@md:`, `@min-[40rem]:`) reflows inside the narrow frame and in a narrow window. The sample screen does this. When the changed files use viewport breakpoints, convert those classes: put `@container` on the screen's root element and replace `sm:` with `@min-[40rem]:` (Tailwind's `sm` is 40rem), and `100vw` with `100cqw`. In the real app the root spans the window, so production behavior is unchanged. List these edits in your report; they're usually the largest part of the boundary diff.
+- **Prefer container queries.** Layout written with `@container` (Tailwind `@container` on the screen's root, then `@md:`, `@min-[40rem]:`) reflows inside the narrow frame and in a narrow window. The sample screen does this. When the changed files use viewport breakpoints, convert those classes: put `@container` on the screen's root element and replace `sm:` with `@min-[40rem]:` (Tailwind's `sm` is 40rem), and `100vw` with `100cqw`. In the real app the root usually spans the window, so production behavior is unchanged. List these edits in your report; they're usually the largest part of the boundary diff.
+- **Check that the root is as wide as the window before converting.** A space-taking scrollbar (`scrollbar-gutter: stable`, or classic scrollbars), padding on an ancestor, or a root font size that changes with the window all make the container narrower than the viewport, so a converted breakpoint flips at a different width in production. Measure the root against `window.innerWidth` at each breakpoint first. If they differ, keep the viewport classes and gate them instead: `lg:@min-[600px]:…` keeps desktop exactly as it was, and an `@max-[600px]:` twin carries each phone value into the frame. That's more classes, so do it only for the changed elements; list the rest under `uncovered`.
 - **Otherwise add an override at the boundary.** Give the viewport hook an override, or the screen an optional `isMobile` prop that defaults to the hook. This covers JavaScript checks only; CSS media queries still need the conversion above.
 
 ```tsx
@@ -205,11 +208,14 @@ export function MapScreen({ isMobile: isMobileOverride, ...props }: MapScreenPro
 
 The render function passes `isMobile={inputs.breakpoint === "mobile"}`.
 
+**Theme is an environment input too.** Theme libraries like `next-themes` set one class or attribute on `<html>` and ignore nested providers, so a dark state can't set the theme for its frame through them. Set the app's own theme selector (`class="dark"` or `data-theme="dark"`, whichever its CSS keys off) on a wrapper in the render function, and pass the theme as a prop to anything that reads it in JavaScript.
+
 Measurements that read the window directly (a map fitting its zoom to `window.innerWidth`, a popover placed against the window) stay desktop-sized in the frame. Pass the size in where it's cheap; otherwise list the affected combination under `uncovered`.
 
 ### Fixed-position elements and full-height screens
 
-- **`position: fixed` escapes the frame.** A sheet, scrim or toast that's fixed to the viewport spans the whole window, not the 375 px frame. Wrap the mobile render in an element with `contain: layout` (Tailwind `[contain:layout]`), which makes it the containing block for fixed descendants.
+- **`position: fixed` escapes the frame.** A sheet, scrim or toast that's fixed to the viewport spans the whole window, not the 375 px frame. Wrap the mobile render in an element with `contain: layout paint` (Tailwind `[contain:layout_paint]`), which makes it the containing block for fixed descendants and clips them to the frame (a closed side sheet parked off-screen otherwise paints beside it).
+- **Window scroll carries over between frames.** The review remounts the screen for each frame but doesn't reset the window's scroll. A state that starts scrolled to a section scrolls there itself (an effect in the render function), and every other state should start at the top.
 - **The review bar sits over the bottom 6rem of the window.** The frame adds bottom padding, which only helps pages that scroll. A full-height screen (`h-dvh`, `h-screen`, a map or editor) keeps its bottom edge under the bar. In the render function, give the screen a box `calc(100dvh - 6rem)` tall and let its root fill it (an optional `className` prop on the screen, or `[&>main]:h-full` on the wrapper).
 
 ## 8. Determinism

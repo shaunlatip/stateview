@@ -62,9 +62,13 @@ export const buttonVariants = cva(
   },
 );
 
-export function Button({ className, variant, size, ...props }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return <ButtonPrimitive className={cn(buttonVariants({ variant, size }), className)} {...props} />;
-}
+// forwardRef for React 18: a Tooltip trigger passes its ref to the button it wraps.
+export const Button = forwardRef(function Button(
+  { className, variant, size, ...props }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>,
+  ref: Ref<HTMLElement>,
+) {
+  return <ButtonPrimitive ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+});
 
 // Sized to sit beside S text without outweighing it: one XS line, XXS side padding.
 const badgeVariants = cva(
