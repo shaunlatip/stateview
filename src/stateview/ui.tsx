@@ -283,12 +283,13 @@ export function MenuPopup({
   className,
   side = "top",
   align = "end",
+  scheme = "light",
   ...props
-}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, "side" | "align">) {
+}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, "side" | "align"> & { scheme?: "light" | "dark" }) {
   return (
     <MenuPrimitive.Portal>
-      {/* Portalled to <body>, so the theme scope is restated inside the portal. */}
-      <ThemeScope>
+      {/* Portalled to <body>, so the theme scope (and the trigger's scheme) is restated inside the portal. */}
+      <ThemeScope className={cn(scheme === "dark" && "dark")}>
         <MenuPrimitive.Positioner side={side} align={align} sideOffset={8} className="z-50">
           <MenuPrimitive.Popup
             className={cn(

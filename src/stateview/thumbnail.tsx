@@ -7,17 +7,35 @@ import { cn } from "@/lib/utils";
  * browser until it scrolls near the viewport. The screen inside starts from
  * the host app's own typography, not Stateview's.
  *
- * 17rem wide (--hub-thumb in theme.css), sized so two two-card sections fit
- * side by side in the hub's 1200px column: a 1088px desktop render at 0.25,
- * or a 375px phone render at 0.5, centred.
+ * "card" is the hub's 208 × 130 and "strip" the viewer filmstrip's 144 × 90
+ * (theme.css). A desktop render fills the width; a phone render is centred.
  */
-export function Thumbnail({ children, viewport }: { children: ReactNode; viewport: "desktop" | "mobile" }) {
+export function Thumbnail({
+  children,
+  viewport,
+  size,
+  className,
+}: {
+  children: ReactNode;
+  viewport: "desktop" | "mobile";
+  size: "card" | "strip";
+  className?: string;
+}) {
   return (
-    <div aria-hidden inert className="content-auto gui-thumb-width relative h-50 shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 shadow-gui-s ring-1 ring-gui-border">
+    <div
+      aria-hidden
+      inert
+      className={cn(
+        "content-auto relative shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
+        size === "card" ? "gui-thumb-card" : "gui-thumb-strip",
+        className,
+      )}
+    >
+      {/* A still picture: loading skeletons and the like don't loop in every thumbnail. */}
       <div
         className={cn(
-          "host-frame pointer-events-none absolute top-0 origin-top bg-background select-none",
-          viewport === "mobile" ? "left-1/2 h-200 w-93.75 -translate-x-1/2 scale-50" : "left-0 h-200 w-272 origin-top-left scale-25",
+          "host-frame pointer-events-none absolute top-0 h-200 bg-background select-none **:animate-none",
+          viewport === "mobile" ? "gui-thumb-mobile left-1/2 origin-top -translate-x-1/2" : "gui-thumb-desktop left-0 origin-top-left",
         )}
       >
         {children}

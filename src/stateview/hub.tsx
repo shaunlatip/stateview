@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, type ReactNode } from "react";
-import { Popover } from "@base-ui/react/popover";
-import { CaretDownIcon, ChatCircleIcon } from "@phosphor-icons/react";
-import { frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
+import { useEffect, useState, type ReactNode } from "react";
+import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { formatReview } from "./agent-export";
+import { CornerChips, FooterChips, chipText } from "./card-chips";
+import { Logo } from "./logo";
+import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section, type Uncovered } from "./manifest";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
-import { Badge, ThemeScope, buttonVariants } from "./ui";
+import { Button, ThemeScope } from "./ui";
 
 type HubProps<T extends Inputs> = {
   manifest: Manifest<T>;
   /** A rendered screen for each item id (first step for sequences). */
   thumbnails: Record<string, ReactNode>;
 };
+
+const UNCOVERED_ID = "not-covered";
 
 /*
  * Where the reviewer was on the hub, so coming back from a state lands on the
@@ -49,108 +55,208 @@ function useRestoredScroll() {
   }, []);
 }
 
+// A section is current once its top is this close to the top of the window.
+const CURRENT_LINE_PX = 120;
+
+/** The section whose top has most recently scrolled up to near the top of the window. */
+function useCurrentSection(ids: string[]) {
+  const [current, setCurrent] = useState(ids[0]);
+  const key = ids.join(" ");
+  useEffect(() => {
+    const update = () => {
+      const line = CURRENT_LINE_PX;
+      let found = key.split(" ")[0];
+      for (const id of key.split(" ")) {
+        const top = document.getElementById(id)?.getBoundingClientRect().top;
+        if (top !== undefined && top <= line) found = id;
+      }
+      // At the very bottom the last sections can't reach the line, so the last one counts.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) found = key.split(" ").at(-1) ?? found;
+      setCurrent(found);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [key]);
+  return current;
+}
+
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   useRestoredScroll();
-  const { annotations } = useReview(manifest);
+  const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
-  const items = listItems(manifest);
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
   const commentsOn = (item: Item<T>) =>
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
+  const sectionIds = [...manifest.sections.map((section) => section.id), ...(manifest.uncovered.length > 0 ? [UNCOVERED_ID] : [])];
+  const current = useCurrentSection(sectionIds);
 
   return (
-    <ThemeScope as="main" className="flex-1 bg-gui-neutral-2">
-      <div className="mx-auto box-content flex max-w-300 flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
-        <header className="flex flex-wrap items-end justify-between gap-x-gui-xl gap-y-gui-s">
-          <div className="flex flex-col gap-gui-xxs">
-            <p className="font-gui-brand text-gui-s font-gui-medium text-gui-neutral-7">Stateview</p>
-            <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">{manifest.screen}</h1>
-            <p className="text-gui-neutral-7">
-              Reviewing <code className="font-gui-data text-gui-neutral-10">{manifest.scope.branch}</code> against{" "}
-              <code className="font-gui-data text-gui-neutral-10">{manifest.scope.base}</code> · {manifest.scope.files} files changed
+    <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+      <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-gui-l overflow-y-auto bg-gui-neutral-2 px-gui-m py-gui-l gui-divider-end md:flex">
+        <div className="flex flex-col gap-gui-xs px-gui-xs">
+          <Logo className="h-6 w-auto self-start" />
+          <h1 className="text-gui-m wrap-break-word">{manifest.scope.repo}</h1>
+        </div>
+        <ul className="flex flex-col">
+          {manifest.sections.map((section) => (
+            <IndexLink key={section.id} id={section.id} current={current === section.id}>
+              {section.title}
+            </IndexLink>
+          ))}
+          {manifest.uncovered.length > 0 ? (
+            <>
+              <li aria-hidden className="flex h-gui-m items-center px-gui-xs">
+                <span className="h-px flex-1 bg-gui-border" />
+              </li>
+              <IndexLink id={UNCOVERED_ID} current={current === UNCOVERED_ID} muted>
+                Not covered
+              </IndexLink>
+            </>
+          ) : null}
+        </ul>
+      </nav>
+
+      <main className="flex min-w-0 flex-1 flex-col">
+        <header className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s px-gui-m py-gui-m gui-divider-bottom md:px-gui-xxl">
+          <div className="flex min-w-0 flex-col gap-gui-xs">
+            {/* Below md the index is hidden, so its logo and title move here. Only one h1 is ever displayed. */}
+            <div className="flex flex-col gap-gui-xxs md:hidden">
+              <Logo className="h-6 w-auto self-start" />
+              <h1 className="text-gui-m wrap-break-word">{manifest.scope.repo}</h1>
+            </div>
+            <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7">
+              <GitBranchIcon aria-hidden className="text-gui-m text-gui-neutral-10" />
+              <span className="sr-only">Reviewing</span>
+              <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.branch}</code>
+              vs
+              <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.base}</code>
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-gui-s">
-            <p className="text-gui-neutral-7 tabular-nums">
-              {items.length} states in {manifest.sections.length} sections
-            </p>
-            <Coverage uncovered={manifest.uncovered} excluded={manifest.excluded} />
-          </div>
+          <CopyComments manifest={manifest} />
         </header>
 
-        {/* Sections hug their cards and wrap, so one-card sections share a row and padding stays even. */}
-        <div className="flex flex-wrap items-start gap-gui-m">
+        <div className="flex flex-col px-gui-m pb-gui-xxl md:px-gui-xxl">
           {manifest.sections.map((section) => (
-            <HubSection
-              key={section.id}
-              section={section}
-              renderCard={(item) => (
+            <SectionRow key={section.id} id={section.id} title={section.title} why={section.why}>
+              {section.items.map((item) => (
                 <StateCard
                   key={item.id}
                   item={item}
                   href={frameHref(manifest, firstFrameOf(item))}
                   viewport={viewportOf(manifest, firstFrameOf(item).inputs)}
                   comments={commentsOn(item)}
+                  viewed={viewed.includes(item.id)}
                   thumbnail={thumbnails[item.id]}
                 />
-              )}
-            />
+              ))}
+            </SectionRow>
           ))}
+          {manifest.uncovered.length > 0 ? (
+            <SectionRow
+              id={UNCOVERED_ID}
+              title="Not covered"
+              why="Combinations of inputs no state above shows. Add one to the manifest or leave it out on purpose."
+              aside={
+                manifest.excluded.length > 0 ? (
+                  <div className="flex flex-col gap-gui-xxs pt-gui-xs text-gui-s text-gui-neutral-7">
+                    <p className="text-gui-neutral-10">Left out on purpose</p>
+                    <ul className="flex flex-col gap-gui-xxs">
+                      {manifest.excluded.map((combination) => (
+                        <li key={combination}>{combination}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null
+              }
+              last
+            >
+              {manifest.uncovered.map((combination) => (
+                <UncoveredCard key={combination.title} combination={combination} />
+              ))}
+            </SectionRow>
+          ) : null}
         </div>
-      </div>
+      </main>
     </ThemeScope>
   );
 }
 
-/** What the review leaves out, behind a count so the header stays one line. */
-function Coverage({ uncovered, excluded }: { uncovered: string[]; excluded: string[] }) {
+function IndexLink({ id, current, muted, children }: { id: string; current: boolean; muted?: boolean; children: ReactNode }) {
   return (
-    <Popover.Root>
-      <Popover.Trigger className={buttonVariants({ variant: "outline", size: "toolbar" })}>
-        <span className="tabular-nums">{uncovered.length} combinations not covered</span>
-        <CaretDownIcon aria-hidden />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
-          <Popover.Popup className="stateview-theme flex max-w-sm flex-col gap-gui-xs rounded-gui-m bg-gui-neutral-1 p-gui-m shadow-gui-m ring-1 ring-gui-neutral-4-transparent outline-none duration-gui ease-gui motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-closed:animate-out motion-safe:data-closed:fade-out-0">
-            <Popover.Title className="font-gui-medium">Combinations no state shows</Popover.Title>
-            <ul className="list-disc pl-gui-l text-gui-neutral-8">
-              {uncovered.map((combination) => (
-                <li key={combination}>{combination}</li>
-              ))}
-            </ul>
-            <p className="pt-gui-xs font-gui-medium">Left out because no real account can be in them</p>
-            <ul className="list-disc pl-gui-l text-gui-neutral-8">
-              {excluded.map((combination) => (
-                <li key={combination}>{combination}</li>
-              ))}
-            </ul>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    <li className="flex">
+      <a
+        href={`#${id}`}
+        aria-current={current ? "location" : undefined}
+        className={cn(
+          "flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none",
+          muted ? "text-gui-neutral-7" : "text-gui-neutral-10",
+        )}
+      >
+        {children}
+      </a>
+    </li>
   );
 }
 
-/**
- * A titled group of screens, after Figma's sections: a light fill and outline
- * in the section's hue, with the title in a bold chip just above the
- * section's top-left corner, outside it.
- */
-function HubSection<T extends Inputs>({ section, renderCard }: { section: Section<T>; renderCard: (item: Item<T>) => ReactNode }) {
-  const headingId = `section-${section.id}`;
+/** Copies every open comment in the review, state by state, as Markdown for a coding agent. */
+function CopyComments<T extends Inputs>({ manifest }: { manifest: Manifest<T> }) {
+  const { annotations } = useReview(manifest);
+  const open = annotations.filter((a) => a.status === "open");
+  const states = new Set(open.map((a) => a.stateId)).size;
+  const copy = () => {
+    void navigator.clipboard
+      .writeText(formatReview(manifest, annotations))
+      .then(() =>
+        toast.success(`Copied ${open.length} ${open.length === 1 ? "comment" : "comments"} from ${states} ${states === 1 ? "state" : "states"}`, {
+          description: "Each with its state’s URL and inputs, ready to paste to your agent.",
+        }),
+      )
+      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+  };
   return (
-    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className="flex max-w-full flex-col gap-gui-xxs">
-      <h2
-        id={headingId}
-        className="w-fit rounded-gui-xs bg-gui-section-chip px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-section-chip-text"
-      >
-        {section.title}
-      </h2>
-      {/* M padding and gap leave room for a hovered card's fill, which extends XS past the card. */}
-      <ul className="flex flex-wrap gap-gui-m rounded-gui-s bg-gui-section-fill p-gui-m inset-ring inset-ring-gui-section-edge">
-        {section.items.map(renderCard)}
-      </ul>
+    <Button focusableWhenDisabled disabled={open.length === 0} onClick={copy}>
+      <CopyIcon aria-hidden />
+      Copy comments for your agent
+      {open.length > 0 ? (
+        <span className="rounded-gui-xs bg-gui-neutral-9 px-gui-xxs font-gui-data text-gui-xs text-gui-neutral-4 tabular-nums">
+          {open.length}
+          <span className="sr-only"> open</span>
+        </span>
+      ) : null}
+    </Button>
+  );
+}
+
+/** One section: its title and question on the left, its states to the right. Stacks on phones. */
+function SectionRow({
+  id,
+  title,
+  why,
+  aside,
+  last,
+  children,
+}: Pick<Section, "id" | "title" | "why"> & { aside?: ReactNode; last?: boolean; children: ReactNode }) {
+  const headingId = `${id}-title`;
+  return (
+    <section
+      id={id}
+      aria-labelledby={headingId}
+      className={cn("flex scroll-mt-gui-m flex-col gap-gui-m py-gui-m lg:flex-row lg:gap-gui-xl", !last && "gui-divider-bottom")}
+    >
+      <div className="flex shrink-0 flex-col gap-gui-xxs lg:w-46">
+        <h2 id={headingId} className="text-gui-s font-gui-heavy">
+          {title}
+        </h2>
+        <p className="text-gui-s text-gui-neutral-7">{why}</p>
+        {aside}
+      </div>
+      {/* Top padding leaves room for a flow's fanned-out cards. */}
+      <ul className="flex flex-wrap gap-gui-l pt-gui-xxs">{children}</ul>
     </section>
   );
 }
@@ -161,63 +267,83 @@ function StateCard<T extends Inputs>({
   href,
   viewport,
   comments,
+  viewed,
   thumbnail,
 }: {
   item: Item<T>;
   href: string;
   viewport: "desktop" | "mobile";
   comments: number;
+  viewed: boolean;
   thumbnail: ReactNode;
 }) {
-  const chips = [item.kind === "sequence" ? `${item.steps.length} steps` : null, item.origin === "code-only" ? "Not in designs" : null].filter(
-    (chip): chip is string => chip !== null,
-  );
+  const details = chipText(item, viewed);
   return (
     <li className="flex">
-      {/*
-        Named by the title alone; the description and chips are its description.
-        At rest it's just the image and text. The hover and focus fill is a
-        pseudo-element extending XS past the card on every side, so nothing moves.
-      */}
+      {/* Named by the title alone; the description and chips are its description. */}
       <Link
         href={href}
         aria-labelledby={`card-${item.id}-title`}
         aria-describedby={`card-${item.id}-details`}
         onClick={rememberScroll}
-        className="relative isolate flex w-min flex-col gap-gui-xs outline-none before:absolute before:-inset-gui-xs before:-z-10 before:rounded-gui-m before:transition-colors before:duration-gui before:ease-gui hover:before:bg-gui-section-card focus-visible:before:bg-gui-section-card focus-visible:before:gui-focus-ring active:gui-press active:before:bg-gui-section-card-hover motion-reduce:before:transition-none"
+        className="group flex w-min flex-col gap-gui-xs rounded-gui-s outline-offset-4 outline-none focus-visible:gui-focus-ring active:gui-press"
       >
-        <Thumbnail viewport={viewport}>{thumbnail}</Thumbnail>
-        {comments > 0 ? (
-          <Badge className="absolute top-gui-xs right-gui-xs">
-            <ChatCircleIcon aria-hidden />
-            <span className="tabular-nums">{comments}</span>
-            <span className="sr-only">{comments === 1 ? "open comment" : "open comments"}</span>
-          </Badge>
-        ) : null}
-        <div className="flex flex-1 flex-col gap-gui-xxs">
-          <div className="flex items-start justify-between gap-gui-xs">
-            <h3 id={`card-${item.id}-title`} className="text-gui-s font-gui-medium">
-              {item.title}
-            </h3>
-            {chips.length > 0 ? (
-              // Code-only states are flag-, entitlement- or loading-gated, so no design shows them.
-              // Hidden here because the description below already reads them out.
-              <span aria-hidden className="flex shrink-0 gap-gui-xxs pt-gui-xxs">
-                {chips.map((chip) => (
-                  <Badge key={chip} variant="surface">
-                    {chip}
-                  </Badge>
-                ))}
-              </span>
-            ) : null}
-          </div>
-          {/* Neutral 8, not 7: Neutral 7 drops under 4.5:1 on the tinted cards. */}
-          <p id={`card-${item.id}-details`} className="text-gui-s text-gui-neutral-8">
+        <div className="relative">
+          {item.kind === "sequence" ? <FlowStack /> : null}
+          <Thumbnail
+            viewport={viewport}
+            size="card"
+            className="transition-shadow duration-gui ease-gui group-hover:shadow-gui-m group-hover:ring-gui-neutral-6 motion-reduce:transition-none"
+          >
+            {thumbnail}
+          </Thumbnail>
+          <CornerChips comments={comments} viewed={viewed} />
+          <FooterChips item={item} />
+        </div>
+        <div className="flex flex-col">
+          <h3 id={`card-${item.id}-title`} className="line-clamp-1 text-gui-s">
+            {item.title}
+          </h3>
+          <p id={`card-${item.id}-details`} className="text-gui-xs text-gui-neutral-7">
             {item.why}
-            {chips.length > 0 ? <span className="sr-only">{` ${chips.join(", ")}.`}</span> : null}
+            {comments > 0 ? <span className="sr-only">{` ${comments} open ${comments === 1 ? "comment" : "comments"}.`}</span> : null}
+            {details ? <span className="sr-only">{` ${details}.`}</span> : null}
           </p>
         </div>
       </Link>
+    </li>
+  );
+}
+
+/** Two blank cards fanned out behind a flow's first screen, so a flow reads as several screens. */
+function FlowStack() {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="absolute inset-0 translate-x-gui-m -translate-y-gui-xs rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border transition-transform duration-gui ease-gui group-hover:translate-x-gui-l motion-reduce:transition-none"
+      />
+      <span
+        aria-hidden
+        className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-transform duration-gui ease-gui group-hover:translate-x-gui-s motion-reduce:transition-none"
+      />
+    </>
+  );
+}
+
+/** A combination no state shows: its inputs in a dashed outline where the screen would be. */
+function UncoveredCard<T extends Inputs>({ combination }: { combination: Uncovered<T> }) {
+  return (
+    <li className="flex w-min flex-col gap-gui-xs">
+      <div className="flex gui-thumb-card flex-col justify-center gap-gui-xxs rounded-gui-s px-gui-m font-gui-data text-gui-xs outline-1 -outline-offset-1 outline-gui-neutral-5 outline-dashed">
+        {Object.entries(combination.set).map(([id, value]) => (
+          <span key={id}>{`${id}: ${String(value)}`}</span>
+        ))}
+      </div>
+      <div className="flex flex-col">
+        <h3 className="text-gui-s">{combination.title}</h3>
+        <p className="text-gui-xs text-gui-neutral-7">No state yet</p>
+      </div>
     </li>
   );
 }

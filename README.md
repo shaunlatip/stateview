@@ -4,10 +4,11 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 ## Try it
 
-- `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
-- Open a state to see the real page in that state. `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut.
-- `C` (or Comment in the review bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
-- Each comment is saved with the state it was made in, as a numbered pin that stays on its element. Hover a pin to read it; click it to edit or delete it. The review bar’s ⋮ menu can hide pins, copy the state's open comments as Markdown for a coding agent (state URL, inputs, and each element's selector, React components and HTML), or delete them all (with undo).
+- `/` is the hub: every state for the change, one row per section, with live thumbnails. The index on the left jumps to a section, and the button at the top right copies every open comment for a coding agent.
+- Open a state to see the real page in that state, with a filmstrip of every state down the left. `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut.
+- `C` (or Comment in the viewer bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
+- Each comment is saved with the state it was made in, as a numbered pin that stays on its element. Hover a pin to read it; click it to edit or delete it. The viewer bar’s ⋮ menu can hide pins, copy the state's open comments as Markdown for a coding agent (state URL, inputs, and each element's selector, React components and HTML), copy a link to the state, or delete its comments (with undo).
+- `S` (or the sliders button) opens the state panel: every input the screen reads, each one editable, kept in the URL.
 
 The sample screen has one bug on purpose: viewers can see Remove buttons. The "Viewer checking who's on the team" state shows it.
 
@@ -35,7 +36,7 @@ Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind
 
 ## Design language
 
-Stateview's own UI (hub, review bar, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app uses the shadcn kit in `src/components/ui` with its own brand, a fictional product called Halcyon: blue, orange and cool-grey tokens in `src/sample-app/halcyon.css`, scoped to `.halcyon`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
+Stateview's own UI (hub, viewer bar, filmstrip, state panel, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app uses the shadcn kit in `src/components/ui` with its own brand, a fictional product called Halcyon: blue, orange and cool-grey tokens in `src/sample-app/halcyon.css`, scoped to `.halcyon`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
 
 **Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/stateview/theme.css`. Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
 
@@ -46,7 +47,7 @@ Without them, Stateview's UI falls back to the system sans-serif and nothing els
 
 ## Where to look
 
-- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx`, `focus-view.tsx` and `focus-bar.tsx` (the review screens), `store.ts` (comments in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer) and `describe-element.ts` (an element's name, selector, HTML and React components).
+- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx` and `focus-view.tsx` (the two screens), `focus-bar.tsx`, `filmstrip.tsx` and `state-panel.tsx` (the viewer's bar, state list and input panel), `thumbnail.tsx` and `card-chips.tsx` (state cards), `logo.tsx`, `agent-export.ts` (comments as Markdown for an agent), `store.ts` (comments and opened states in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer) and `describe-element.ts` (an element's name, selector, HTML and React components).
 - `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `manifest.ts` lists the states for this change.
 - `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state).
 
@@ -76,15 +77,15 @@ The sample screen's layout follows the Team Settings page of Vercel's [Next.js S
 
 A running list of interaction and visual details, kept while building.
 
-- Thumbnails are the real screen rendered at 1152 px and scaled to a quarter, so they always match the build. They are inert and hidden from assistive tech, and `content-visibility: auto` skips the ones far off screen.
+- Thumbnails are the real screen rendered at 1088 px and scaled down to the card, so they always match the build. They are inert and hidden from assistive tech, animations inside them are off (a loading skeleton doesn't pulse in every card), and `content-visibility: auto` skips the ones far off screen.
 - The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
 - The whole state card is one link, named by its title and described by its why line and chips, so element pickers and screen readers each get one clear target.
-- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors: a light fill and outline in the section's hue, cards in a stronger tint of the same hue, and the title in a bold chip with black or white text, whichever reads on it.
-- Sections hug their cards and wrap inside a 1200 px column, so one-card sections share a row and every section has even padding.
-- What the review leaves out sits behind a "combinations not covered" popover in the header, so the header stays one row.
-- Coming back to the hub (Escape, All states or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
-- The review bar floats over the page instead of framing it, so the app keeps its full width. It samples the colour behind it and takes the opposite scheme, so it stays distinct from any app. Its text wraps instead of truncating. It stays out of the way: it shows on any review action (a shortcut, a new state, a new comment) or when the pointer nears the bottom of the window, and tucks away after 6 s of quiet. A keyboard action brings it back without animation, since animating something pressed that often makes it feel slow. It stays up in comment mode, while its menu is open and while it has keyboard focus.
-- The bar’s text is two lines: the section as a small header (“Main flows”) over the state’s title. A step in a flow adds its name and a 1/4 chip on the right.
+- Each section is a row: its title and why line on the left, its cards wrapping on the right. Below 1024 px the title goes above the cards. The index marks the section at the top of the window.
+- A card shows a light "New" badge until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards with its step count; the stack fans out on hover.
+- Combinations of inputs that no state shows are the last row, "Not covered", as dashed cards listing the inputs, with the combinations left out on purpose beside them.
+- Coming back to the hub (Escape, the logo or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
+- The viewer bar runs across the top and is always dark, so it reads as Stateview's frame around the app. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. On phones the filmstrip starts closed and covers the app when opened.
+- The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.
 - Shortcuts don't fire while typing, inside a radio group or menu, or inside the comment popover. Escape first closes the comment tools; only a second Escape leaves the state.

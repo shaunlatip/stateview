@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Collapsible } from "@base-ui/react/collapsible";
+import { createPortal } from "react-dom";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { CaretRightIcon } from "@phosphor-icons/react";
@@ -263,10 +264,8 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
   const number = composer?.kind === "new" ? ordered.length + 1 : editing ? ordered.indexOf(editing) + 1 : 0;
   const draftPosition = composer?.kind === "new" ? positions[composer.id] : undefined;
 
-  return (
-    <ThemeScope>
-      {target && box ? <Highlight box={box} /> : null}
-
+  const pinNodes = (
+    <>
       {pinsVisible
         ? ordered.map((annotation, index) => {
             const position = positions[annotation.id];
@@ -305,6 +304,16 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
           {number}
         </span>
       ) : null}
+    </>
+  );
+  const pinLayer = pinLayerOf(root);
+
+  return (
+    <ThemeScope>
+      {target && box ? <Highlight box={box} /> : null}
+
+      {/* Inside the app's own scroller when it has one, so pins scroll with the page they sit on. */}
+      {pinLayer ? createPortal(<ThemeScope>{pinNodes}</ThemeScope>, pinLayer) : pinNodes}
 
       <Popover.Root open={composer !== null && subject !== undefined} onOpenChange={onOpenChange}>
         <Popover.Portal>
@@ -382,8 +391,8 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
   );
 }
 
-// Keeps the composer clear of the viewport edges and of the review bar along the bottom.
-const BAR_CLEARANCE = { top: 11, right: 11, left: 11, bottom: 72 };
+// Keeps the composer clear of the viewport edges and of the viewer bar along the top (45px tall).
+const BAR_CLEARANCE = { top: 56, right: 11, left: 11, bottom: 11 };
 
 const DOCK_INSET = 22;
 const DOCK_GAP = 36;
@@ -489,18 +498,33 @@ function CodeDetails({ element }: { element: AnnotatedElement }) {
   );
 }
 
-/** Pin positions in page coordinates, so pins scroll with the page without being re-measured. */
+/**
+ * Where pins go: the nearest `[data-pin-layer]` around the screen (the
+ * viewer's scrolling app frame, which must be positioned), or the page.
+ */
+function pinLayerOf(root: Element | null) {
+  return root?.closest<HTMLElement>("[data-pin-layer]") ?? null;
+}
+
+/**
+ * Pin positions in the pin layer's scrolled coordinates (or the page's), so
+ * pins scroll with the page without being re-measured.
+ */
 function measurePins(root: Element, placed: { id: string; element: Element | null; anchor: Anchor }[]) {
   const positions: Record<string, PinPosition> = {};
+  const layer = pinLayerOf(root);
+  const origin = layer
+    ? { x: layer.scrollLeft - layer.getBoundingClientRect().left, y: layer.scrollTop - layer.getBoundingClientRect().top }
+    : { x: scrollX, y: scrollY };
   const screen = root.getBoundingClientRect();
   let detached = 0;
   for (const { id, element, anchor } of placed) {
     if (element) {
       const rect = element.getBoundingClientRect();
-      positions[id] = { left: rect.left + scrollX + anchor.x * rect.width, top: rect.top + scrollY + anchor.y * rect.height, detached: false };
+      positions[id] = { left: rect.left + origin.x + anchor.x * rect.width, top: rect.top + origin.y + anchor.y * rect.height, detached: false };
     } else {
       // The element isn't on this screen (removed, or the app changed): dock the pin at the screen's top right.
-      positions[id] = { left: screen.right + scrollX - DOCK_INSET, top: screen.top + scrollY + DOCK_INSET + detached++ * DOCK_GAP, detached: true };
+      positions[id] = { left: screen.right + origin.x - DOCK_INSET, top: screen.top + origin.y + DOCK_INSET + detached++ * DOCK_GAP, detached: true };
     }
   }
   return positions;

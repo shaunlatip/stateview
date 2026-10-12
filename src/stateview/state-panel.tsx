@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
-import { DeviceMobileIcon, LinkSimpleIcon, MonitorIcon, SlidersIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { DeviceMobileIcon, MonitorIcon } from "@phosphor-icons/react";
 import { valueLabel, type Input, type InputClass, type Inputs, type Manifest } from "./manifest";
-import { Button, SegmentedControl, Select, Switch, ThemeScope, Tooltip, type ControlOption } from "./ui";
-import { useBackdropScheme } from "./use-backdrop-scheme";
+import { SegmentedControl, Select, Switch, ThemeScope, type ControlOption } from "./ui";
 
 const GROUPS: { id: InputClass; title: string }[] = [
   { id: "who", title: "Who" },
@@ -39,21 +37,17 @@ type StatePanelProps<T extends Inputs> = {
   /** The inputs the screen is rendering now: the state's own, plus any the reviewer changed. */
   inputs: T;
   onChange: (id: keyof T & string, value: string) => void;
-  onCopyLink: () => void;
   onClose: () => void;
   /** Opened from the keyboard: take focus so the next Tab lands on the first control. */
   focusOnOpen: boolean;
 };
 
 /**
- * Every input the screen reads, grouped by class, each one editable. Floats
- * over the top right like the review bar floats over the bottom, and takes
- * the scheme opposite the content behind it.
+ * Every input the screen reads, grouped by class, each one editable. Hangs
+ * from the viewer bar over the top right of the app, dark like the bar.
  */
-export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChange, onCopyLink, onClose, focusOnOpen }: StatePanelProps<T>) {
+export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
   const localRef = useRef<HTMLElement>(null);
-  const scheme = useBackdropScheme(localRef);
-  const titleId = useId();
 
   useEffect(() => {
     if (focusOnOpen) localRef.current?.focus();
@@ -78,34 +72,19 @@ export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChan
       id={id}
       ref={setRefs}
       tabIndex={-1}
-      aria-labelledby={titleId}
+      aria-label="State"
       data-state-panel=""
       onKeyDown={onKeyDown}
-      className={cn(
-        "fixed top-gui-m right-gui-m z-40 flex w-100 gui-panel-height flex-col rounded-gui-l bg-gui-toolbar shadow-gui-m ring-1 ring-gui-neutral-4-transparent outline-none max-sm:left-gui-s max-sm:w-auto motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-2 motion-safe:duration-gui-large motion-safe:ease-gui-large",
-        scheme === "dark" && "dark scheme-dark",
-      )}
+      className="dark fixed top-(--viewer-bar) right-gui-s z-40 mt-gui-xs flex w-92 gui-panel-height flex-col rounded-gui-s bg-gui-toolbar shadow-gui-m ring-1 ring-gui-neutral-4-transparent outline-none scheme-dark max-sm:left-gui-s max-sm:w-auto motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-gui-large motion-safe:ease-gui-large"
     >
-      <header className="flex shrink-0 items-center gap-gui-xs px-gui-l pt-gui-m pb-gui-s">
-        <SlidersIcon aria-hidden />
-        {/* Same size as the group headings; the heavier weight marks it as the panel's title. */}
-        <h2 id={titleId} className="flex-1 text-gui-m font-gui-heavy">
-          State
-        </h2>
-        <Tooltip label="Copy link to this state" side="bottom">
-          <Button variant="toolbar" size="icon" aria-label="Copy link to this state" onClick={onCopyLink} className="-me-gui-s">
-            <LinkSimpleIcon aria-hidden />
-          </Button>
-        </Tooltip>
-      </header>
-      <div className="@container flex min-h-0 flex-col gap-gui-l overflow-y-auto overscroll-contain px-gui-l pt-gui-xs pb-gui-l">
+      <div className="@container flex min-h-0 flex-col gap-gui-l overflow-y-auto overscroll-contain px-gui-l pt-gui-m pb-gui-l">
         {GROUPS.map((group) => {
           const groupInputs = manifest.inputs.filter((input) => input.class === group.id);
           if (groupInputs.length === 0) return null;
           return (
             <InputGroup key={group.id} title={group.title}>
               {groupInputs.map((input) => (
-                <InputRow key={input.id} input={input} value={inputs[input.id]} scheme={scheme} onChange={(value) => onChange(input.id, value)} />
+                <InputRow key={input.id} input={input} value={inputs[input.id]} scheme="dark" onChange={(value) => onChange(input.id, value)} />
               ))}
             </InputGroup>
           );

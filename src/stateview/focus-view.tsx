@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { stateContext } from "./agent-export";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
+import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
-import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
+import { findFrameIndex, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
 import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
 import { ThemeScope, buttonVariants } from "./ui";
@@ -36,7 +38,16 @@ type FocusViewProps<T extends Inputs> = {
   annotationLayer: AnnotationLayer;
 };
 
-/** The real screen in one state, with Stateview's review bar on top. */
+// From this width the filmstrip opens by default and takes its own column; below it, it overlays the app.
+const WIDE = "(min-width: 768px)";
+
+function subscribeWide(onChange: () => void) {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
 export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer }: FocusViewProps<T>) {
   const router = useRouter();
   const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
@@ -58,6 +69,25 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     // A new comment's pin should be visible once it's saved.
     if (!commenting) setPinsVisible(true);
   };
+
+  const wide = useSyncExternalStore(
+    subscribeWide,
+    () => window.matchMedia(WIDE).matches,
+    () => true,
+  );
+  // Null until the reviewer toggles it: open on wide screens, closed on phones.
+  const [stripChoice, setStripChoice] = useState<boolean | null>(null);
+  const stripOpen = stripChoice ?? wide;
+  const stripId = useId();
+
+  const markViewed = review.markViewed;
+  const itemId = frame?.item.id;
+  useEffect(() => {
+    if (itemId) markViewed(itemId);
+  }, [itemId, markViewed]);
+
+  const commentsOn = (item: Item<T>) =>
+    review.annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
 
   const panelId = useId();
   const panelRef = useRef<HTMLElement>(null);
@@ -146,20 +176,6 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   return (
     <>
       <title>{`${frame.item.title} · Stateview`}</title>
-      <ThemeScope className={cn("grid min-h-dvh", viewportOf(manifest, inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
-        {/*
-         * Keyed by state and inputs so the screen starts fresh from its inputs
-         * every time. Bottom padding on the app's root keeps the end of the
-         * page clear of the review bar, painted in the app's own background.
-         */}
-        <div
-          key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
-          ref={setScreen}
-          className={cn("host-frame grid *:pb-24", commenting && "cursor-crosshair **:cursor-crosshair")}
-        >
-          {render(inputs)}
-        </div>
-      </ThemeScope>
       <FocusBar
         frame={frame}
         position={index + 1}
@@ -167,28 +183,59 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         hubHref={HUB_HREF}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
+        strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
         commenting={commenting}
         onToggleCommenting={toggleCommenting}
         commentCount={openCount}
         pinsVisible={pinsVisible}
         onTogglePins={() => setPinsVisible(!pinsVisible)}
         onCopyComments={openCount > 0 ? copyComments : null}
+        onCopyLink={copyLink}
         onDeleteComments={annotations.length > 0 ? deleteComments : null}
-        activity={`${frame.key}:${annotations.length}`}
         panel={{ id: panelId, open: panel !== "closed", onToggle: () => (panel === "closed" ? setPanel("pointer") : closePanel()) }}
         panelTriggerRef={panelTriggerRef}
       />
+      <Filmstrip
+        id={stripId}
+        manifest={manifest}
+        currentId={frame.item.id}
+        open={stripOpen}
+        auto={stripChoice === null}
+        viewed={review.viewed}
+        commentsOn={commentsOn}
+        render={render}
+        // On a phone the strip covers the app, so picking a state puts it away.
+        onPick={() => {
+          if (!wide) setStripChoice(false);
+        }}
+      />
+      {/*
+       * The app's window: below the bar and, on wide screens, beside the open
+       * filmstrip. The transform makes this box the app's viewport for fixed
+       * elements (a fixed sidebar stays beside the filmstrip, not under it),
+       * and the app scrolls inside it rather than the page.
+       */}
+      <ThemeScope
+        className={cn(
+          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center transition-all duration-gui-large ease-gui-large motion-reduce:transition-none",
+          stripOpen && "md:left-(--viewer-strip)",
+        )}
+      >
+        <div className={cn("w-full transform-gpu overflow-hidden", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}>
+          <div data-pin-layer="" className="relative grid h-full overflow-y-auto overscroll-contain">
+            {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
+            <div
+              key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
+              ref={setScreen}
+              className={cn("host-frame grid", commenting && "cursor-crosshair **:cursor-crosshair")}
+            >
+              {render(inputs)}
+            </div>
+          </div>
+        </div>
+      </ThemeScope>
       {panel !== "closed" ? (
-        <StatePanel
-          id={panelId}
-          ref={panelRef}
-          manifest={manifest}
-          inputs={inputs}
-          onChange={setInput}
-          onCopyLink={copyLink}
-          onClose={closePanel}
-          focusOnOpen={panel === "keyboard"}
-        />
+        <StatePanel id={panelId} ref={panelRef} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
       ) : null}
       {/* Keyed by state so a half-written comment never carries over to another state. */}
       <Layer
@@ -225,24 +272,6 @@ function inputParsers<T extends Inputs>(manifest: Manifest<T>) {
 function withOverrides<T extends Inputs>(inputs: T, overrides: Record<string, string | null>): T {
   const set = Object.entries(overrides).filter(([id, value]) => value !== null && id in inputs);
   return { ...inputs, ...Object.fromEntries(set) };
-}
-
-/** A header for copied comments, so an agent can open exactly the state the reviewer saw. */
-function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>, inputs: T) {
-  const changed = new Set<string>(changedInputs(manifest, inputs));
-  const list = manifest.inputs
-    .map((input) => `${input.id}=${inputs[input.id]}${changed.has(input.id) ? " (changed)" : ""}`)
-    .join(", ");
-  const step = frame.step ? ` · step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : "";
-  // With inputs changed in the state panel, the current URL carries them; otherwise the state's own link.
-  const edited = manifest.inputs.some((input) => inputs[input.id] !== frame.inputs[input.id]);
-  return [
-    `## State: ${frame.section.title} › ${frame.item.title}${step}${edited ? " (inputs changed by the reviewer)" : ""}`,
-    `URL: ${edited ? window.location.href : `${window.location.origin}${frameHref(manifest, frame)}`}`,
-    `Inputs: ${list}`,
-    "",
-    "",
-  ].join("\n");
 }
 
 function UnknownState({ id }: { id: string | null }) {

@@ -315,13 +315,6 @@
 
   --ease-gui: var(--motion-easing);
   --ease-gui-large: var(--motion-large-easing);
-
-  --color-gui-section-fill: var(--section-fill);
-  --color-gui-section-edge: var(--section-edge);
-  --color-gui-section-card: var(--section-card);
-  --color-gui-section-card-hover: var(--section-card-hover);
-  --color-gui-section-chip: var(--section-chip);
-  --color-gui-section-chip-text: var(--section-chip-text);
 }
 
 /* Keyboard focus: the theme's outline, kept separate from the component edge. */
@@ -364,19 +357,32 @@
 }
 
 /*
- * The state panel stops above the review bar: the bar is a two-line title
- * (XS and S lines, XXS padding) inside XXS padding, S from the bottom, with
- * an S gap above it.
+ * The viewer's frame: a bar along the top, one toolbar control tall inside
+ * XXS padding, and a filmstrip down the left, one strip thumbnail wide inside
+ * S padding. The app under review fills the rest.
  */
+.stateview-theme {
+  --viewer-bar: calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-xxs));
+  --viewer-strip: calc(var(--thumb-strip-width) * 1px + 2 * var(--space-s));
+  --thumb-strip-width: 144;
+}
+
+/* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
 @utility gui-panel-height {
-  max-height: calc(
-    100dvh - var(--space-m) - (var(--line-xs) + var(--line-s) + 4 * var(--space-xxs)) - 2 * var(--space-s)
-  );
+  max-height: calc(100dvh - var(--viewer-bar) - 2 * var(--space-xs));
 }
 
 /* Edges and dividers are drawn with inset shadows, never native borders. */
 @utility gui-divider-top {
   box-shadow: inset 0 var(--border-s) 0 0 var(--border-default-color);
+}
+
+@utility gui-divider-bottom {
+  box-shadow: inset 0 calc(-1 * var(--border-s)) 0 0 var(--border-default-color);
+}
+
+@utility gui-divider-end {
+  box-shadow: inset calc(-1 * var(--border-s)) 0 0 0 var(--border-default-color);
 }
 
 @utility gui-divider-vertical {
@@ -396,64 +402,32 @@
 }
 
 /*
- * Hub sections, color-coded by the family of question they answer, after
- * Figma's section colors: a light fill and an outline in the section's hue,
- * a stronger tint of it behind a hovered card, and the title in a bold chip
- * above the section. Chips are dark enough for white text (purple and teal,
- * mixed 40% toward black: about 6.6:1 and 5.3:1) or light enough for black
- * (lime, greys). Fills mix with Neutral 1, so they flip with dark mode.
+ * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90), both
+ * 16:10. Sizes are unitless so the screen inside can scale from them: a
+ * desktop render (1088px wide) fills the width; a phone render (375px wide)
+ * shows its top 400px.
  */
-.stateview-theme [data-tone="base"] {
-  --section-fill: var(--neutral-1);
-  --section-edge: var(--neutral-4);
-  --section-card: color-mix(in srgb, var(--neutral-10) 5%, var(--neutral-1));
-  --section-card-hover: color-mix(in srgb, var(--neutral-10) 11%, var(--neutral-1));
-  --section-chip: var(--neutral-3);
-  --section-chip-text: var(--neutral-10);
+@utility gui-thumb-card {
+  --thumb-width: 208;
+  --thumb-height: 130;
+  width: calc(var(--thumb-width) * 1px);
+  height: calc(var(--thumb-height) * 1px);
 }
 
-.stateview-theme [data-tone="who"] {
-  --section-fill: color-mix(in srgb, var(--color-4) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-4) 55%, var(--neutral-1));
-  --section-card: color-mix(in srgb, var(--color-4) 18%, var(--neutral-1));
-  --section-card-hover: color-mix(in srgb, var(--color-4) 30%, var(--neutral-1));
-  --section-chip: color-mix(in srgb, var(--color-4) 60%, #000000);
-  --section-chip-text: #ffffff;
+@utility gui-thumb-strip {
+  --thumb-width: var(--thumb-strip-width);
+  --thumb-height: 90;
+  width: calc(var(--thumb-width) * 1px);
+  height: calc(var(--thumb-height) * 1px);
 }
 
-.stateview-theme [data-tone="system"] {
-  --section-fill: color-mix(in srgb, var(--color-2) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-2) 55%, var(--neutral-1));
-  --section-card: color-mix(in srgb, var(--color-2) 18%, var(--neutral-1));
-  --section-card-hover: color-mix(in srgb, var(--color-2) 30%, var(--neutral-1));
-  --section-chip: color-mix(in srgb, var(--color-2) 60%, #000000);
-  --section-chip-text: #ffffff;
+@utility gui-thumb-desktop {
+  width: 1088px;
+  scale: calc(var(--thumb-width) / 1088);
 }
 
-.stateview-theme [data-tone="data"] {
-  --section-fill: color-mix(in srgb, var(--color-1) 8%, var(--neutral-1));
-  --section-edge: color-mix(in srgb, var(--color-1) 55%, var(--neutral-1));
-  --section-card: color-mix(in srgb, var(--color-1) 18%, var(--neutral-1));
-  --section-card-hover: color-mix(in srgb, var(--color-1) 30%, var(--neutral-1));
-  --section-chip: var(--color-1);
-  --section-chip-text: #000000;
-}
-
-.stateview-theme [data-tone="nearby"] {
-  --section-fill: var(--neutral-3);
-  --section-edge: var(--neutral-5);
-  --section-card: color-mix(in srgb, var(--neutral-10) 6%, var(--neutral-3));
-  --section-card-hover: color-mix(in srgb, var(--neutral-10) 12%, var(--neutral-3));
-  --section-chip: var(--neutral-5);
-  --section-chip-text: var(--neutral-10);
-}
-
-.stateview-theme {
-  /* Thumbnail width: 18rem, narrowed on small phones so a one-card section still fits beside the page padding. */
-  --hub-thumb: min(17rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
-}
-
-@utility gui-thumb-width {
-  width: var(--hub-thumb);
+@utility gui-thumb-mobile {
+  width: 375px;
+  scale: calc(var(--thumb-height) / 400);
 }
 
