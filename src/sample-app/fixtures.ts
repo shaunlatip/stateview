@@ -15,6 +15,7 @@ export type Member = {
   /** Provisioned by the identity provider; only meaningful when the SSO beta is on. */
   sso: boolean;
   isYou: boolean;
+  lastActive: string;
 };
 
 export type Invite = {
@@ -35,14 +36,15 @@ const you = (role: Role): Member => ({
   role,
   sso: false,
   isYou: true,
+  lastActive: "Active now",
 });
 
 const team: Omit<Member, "isYou">[] = [
-  { id: "m-priya", name: "Priya Raman", email: "priya@halcyon.dev", role: "owner", sso: false },
-  { id: "m-daniel", name: "Daniel Kim", email: "daniel.kim@halcyon.dev", role: "member", sso: true },
-  { id: "m-lucia", name: "Lucía Fernández", email: "lucia@halcyon.dev", role: "member", sso: true },
-  { id: "m-tomas", name: "Tomás Novak", email: "tomas@halcyon.dev", role: "viewer", sso: false },
-  { id: "m-aisha", name: "Aisha Bello", email: "aisha.bello@halcyon.dev", role: "member", sso: true },
+  { id: "m-priya", name: "Priya Raman", email: "priya@halcyon.dev", role: "owner", sso: false, lastActive: "2 hours ago" },
+  { id: "m-daniel", name: "Daniel Kim", email: "daniel.kim@halcyon.dev", role: "member", sso: true, lastActive: "Yesterday" },
+  { id: "m-lucia", name: "Lucía Fernández", email: "lucia@halcyon.dev", role: "member", sso: true, lastActive: "12 minutes ago" },
+  { id: "m-tomas", name: "Tomás Novak", email: "tomas@halcyon.dev", role: "viewer", sso: false, lastActive: "3 weeks ago" },
+  { id: "m-aisha", name: "Aisha Bello", email: "aisha.bello@halcyon.dev", role: "member", sso: true, lastActive: "4 days ago" },
 ];
 
 const longNames: [string | null, string][] = [
@@ -58,9 +60,17 @@ const longNames: [string | null, string][] = [
 const firstNames = ["Mei", "Jonas", "Amara", "Rafael", "Ingrid", "Kofi", "Leila", "Mateo", "Hana", "Ravi", "Zoe", "Emeka", "Sofia", "Arjun", "Noor", "Felix"];
 const lastNames = ["Tanaka", "Lindqvist", "Okonkwo", "Silva", "Berg", "Mensah", "Haddad", "Rossi", "Sato", "Iyer", "Laurent", "Eze", "Moreau", "Kapoor", "Aziz", "Weber"];
 const roles: Role[] = ["member", "member", "viewer", "member", "owner", "member", "viewer"];
+const activity = ["5 minutes ago", "1 hour ago", "Yesterday", "3 days ago", "Last week", "2 weeks ago", "Never signed in"];
 
 function manyMembers(): Omit<Member, "isYou">[] {
-  const long = longNames.map(([name, email], i) => ({ id: `m-long-${i}`, name, email, role: roles[i % roles.length], sso: i % 3 === 0 }));
+  const long = longNames.map(([name, email], i) => ({
+    id: `m-long-${i}`,
+    name,
+    email,
+    role: roles[i % roles.length],
+    sso: i % 3 === 0,
+    lastActive: activity[(i * 2) % activity.length],
+  }));
   const regular = Array.from({ length: 39 - long.length }, (_, i) => {
     const first = firstNames[i % firstNames.length];
     const last = lastNames[(i * 5) % lastNames.length];
@@ -70,6 +80,7 @@ function manyMembers(): Omit<Member, "isYou">[] {
       email: `${first}.${last}@halcyon.dev`.toLowerCase(),
       role: roles[(i + 3) % roles.length],
       sso: i % 4 === 1,
+      lastActive: activity[i % activity.length],
     };
   });
   return [...long, ...regular];

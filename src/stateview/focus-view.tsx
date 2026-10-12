@@ -107,10 +107,13 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   return (
     <>
       <title>{`${frame.item.title} · Stateview`}</title>
-      {/* Bottom padding keeps the end of the page clear of the review bar. */}
-      <ThemeScope className={cn("grid min-h-dvh pb-24", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
-        {/* Keyed by state so the screen starts fresh from its inputs every time. */}
-        <div key={frame.key} className="host-frame grid">
+      <ThemeScope className={cn("grid min-h-dvh", viewportOf(manifest, frame.inputs) === "mobile" && "mx-auto w-full max-w-93.75 ring-1 ring-gui-border")}>
+        {/*
+         * Keyed by state so the screen starts fresh from its inputs every time.
+         * Bottom padding on the app's root keeps the end of the page clear of
+         * the review bar, painted in the app's own background.
+         */}
+        <div key={frame.key} className="host-frame grid *:pb-24">
           {render(frame.inputs)}
         </div>
       </ThemeScope>
