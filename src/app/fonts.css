@@ -9,16 +9,16 @@
  */
 @font-face {
   font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskLight.woff2") format("woff2");
-  font-weight: 300;
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
-  font-weight: 400;
+  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskMedium.woff2") format("woff2");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }

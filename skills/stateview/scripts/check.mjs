@@ -21,6 +21,7 @@ const INPUT_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const CLASSES = ["who", "config", "data", "system", "moment", "environment"];
 const SOURCES = ["prop", "flag", "entitlement", "api", "viewport"];
 const ORIGINS = new Set(["design", "code-only"]);
+const TONES = ["base", "who", "system", "data", "nearby"];
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git"]);
 
 /** Limits behind the composition warnings. */
@@ -192,6 +193,9 @@ function checkSections(m, model, f) {
     checkId(section.id, at(path, "id"), sectionIds, "section", "Section", "loading-errors", f);
     f.expect(isText(section.title), "section", at(path, "title"), `Section title should be a short heading, like "Loading & errors"${got(section.title)}.`);
     f.expect(isText(section.why), "section", at(path, "why"), `Section why should say in one sentence why these states matter${got(section.why)}.`);
+    if (section.tone !== undefined) {
+      f.expect(TONES.includes(section.tone), "section", at(path, "tone"), `Section tone should be one of ${TONES.join(", ")}, or left out for "base"${got(section.tone)}.`);
+    }
     const itemsPath = at(path, "items");
     if (!f.expect(Array.isArray(section.items) && section.items.length > 0, "section", itemsPath, `A section needs at least one item; add one or remove the section${got(section.items)}.`)) return;
     section.items.forEach((item, i) => {

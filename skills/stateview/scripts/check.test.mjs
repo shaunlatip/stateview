@@ -86,10 +86,13 @@ test("section", () => {
   const { errors } = check((m) => {
     m.sections[1].id = "happy-path";
     m.sections[2].items = [];
+    m.sections[3].tone = "loud";
+    delete m.sections[4].tone;
   });
   assert.deepEqual(errors.map((e) => [e.rule, e.path]), [
     ["section", "sections[1].id"],
     ["section", "sections[2].items"],
+    ["section", "sections[3].tone"],
   ]);
 });
 

@@ -73,17 +73,21 @@ Each rule is followed by how to apply it in the manifest.
 
 The hub shows sections in the order a design handoff does. Use these titles and this order:
 
-1. **Happy path**: the screen most people see most of the time. Holds the baseline.
-2. **First use**: empty or brand-new accounts.
-3. **Main flows**: the flows the change adds or alters, usually sequences.
-4. **Roles**: who can do what.
-5. **Plan & flags**: entitlements and flags that change what the screen offers.
-6. **Loading & errors**: async states inside the page.
-7. **Long content**: real data at its largest or most extreme.
-8. **Breakpoints**: where the layout reflows.
-9. **Nearby features**: unchanged parts of the page the change could break.
+| Order | Section | Holds | `tone` |
+|---|---|---|---|
+| 1 | **Happy path** | the screen most people see most of the time; holds the baseline | `base` |
+| 2 | **First use** | empty or brand-new accounts | `base` |
+| 3 | **Main flows** | the flows the change adds or alters, usually sequences | `base` |
+| 4 | **Roles** | who can do what | `who` |
+| 5 | **Plan & flags** | entitlements and flags that change what the screen offers | `who` |
+| 6 | **Loading & errors** | async states inside the page | `system` |
+| 7 | **Long content** | real data at its largest or most extreme | `data` |
+| 8 | **Breakpoints** | where the layout reflows | `data` |
+| 9 | **Nearby features** | unchanged parts of the page the change could break | `nearby` |
 
-Omit a section when it has nothing to show. A screen with no roles has no Roles section; don't add a placeholder. Each section's `why` is one sentence saying why this family of states matters for this change ("Who can do what. The change added a viewer role.").
+Omit a section when it has nothing to show. A screen with no roles has no Roles section; don't add a placeholder. Each section's `why` is one sentence saying why this family of states matters for this change ("Who can do what. The change added a viewer role."); it isn't shown on the hub, but it's the section's reason for existing and the checker requires it.
+
+`tone` colors the section on the hub by question family, the way Figma section colors do: `base` for the screen as most people see it, `who` for roles, plans and flags, `system` for loading and errors, `data` for content and layout extremes, `nearby` for unchanged features. Leaving it out means `base`. A section that doesn't fit the list above takes the tone of the family it's closest to.
 
 ## Writing titles, `why` lines and checks
 

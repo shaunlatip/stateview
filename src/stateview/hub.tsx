@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ChatCircleIcon, CheckIcon } from "@phosphor-icons/react";
+import { ChatCircleIcon } from "@phosphor-icons/react";
+import { cn } from "./cn";
 import { changedInputs, frameHref, listFrames, listItems, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { useReview } from "./store";
 import { InputsThumbnail, Thumbnail } from "./thumbnail";
@@ -19,11 +20,9 @@ type HubProps<T extends Inputs> = {
 };
 
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
-  const { reviewed, annotations } = useReview(manifest);
+  const { annotations } = useReview(manifest);
   const frames = listFrames(manifest);
   const items = listItems(manifest);
-  const reviewedCount = items.filter((item) => reviewed.includes(item.id)).length;
-  const nextFrame = frames.find((frame) => !reviewed.includes(frame.item.id)) ?? frames[0];
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
   const commentsOn = (item: Item<T>) =>
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
@@ -39,9 +38,9 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
 
   return (
     <ThemeScope as="main" className="flex-1 bg-gui-neutral-1">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
+      <div className="flex w-full flex-col gap-gui-xl px-gui-m py-gui-xl sm:px-gui-xl">
         <header className="flex flex-col gap-gui-m">
-          <p className="font-gui-brand font-gui-brand-heavy">Stateview</p>
+          <p className="font-gui-brand text-gui-s font-gui-medium text-gui-neutral-7">Stateview</p>
           <div className="flex flex-col gap-gui-xs">
             <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">{manifest.screen}</h1>
             <p className="text-gui-neutral-7">
@@ -49,15 +48,14 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
               <code className="font-gui-data text-gui-neutral-10">{manifest.scope.base}</code> · {manifest.scope.files} files changed
             </p>
             <p className="tabular-nums">
-              {items.length} states in {manifest.sections.length} sections · {reviewedCount} of {items.length} reviewed ·{" "}
-              {manifest.uncovered.length} combinations not covered
+              {items.length} states in {manifest.sections.length} sections · {manifest.uncovered.length} combinations not covered
             </p>
           </div>
-          <Link href={frameHref(manifest, nextFrame)} className={buttonVariants({ className: "w-fit" })}>
-            {reviewedCount === 0 ? "Start review" : reviewedCount === items.length ? "Review again" : "Continue review"}
+          <Link href={frameHref(manifest, frames[0])} className={buttonVariants({ className: "w-fit" })}>
+            Start review
           </Link>
           <details className="group flex max-w-prose flex-col gap-gui-s">
-            <summary className="w-fit cursor-pointer rounded-gui-s py-gui-xs font-gui-medium outline-none marker:text-gui-neutral-7 focus-visible:gui-focus-ring">
+            <summary className="-mx-gui-xs w-fit cursor-pointer rounded-gui-s px-gui-xs py-gui-xs font-gui-medium outline-none transition-colors duration-gui ease-gui marker:text-gui-neutral-7 hover:bg-gui-neutral-3 focus-visible:gui-focus-ring motion-reduce:transition-none">
               What this review doesn’t cover
             </summary>
             <div className="flex flex-col gap-gui-xs rounded-gui-s bg-gui-neutral-2 p-gui-s text-gui-neutral-8 ring-1 ring-gui-neutral-4-transparent">
@@ -77,102 +75,109 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
           </details>
         </header>
 
-        {manifest.sections.map((section) => (
-          <HubSection
-            key={section.id}
-            section={section}
-            reviewed={reviewed}
-            renderCard={(item) => (
-              <StateCard
-                key={item.id}
-                item={item}
-                href={frameHref(manifest, firstFrameOf(item))}
-                reviewed={reviewed.includes(item.id)}
-                comments={commentsOn(item)}
-                thumbnail={thumbnailOf(item)}
-              />
-            )}
-          />
-        ))}
+        {/* Bento: fixed one-card tracks; dense packing lets one-card sections share a row. */}
+        <div className="gui-section-grid grid grid-flow-dense items-start gap-gui-m">
+          {manifest.sections.map((section) => (
+            <HubSection
+              key={section.id}
+              section={section}
+              renderCard={(item) => (
+                <StateCard
+                  key={item.id}
+                  item={item}
+                  href={frameHref(manifest, firstFrameOf(item))}
+                  comments={commentsOn(item)}
+                  thumbnail={thumbnailOf(item)}
+                />
+              )}
+            />
+          ))}
+        </div>
       </div>
     </ThemeScope>
   );
 }
 
-function HubSection<T extends Inputs>({
-  section,
-  reviewed,
-  renderCard,
-}: {
-  section: Section<T>;
-  reviewed: string[];
-  renderCard: (item: Item<T>) => ReactNode;
-}) {
+/** Columns a section spans, by card count. Capped per breakpoint so a span never asks for more tracks than fit. */
+function spanFor(count: number) {
+  if (count >= 3) return "md:col-span-2 xl:col-span-3";
+  if (count === 2) return "md:col-span-2";
+  return undefined;
+}
+
+/**
+ * A titled container of screens, after Figma's sections: a tinted body with
+ * an outline, and the title on a tab at the top-left whose edge steps down
+ * into the body's through a curved tail (Rauno's Next.js dev tools notch).
+ */
+function HubSection<T extends Inputs>({ section, renderCard }: { section: Section<T>; renderCard: (item: Item<T>) => ReactNode }) {
   const headingId = `section-${section.id}`;
-  const done = section.items.filter((item) => reviewed.includes(item.id)).length;
   return (
-    <section aria-labelledby={headingId} className="gui-divider-top flex flex-col gap-gui-m pt-gui-m lg:grid lg:grid-cols-4 lg:gap-gui-xl">
-      <div className="flex flex-col gap-gui-xxs">
+    <section aria-labelledby={headingId} data-tone={section.tone ?? "base"} className={cn("flex flex-col", spanFor(section.items.length))}>
+      {/* Overlaps the body by one edge width and paints over it, hiding the body's top edge under the tab and tail. */}
+      <div className="gui-section-tab-edge relative z-10 -mb-px self-start rounded-tl-gui-l bg-gui-section-fill px-gui-s pt-gui-xs pb-gui-xxs">
         <h2 id={headingId} className="font-gui-heavy">
           {section.title}
         </h2>
-        <p className="text-gui-s text-gui-neutral-7 tabular-nums">
-          {done} of {section.items.length} reviewed
-        </p>
-        <p className="text-gui-s text-gui-neutral-7">{section.why}</p>
+        <svg aria-hidden className="gui-notch-tail w-gui-l" viewBox="0 0 24 24" preserveAspectRatio="none">
+          <path d="M0 0C12 0 12 24 24 24V25H0Z" className="fill-gui-section-fill" />
+          <path d="M0 0C12 0 12 24 24 24" vectorEffect="non-scaling-stroke" className="gui-stroke-edge fill-none stroke-gui-section-edge" />
+        </svg>
       </div>
-      <ul className="flex flex-wrap gap-gui-m lg:col-span-3">{section.items.map(renderCard)}</ul>
+      {/* L radius: the cards' M radius plus the body's S padding, so the corners stay concentric. */}
+      <ul className="flex flex-wrap gap-gui-s rounded-gui-l rounded-tl-none bg-gui-section-fill p-gui-s inset-ring inset-ring-gui-section-edge">
+        {section.items.map(renderCard)}
+      </ul>
     </section>
   );
 }
 
+/** The whole card is the link, so element pickers (Agentation) and pointers hit one target. */
 function StateCard<T extends Inputs>({
   item,
   href,
-  reviewed,
   comments,
   thumbnail,
 }: {
   item: Item<T>;
   href: string;
-  reviewed: boolean;
   comments: number;
   thumbnail: ReactNode;
 }) {
   return (
-    <li className="relative flex w-72 flex-col overflow-hidden rounded-gui-m bg-gui-neutral-1 shadow-gui-s ring-1 ring-gui-border transition duration-gui ease-gui hover:ring-gui-neutral-4 has-focus-visible:gui-focus-ring motion-reduce:transition-none">
-      {thumbnail}
-      {reviewed || comments > 0 ? (
-        <div className="absolute top-gui-xs right-gui-xs flex gap-gui-xxs">
-          {comments > 0 ? (
-            <Badge>
-              <ChatCircleIcon aria-hidden />
-              <span className="tabular-nums">{comments}</span>
-              <span className="sr-only">{comments === 1 ? "open comment" : "open comments"}</span>
-            </Badge>
-          ) : null}
-          {reviewed ? (
-            <Badge variant="strong">
-              <CheckIcon aria-hidden />
-              Reviewed
-            </Badge>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="gui-divider-top flex flex-1 flex-col gap-gui-xxs p-gui-s">
-        <h3 className="font-gui-medium">
-          <Link href={href} className="outline-none after:absolute after:inset-0">
-            {item.title}
-          </Link>
-        </h3>
-        <p className="line-clamp-2 text-gui-s text-gui-neutral-7">{item.why}</p>
-        {item.origin === "code-only" || item.kind === "sequence" ? (
-          <div className="mt-auto flex flex-wrap gap-gui-xxs pt-gui-xs">
-            {item.kind === "sequence" ? <Badge>{item.steps.length} steps</Badge> : null}
-            {item.origin === "code-only" ? <Badge>Code-only</Badge> : null}
-          </div>
+    <li className="flex">
+      {/* Named by the title alone; the description and chips are its description. */}
+      <Link
+        href={href}
+        aria-labelledby={`card-${item.id}-title`}
+        aria-describedby={`card-${item.id}-details`}
+        className="relative flex w-min flex-col rounded-gui-m bg-gui-card p-gui-xxs outline-none transition duration-gui ease-gui hover:bg-gui-card-hover focus-visible:gui-focus-ring active:gui-press motion-reduce:transition-none"
+      >
+        {thumbnail}
+        {comments > 0 ? (
+          <Badge className="absolute top-gui-s right-gui-s">
+            <ChatCircleIcon aria-hidden />
+            <span className="tabular-nums">{comments}</span>
+            <span className="sr-only">{comments === 1 ? "open comment" : "open comments"}</span>
+          </Badge>
         ) : null}
-      </div>
+        <div className="flex flex-1 flex-col gap-gui-xxs px-gui-xs pt-gui-xs pb-gui-xxs">
+          <h3 id={`card-${item.id}-title`} className="text-gui-s font-gui-medium">
+            {item.title}
+          </h3>
+          <div id={`card-${item.id}-details`} className="flex flex-col gap-gui-xs">
+            {/* Neutral 8, not 7: Neutral 7 drops under 4.5:1 on the tinted sections once the card shade is added. */}
+            <p className="text-gui-s text-gui-neutral-8">{item.why}</p>
+            {item.origin === "code-only" || item.kind === "sequence" ? (
+              <div className="flex flex-wrap gap-gui-xxs">
+                {item.kind === "sequence" ? <Badge variant="surface">{item.steps.length} steps</Badge> : null}
+                {/* Code-only states are flag-, entitlement- or loading-gated, so no design shows them. */}
+                {item.origin === "code-only" ? <Badge variant="surface">Not in designs</Badge> : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </Link>
     </li>
   );
 }

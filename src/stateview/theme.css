@@ -83,14 +83,18 @@
   --font-editorial: "Timeless Grotesk", sans-serif;
   /* "Sidebar Geist Mono" maps to the Geist Mono family next/font already loads. */
   --font-data: var(--font-geist-mono), monospace;
-  --weight-ui-regular: 300;
-  --weight-ui-medium: 400;
+  /*
+   * Changed from the export (300/400/600): Light at 12–15px reads thin and grey,
+   * and a 100-weight step between title and body barely registers.
+   */
+  --weight-ui-regular: 400;
+  --weight-ui-medium: 500;
   --weight-ui-heavy: 600;
-  --weight-brand-regular: 300;
-  --weight-brand-medium: 400;
+  --weight-brand-regular: 400;
+  --weight-brand-medium: 500;
   --weight-brand-heavy: 600;
-  --weight-data-regular: 300;
-  --weight-data-medium: 400;
+  --weight-data-regular: 400;
+  --weight-data-medium: 500;
   --weight-data-heavy: 600;
 
   --color-none: transparent;
@@ -130,22 +134,32 @@
   --error-transparent: #ff526333;
 
   --shadow-none: none;
-  --shadow-s: 0px 1px 2px 0px #00000000;
-  --shadow-m: 0px 8px 24px 0px #00000000;
-  --shadow-l: 0px 12px 30px 0px #00000000;
+  /* Changed from the export, whose shadows were fully transparent: hovers and floating surfaces had no lift. */
+  --shadow-s: 0px 1px 2px 0px #0000001f;
+  --shadow-m: 0px 8px 24px 0px #0000001f;
+  --shadow-l: 0px 12px 30px 0px #0000001f;
 
-  font-family: var(--font-ui);
-  font-weight: var(--weight-ui-regular);
-  font-size: var(--size-m);
-  line-height: var(--line-m);
-  letter-spacing: var(--letter-spacing-m);
-  color: var(--neutral-10);
-  text-wrap: pretty;
+  /* Toolbar group fill: Neutral 1 in light, Neutral 2 in dark (Toolbar assignment). */
+  --toolbar-background: var(--neutral-1);
+}
+
+/* Base type for every Stateview surface. In the base layer so utilities on the same element win. */
+@layer base {
+  .stateview-theme {
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-regular);
+    font-size: var(--size-m);
+    line-height: var(--line-m);
+    letter-spacing: var(--letter-spacing-m);
+    color: var(--neutral-10);
+    text-wrap: pretty;
+  }
 }
 
 .dark .stateview-theme,
 .stateview-theme.dark {
   --focus-ring-outline: 2px solid color-mix(in srgb, #ffffff 50%, transparent);
+  --toolbar-background: var(--neutral-2);
 
   --option-badge-background: #2b2b2b;
   --option-badge-foreground: #ffffff;
@@ -178,6 +192,7 @@
 
 /* Registered as `gui-*` utilities (bg-gui-neutral-3, p-gui-m, text-gui-s, rounded-gui-s, …). */
 @theme inline {
+  --color-gui-toolbar: var(--toolbar-background);
   --color-gui-neutral-1: var(--neutral-1);
   --color-gui-neutral-2: var(--neutral-2);
   --color-gui-neutral-3: var(--neutral-3);
@@ -187,6 +202,7 @@
   --color-gui-neutral-6: var(--neutral-6);
   --color-gui-neutral-7: var(--neutral-7);
   --color-gui-neutral-8: var(--neutral-8);
+  --color-gui-neutral-9: var(--neutral-9);
   --color-gui-neutral-10: var(--neutral-10);
   --color-gui-neutral-10-transparent: var(--neutral-10-transparent);
   --color-gui-1-transparent: var(--color-1-transparent);
@@ -229,12 +245,18 @@
   --radius-gui-xs: var(--radius-xs);
   --radius-gui-s: var(--radius-s);
   --radius-gui-m: var(--radius-m);
+  --radius-gui-l: var(--radius-l);
 
   --shadow-gui-s: var(--shadow-s);
   --shadow-gui-m: var(--shadow-m);
 
   --ease-gui: var(--motion-easing);
   --ease-gui-large: var(--motion-large-easing);
+
+  --color-gui-section-fill: var(--section-fill);
+  --color-gui-section-edge: var(--section-edge);
+  --color-gui-card: var(--card-fill);
+  --color-gui-card-hover: var(--card-fill-hover);
 }
 
 /* Keyboard focus: the theme's outline, kept separate from the component edge. */
@@ -291,4 +313,75 @@
   letter-spacing: normal;
   color: var(--foreground);
   text-wrap: wrap;
+}
+
+/*
+ * Hub sections, color-coded by the family of question they answer (like
+ * Figma section colors). Fills are opaque mixes with Neutral 1, so the tab
+ * can hide the body edge it overlaps and the tints flip with dark mode.
+ */
+.stateview-theme [data-tone="base"] {
+  --section-fill: var(--neutral-1);
+  --section-edge: var(--neutral-4);
+}
+
+.stateview-theme [data-tone="who"] {
+  --section-fill: color-mix(in srgb, var(--color-4) 8%, var(--neutral-1));
+  --section-edge: color-mix(in srgb, var(--color-4) 55%, var(--neutral-1));
+}
+
+.stateview-theme [data-tone="system"] {
+  --section-fill: color-mix(in srgb, var(--color-2) 8%, var(--neutral-1));
+  --section-edge: color-mix(in srgb, var(--color-2) 55%, var(--neutral-1));
+}
+
+.stateview-theme [data-tone="data"] {
+  --section-fill: color-mix(in srgb, var(--color-1) 8%, var(--neutral-1));
+  --section-edge: color-mix(in srgb, var(--color-1) 55%, var(--neutral-1));
+}
+
+.stateview-theme [data-tone="nearby"] {
+  --section-fill: var(--neutral-3);
+  --section-edge: var(--neutral-5);
+}
+
+/* Hub cards sit one shade darker than whatever is behind them, so they read on any section tint. */
+.stateview-theme {
+  --card-fill: color-mix(in srgb, var(--neutral-10) 5%, transparent);
+  --card-fill-hover: color-mix(in srgb, var(--neutral-10) 12%, transparent);
+  /* Thumbnail width: 18rem, narrowed on small phones so a one-card section still fits beside the page padding. */
+  --hub-thumb: min(18rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
+}
+
+/* Hub grid: fixed tracks for one card (a thumbnail plus XXS card padding) inside a section's S padding. */
+@utility gui-section-grid {
+  grid-template-columns: repeat(auto-fill, calc(var(--hub-thumb) + 2 * var(--space-xxs) + 2 * var(--space-s)));
+}
+
+@utility gui-thumb-width {
+  width: var(--hub-thumb);
+}
+
+/* Section tab edge: top and left only; the tail and the body carry the rest of the outline. */
+@utility gui-section-tab-edge {
+  box-shadow: inset var(--border-s) var(--border-s) 0 0 var(--section-edge);
+}
+
+/*
+ * The tab's curved tail, after Rauno's Next.js dev tools notch: an SVG glued
+ * to the tab's right edge (overlapping it by one edge width) that scales with
+ * the tab's height. Inset half an edge top and bottom so its stroke, drawn at
+ * y=0 and y=24 of the viewBox, lands on the centre of the tab's top edge and
+ * of the body's top edge.
+ */
+@utility gui-notch-tail {
+  position: absolute;
+  top: calc(var(--border-s) / 2);
+  left: calc(100% - var(--border-s));
+  height: calc(100% - var(--border-s));
+  overflow: visible;
+}
+
+@utility gui-stroke-edge {
+  stroke-width: var(--border-s);
 }

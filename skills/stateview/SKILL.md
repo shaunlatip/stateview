@@ -1,11 +1,11 @@
 ---
 name: stateview
-description: Set up a Stateview review for the current branch of a Next.js app. Reads the diff, finds the inputs the changed screen reads (role, plan, flags, data, request states, moments, breakpoint), makes the screen start in any state at one boundary, writes a manifest of 8–15 named states in sections, checks it, and wires /stateview routes where a reviewer steps through each state, comments on elements and marks states reviewed. Use when the user says /stateview, "set up a state review", "review the states for this branch", "make this branch reviewable", or asks how a change looks across roles, plans, flags, data, loading/error and breakpoints.
+description: Set up a Stateview review for the current branch of a Next.js app. Reads the diff, finds the inputs the changed screen reads (role, plan, flags, data, request states, moments, breakpoint), makes the screen start in any state at one boundary, writes a manifest of 8–15 named states in sections, checks it, and wires /stateview routes where a reviewer steps through each state and comments on elements. Use when the user says /stateview, "set up a state review", "review the states for this branch", "make this branch reviewable", or asks how a change looks across roles, plans, flags, data, loading/error and breakpoints.
 ---
 
 # /stateview
 
-Turn the current branch into a review: a small set of named states for the screen it changes, each one the real app started in that state, at `/stateview/<review>`. The reviewer steps through them (J/K), comments on elements, and marks each one reviewed. Comments carry the state they were made in, so you can reproduce exactly what the reviewer saw.
+Turn the current branch into a review: a small set of named states for the screen it changes, each one the real app started in that state, at `/stateview/<review>`. The reviewer steps through them (J/K) and comments on elements. Comments carry the state they were made in, so you can reproduce exactly what the reviewer saw.
 
 Your job is the part only an agent can do from the code: find what the screen reads, give it one place to receive that state, and choose the states worth a person's attention. The scripts do the rest deterministically.
 
@@ -15,7 +15,7 @@ Your job is the part only an agent can do from the code: find what the screen re
 
 Check, and stop with a one-line reason if any fails:
 
-- A Next.js App Router app (`app/` or `src/app/`), React 19, Tailwind CSS v4, a `cn` helper in `lib/utils` (shadcn apps have all of these).
+- A Next.js App Router app (`app/` or `src/app/`), React 19 and Tailwind CSS v4.
 - A git repo on a branch with changes against its base. With no changes, ask whether to review a screen as a whole; the scope line then reads the branch against itself.
 - The change touches UI. Stateview reviews screens; a backend-only change has nothing to show.
 
@@ -65,8 +65,8 @@ Fill in `review.json`: `baseline`, `inputs`, `sections` of states and sequences,
 
 - The realistic baseline comes first. Each state is one moment a real person could be in, answering one question, changing one or two inputs from the baseline.
 - Only stack what can be true at the same moment: who, config and data combine freely; one request state and one moment per state unless they truly co-occur. Use a sequence for anything that needs order (a flow, error then retry).
-- Mark flag- and entitlement-gated states and sub-component loading/error states `"code-only"`. They're the states nobody draws, and the most valuable ones here.
-- About 8–15 states in the standard section order, a short "Nearby features" section for unchanged things the change could break, and an honest `uncovered` and `excluded` list.
+- Mark flag- and entitlement-gated states and sub-component loading/error states `"code-only"` (the hub labels them "Not in designs"). They're the states nobody draws, and the most valuable ones here.
+- About 8–15 states in the standard section order, each section with the `tone` the order table gives it, a short "Nearby features" section for unchanged things the change could break, and an honest `uncovered` and `excluded` list.
 - Titles name the state ("Viewer checking who's on the team"); each `why` is one sentence written as a person doing something; `checks` are short, observable things to verify.
 
 Keep `route` as `/stateview/<id>/state`. Bump `version` whenever you change states in a review someone has started, so saved progress and comments don't map onto the wrong state.

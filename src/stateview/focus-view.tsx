@@ -6,7 +6,7 @@ import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { Toaster, toast } from "sonner";
 import { CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import type { AnnotationLayer } from "./annotations";
 import { FocusBar } from "./focus-bar";
 import { changedInputs, findFrameIndex, frameHref, listFrames, viewportOf, type Frame, type Inputs, type Manifest } from "./manifest";
@@ -80,11 +80,6 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         event.preventDefault();
         goTo(index - 1);
         break;
-      case "r":
-      case "R":
-        event.preventDefault();
-        review.toggleReviewed(frame.item.id);
-        break;
       case "Escape":
         router.push(hubHref);
         break;
@@ -103,7 +98,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     void navigator.clipboard
       .writeText(stateContext(manifest, frame) + markdown)
       .then(() => toast.success("Comments copied with this state’s URL and inputs"))
-      .catch(() => toast.error("Couldn’t copy. Your browser blocked clipboard access."));
+      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
 
   return (
@@ -120,11 +115,9 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         frame={frame}
         position={index + 1}
         total={frames.length}
-        reviewed={review.reviewed.includes(frame.item.id)}
         hubHref={hubHref}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
-        onToggleReviewed={() => review.toggleReviewed(frame.item.id)}
       />
       <Layer
         stateId={frame.key}
@@ -165,9 +158,9 @@ function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
-        <p className="text-gui-neutral-7">The review may have changed since this link was made. The hub lists every state.</p>
+        <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
         <Link href={hubHref} className={buttonVariants({ className: "w-fit" })}>
-          Go to the hub
+          See all states
         </Link>
       </div>
     </ThemeScope>

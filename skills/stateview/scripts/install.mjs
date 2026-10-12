@@ -6,13 +6,13 @@
 // What it does, all of it deterministic:
 //   1. Copies src/stateview/ (the engine) into the app's source root, replacing any earlier copy.
 //      The copy is vendored like a shadcn component: the app owns it, re-running updates it.
-//   2. Points the engine's one app import (`@/lib/utils`, for `cn`) at the app's own helper.
-//   3. Imports the engine's theme into the app's Tailwind stylesheet.
-//   4. Writes the review routes and an empty review registry, unless they already exist:
+//      The engine imports nothing from the app it's in, only npm packages.
+//   2. Imports the engine's theme into the app's Tailwind stylesheet.
+//   3. Writes the review routes and an empty review registry, unless they already exist:
 //        /stateview                     every review
 //        /stateview/<review>            the hub
 //        /stateview/<review>/state?sv=  one state, with the review bar
-//   5. Lists the packages the engine imports that the app doesn't have yet. It doesn't install them.
+//   4. Lists the packages the engine imports that the app doesn't have yet. It doesn't install them.
 
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -38,18 +38,14 @@ printReport();
 
 function copyEngine() {
   const from = join(source, "src/stateview");
-  const utils = findUtils();
+  for (const file of readdirSync(from)) {
+    if (!/\.(ts|tsx)$/.test(file)) continue;
+    const stray = readFileSync(join(from, file), "utf8").match(/from "@\/[^"]+"/);
+    if (stray) fail(`The engine file ${file} imports ${stray[0].slice(5)}, which an app can't be assumed to have.`);
+  }
   if (!dryRun) {
     rmSync(engineDir, { recursive: true, force: true });
     cpSync(from, engineDir, { recursive: true });
-  }
-  for (const file of readdirSync(from)) {
-    if (!/\.(ts|tsx)$/.test(file)) continue;
-    const text = readFileSync(join(from, file), "utf8");
-    const rewritten = text.replace(/from "@\/lib\/utils"/g, `from "${importPath(join(engineDir, file), utils)}"`);
-    const stray = rewritten.match(/from "@\/[^"]+"/);
-    if (stray) fail(`The engine file ${file} imports ${stray[0].slice(5)}, which an app can't be assumed to have.`);
-    if (!dryRun && rewritten !== text) writeFileSync(join(engineDir, file), rewritten);
   }
   const commit = git(source, ["rev-parse", "--short", "HEAD"]);
   writeOnce(
@@ -65,17 +61,6 @@ function copyEngine() {
     { force: true, dryRun },
   );
   report.push(`${(dryRun ? "would copy" : "copied").padEnd(8)} engine → ${relative(appRoot, engineDir)}/`);
-}
-
-/** The app's `cn` helper. Every shadcn app has one; the engine uses it for class names. */
-function findUtils() {
-  for (const ext of ["ts", "tsx", "js", "mjs"]) {
-    const path = join(srcDir, "lib", `utils.${ext}`);
-    if (existsSync(path) && /export\s+(\{[^}]*\bcn\b|function cn|const cn)/.test(readFileSync(path, "utf8"))) {
-      return join(srcDir, "lib", "utils");
-    }
-  }
-  fail(`No \`cn\` helper in ${relative(appRoot, join(srcDir, "lib/utils.ts"))}. Add shadcn's (clsx + tailwind-merge) and run this again.`);
 }
 
 /** Packages the engine imports that the app doesn't depend on yet, with Stateview's version ranges. */
