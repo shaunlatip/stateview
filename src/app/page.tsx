@@ -1,8 +1,13 @@
-export default function Home() {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-2 px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-balance">Stateview</h1>
-      <p className="text-muted-foreground">Start here.</p>
-    </main>
-  );
+import { membersManifest } from "@/sample-app/manifest";
+import { MembersScreen } from "@/sample-app/members-screen";
+import { parseMembersState } from "@/sample-app/state";
+import { Hub } from "@/stateview/hub";
+import { listFrames } from "@/stateview/manifest";
+
+export default function HubPage() {
+  const thumbnails: Record<string, React.ReactNode> = {};
+  for (const frame of listFrames(membersManifest)) {
+    thumbnails[frame.item.id] ??= <MembersScreen state={parseMembersState(frame.inputs)} />;
+  }
+  return <Hub manifest={membersManifest} thumbnails={thumbnails} />;
 }
