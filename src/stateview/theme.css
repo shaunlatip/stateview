@@ -318,8 +318,10 @@
 
   --color-gui-section-fill: var(--section-fill);
   --color-gui-section-edge: var(--section-edge);
-  --color-gui-card: var(--card-fill);
-  --color-gui-card-hover: var(--card-fill-hover);
+  --color-gui-section-card: var(--section-card);
+  --color-gui-section-card-hover: var(--section-card-hover);
+  --color-gui-section-chip: var(--section-chip);
+  --color-gui-section-chip-text: var(--section-chip-text);
 }
 
 /* Keyboard focus: the theme's outline, kept separate from the component edge. */
@@ -373,72 +375,64 @@
 }
 
 /*
- * Hub sections, color-coded by the family of question they answer (like
- * Figma section colors). Fills are opaque mixes with Neutral 1, so the tab
- * can hide the body edge it overlaps and the tints flip with dark mode.
+ * Hub sections, color-coded by the family of question they answer, after
+ * Figma's section colors: a light fill and an outline in the section's hue,
+ * a stronger tint of it behind a hovered card, and the title in a bold chip
+ * above the section. Chips are dark enough for white text (purple and teal,
+ * mixed 40% toward black: about 6.6:1 and 5.3:1) or light enough for black
+ * (lime, greys). Fills mix with Neutral 1, so they flip with dark mode.
  */
 .stateview-theme [data-tone="base"] {
   --section-fill: var(--neutral-1);
   --section-edge: var(--neutral-4);
+  --section-card: color-mix(in srgb, var(--neutral-10) 5%, var(--neutral-1));
+  --section-card-hover: color-mix(in srgb, var(--neutral-10) 11%, var(--neutral-1));
+  --section-chip: var(--neutral-3);
+  --section-chip-text: var(--neutral-10);
 }
 
 .stateview-theme [data-tone="who"] {
   --section-fill: color-mix(in srgb, var(--color-4) 8%, var(--neutral-1));
   --section-edge: color-mix(in srgb, var(--color-4) 55%, var(--neutral-1));
+  --section-card: color-mix(in srgb, var(--color-4) 18%, var(--neutral-1));
+  --section-card-hover: color-mix(in srgb, var(--color-4) 30%, var(--neutral-1));
+  --section-chip: color-mix(in srgb, var(--color-4) 60%, #000000);
+  --section-chip-text: #ffffff;
 }
 
 .stateview-theme [data-tone="system"] {
   --section-fill: color-mix(in srgb, var(--color-2) 8%, var(--neutral-1));
   --section-edge: color-mix(in srgb, var(--color-2) 55%, var(--neutral-1));
+  --section-card: color-mix(in srgb, var(--color-2) 18%, var(--neutral-1));
+  --section-card-hover: color-mix(in srgb, var(--color-2) 30%, var(--neutral-1));
+  --section-chip: color-mix(in srgb, var(--color-2) 60%, #000000);
+  --section-chip-text: #ffffff;
 }
 
 .stateview-theme [data-tone="data"] {
   --section-fill: color-mix(in srgb, var(--color-1) 8%, var(--neutral-1));
   --section-edge: color-mix(in srgb, var(--color-1) 55%, var(--neutral-1));
+  --section-card: color-mix(in srgb, var(--color-1) 18%, var(--neutral-1));
+  --section-card-hover: color-mix(in srgb, var(--color-1) 30%, var(--neutral-1));
+  --section-chip: var(--color-1);
+  --section-chip-text: #000000;
 }
 
 .stateview-theme [data-tone="nearby"] {
   --section-fill: var(--neutral-3);
   --section-edge: var(--neutral-5);
+  --section-card: color-mix(in srgb, var(--neutral-10) 6%, var(--neutral-3));
+  --section-card-hover: color-mix(in srgb, var(--neutral-10) 12%, var(--neutral-3));
+  --section-chip: var(--neutral-5);
+  --section-chip-text: var(--neutral-10);
 }
 
-/* Hub cards sit one shade darker than whatever is behind them, so they read on any section tint. */
 .stateview-theme {
-  --card-fill: color-mix(in srgb, var(--neutral-10) 5%, transparent);
-  --card-fill-hover: color-mix(in srgb, var(--neutral-10) 12%, transparent);
   /* Thumbnail width: 18rem, narrowed on small phones so a one-card section still fits beside the page padding. */
-  --hub-thumb: min(18rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
-}
-
-/* Hub grid: fixed tracks for one card (a thumbnail plus XXS card padding) inside a section's S padding. */
-@utility gui-section-grid {
-  grid-template-columns: repeat(auto-fill, calc(var(--hub-thumb) + 2 * var(--space-xxs) + 2 * var(--space-s)));
+  --hub-thumb: min(17rem, 100vw - 2 * var(--space-m) - 2 * var(--space-s) - 2 * var(--space-xxs));
 }
 
 @utility gui-thumb-width {
   width: var(--hub-thumb);
 }
 
-/* Section tab edge: top and left only; the tail and the body carry the rest of the outline. */
-@utility gui-section-tab-edge {
-  box-shadow: inset var(--border-s) var(--border-s) 0 0 var(--section-edge);
-}
-
-/*
- * The tab's curved tail, after Rauno's Next.js dev tools notch: an SVG glued
- * to the tab's right edge (overlapping it by one edge width) that scales with
- * the tab's height. Inset half an edge top and bottom so its stroke, drawn at
- * y=0 and y=24 of the viewBox, lands on the centre of the tab's top edge and
- * of the body's top edge.
- */
-@utility gui-notch-tail {
-  position: absolute;
-  top: calc(var(--border-s) / 2);
-  left: calc(100% - var(--border-s));
-  height: calc(100% - var(--border-s));
-  overflow: visible;
-}
-
-@utility gui-stroke-edge {
-  stroke-width: var(--border-s);
-}

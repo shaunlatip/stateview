@@ -81,7 +81,7 @@ export function FocusBar<T extends Inputs>({
       <div className="relative">
         <div className="relative flex items-center gap-gui-xxs rounded-gui-m bg-gui-toolbar p-gui-xxs shadow-gui-s ring-1 ring-gui-neutral-4-transparent">
           <Tooltip label="All states" shortcut="Esc">
-            <Link href={hubHref} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
+            <Link href={hubHref} scroll={false} aria-label="All states" aria-keyshortcuts="Escape" className={buttonVariants({ variant: "toolbar", size: "icon" })}>
               <SquaresFourIcon aria-hidden />
             </Link>
           </Tooltip>
@@ -142,13 +142,13 @@ export function FocusBar<T extends Inputs>({
             </MenuPopup>
           </Menu>
           <ToolbarSeparator />
-          <Tooltip label="Previous state" shortcut="K">
-            <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="K ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
+          <Tooltip label="Previous state" shortcut="J">
+            <Button variant="toolbar" size="icon" aria-label="Previous state" aria-keyshortcuts="J ArrowLeft" focusableWhenDisabled disabled={!onPrevious} onClick={onPrevious ?? undefined}>
               <CaretLeftIcon aria-hidden />
             </Button>
           </Tooltip>
-          <Tooltip label="Next state" shortcut="J">
-            <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="J ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
+          <Tooltip label="Next state" shortcut="K">
+            <Button variant="toolbar" size="icon" aria-label="Next state" aria-keyshortcuts="K ArrowRight" focusableWhenDisabled disabled={!onNext} onClick={onNext ?? undefined}>
               <CaretRightIcon aria-hidden />
             </Button>
           </Tooltip>

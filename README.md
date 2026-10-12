@@ -5,7 +5,7 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 ## Try it
 
 - `/` is the hub: every state for the change, grouped into sections, with live thumbnails.
-- Open a state to see the real page in that state. `J` / `K` (or the arrow keys) step through states and `Esc` goes back to the hub; hover a control to see its shortcut.
+- Open a state to see the real page in that state. `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut.
 - `C` (or Comment in the review bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
 - Each comment is saved with the state it was made in, as a numbered pin that stays on its element. Hover a pin to read it; click it to edit or delete it. The review bar’s ⋮ menu can hide pins, copy the state's open comments as Markdown for a coding agent (state URL, inputs, and each element's selector, React components and HTML), or delete them all (with undo).
 
@@ -79,8 +79,10 @@ A running list of interaction and visual details, kept while building.
 - Thumbnails are the real screen rendered at 1152 px and scaled to a quarter, so they always match the build. They are inert and hidden from assistive tech, and `content-visibility: auto` skips the ones far off screen.
 - The sample screen uses container queries instead of viewport breakpoints, so it reflows the same way in a thumbnail, in the 375 px frame of the phone state and in a narrow window.
 - The whole state card is one link, named by its title and described by its why line and chips, so element pickers and screen readers each get one clear target.
-- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors, with the title on a tab whose edge steps down into the body through an SVG tail glued to the tab, after Rauno's Next.js dev tools notch. The tab grows with its title.
-- The hub is a bento grid of fixed one-card tracks; a section spans as many tracks as it has cards, so one-card sections share a row.
+- Sections are tinted by question family (who, system, data, nearby) like Figma's section colors: a light fill and outline in the section's hue, cards in a stronger tint of the same hue, and the title in a bold chip with black or white text, whichever reads on it.
+- Sections hug their cards and wrap inside a 1200 px column, so one-card sections share a row and every section has even padding.
+- What the review leaves out sits behind a "combinations not covered" popover in the header, so the header stays one row.
+- Coming back to the hub (Escape, All states or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
 - The review bar floats over the page instead of framing it, so the app keeps its full width. It samples the colour behind it and takes the opposite scheme, so it stays distinct from any app. Its text wraps instead of truncating. It stays out of the way: it shows on any review action (a shortcut, a new state, a new comment) or when the pointer nears the bottom of the window, and tucks away after 6 s of quiet. A keyboard action brings it back without animation, since animating something pressed that often makes it feel slow. It stays up in comment mode, while its menu is open and while it has keyboard focus.
 - The bar’s text is two lines: the section as a small header (“Main flows”) over the state’s title. A step in a flow adds its name and a 1/4 chip on the right.
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
