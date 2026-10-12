@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# harden-check reports and Playwright artifacts
+.harden/
+test-results/
+playwright-report/
