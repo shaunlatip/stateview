@@ -82,11 +82,6 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         event.preventDefault();
         goTo(index - 1);
         break;
-      case "r":
-      case "R":
-        event.preventDefault();
-        review.toggleReviewed(frame.item.id);
-        break;
       case "Escape":
         router.push(HUB_HREF);
         break;
@@ -122,11 +117,9 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         frame={frame}
         position={index + 1}
         total={frames.length}
-        reviewed={review.reviewed.includes(frame.item.id)}
         hubHref={HUB_HREF}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
-        onToggleReviewed={() => review.toggleReviewed(frame.item.id)}
       />
       <Layer
         stateId={frame.key}

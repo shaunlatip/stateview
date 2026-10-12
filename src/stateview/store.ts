@@ -5,18 +5,16 @@ import type { Annotation } from "./annotations";
 import type { Manifest } from "./manifest";
 
 /**
- * Review progress, saved in localStorage under the manifest's id and version.
+ * Review comments, saved in localStorage under the manifest's id and version.
  * A changed manifest gets a fresh record instead of mapping old comments onto
  * the wrong states.
  */
 
 type ReviewRecord = {
-  /** Item ids (states and whole sequences) marked reviewed. */
-  reviewed: string[];
   annotations: Annotation[];
 };
 
-const EMPTY: ReviewRecord = { reviewed: [], annotations: [] };
+const EMPTY: ReviewRecord = { annotations: [] };
 const listeners = new Set<() => void>();
 const snapshots = new Map<string, { raw: string | null; record: ReviewRecord }>();
 
@@ -31,7 +29,7 @@ function read(key: string): ReviewRecord {
   let record = EMPTY;
   try {
     const parsed = raw ? (JSON.parse(raw) as Partial<ReviewRecord>) : null;
-    if (parsed) record = { reviewed: parsed.reviewed ?? [], annotations: parsed.annotations ?? [] };
+    if (parsed) record = { annotations: parsed.annotations ?? [] };
   } catch {
     // Unreadable record: start fresh rather than crash the review.
   }
@@ -67,14 +65,7 @@ export function useReview(manifest: Pick<Manifest, "id" | "version">) {
   );
 
   return {
-    reviewed: record.reviewed,
     annotations: record.annotations,
-    toggleReviewed(itemId: string) {
-      write(key, (r) => ({
-        ...r,
-        reviewed: r.reviewed.includes(itemId) ? r.reviewed.filter((id) => id !== itemId) : [...r.reviewed, itemId],
-      }));
-    },
     addAnnotation(annotation: Annotation) {
       write(key, (r) => ({ ...r, annotations: [...r.annotations.filter((a) => a.id !== annotation.id), annotation] }));
     },

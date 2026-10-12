@@ -1,8 +1,8 @@
 "use client";
 
-import type { ComponentProps, ElementType } from "react";
+import type { ComponentProps, ElementType, ReactElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { IconContext, type IconProps } from "@phosphor-icons/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
@@ -58,8 +58,9 @@ export function Button({ className, variant, size, ...props }: ButtonPrimitive.P
   return <ButtonPrimitive className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 }
 
+// Sized to sit beside S text without outweighing it: one XS line, XXS side padding.
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center gap-gui-xxs rounded-gui-s px-gui-xs py-gui-xxs font-gui-ui text-gui-xs font-gui-medium whitespace-nowrap",
+  "inline-flex w-fit shrink-0 items-center gap-gui-xxs rounded-gui-xs px-gui-xxs font-gui-ui text-gui-xs font-gui-medium whitespace-nowrap",
   {
     variants: {
       variant: {
@@ -89,7 +90,36 @@ export function Kbd({ className, ...props }: ComponentProps<"kbd">) {
   );
 }
 
-/** Graphical Toolbar separator. */
-export function ToolbarSeparator() {
-  return <SeparatorPrimitive orientation="vertical" className="gui-divider-vertical my-gui-xxs self-stretch" />;
+/**
+ * Graphical Tooltip. The popup is portalled to <body>, outside any themed
+ * subtree, so it carries the theme scope itself.
+ */
+export function Tooltip({
+  label,
+  shortcut,
+  children,
+  side = "top",
+}: {
+  label: string;
+  /** Shown only in the tooltip; the trigger should also set aria-keyshortcuts. */
+  shortcut?: string;
+  /** The trigger element. */
+  children: ReactElement<Record<string, unknown>>;
+  side?: TooltipPrimitive.Positioner.Props["side"];
+}) {
+  return (
+    <TooltipPrimitive.Root>
+      <TooltipPrimitive.Trigger render={children} />
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Positioner side={side} sideOffset={8} className="z-50">
+          <TooltipPrimitive.Popup className="stateview-theme flex items-center gap-gui-xs rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-neutral-1 shadow-gui-s duration-gui ease-gui motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-closed:animate-out motion-safe:data-closed:fade-out-0">
+            {label}
+            {shortcut ? (
+              <kbd className="font-gui-data text-gui-xs text-gui-neutral-6">{shortcut}</kbd>
+            ) : null}
+          </TooltipPrimitive.Popup>
+        </TooltipPrimitive.Positioner>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
 }
