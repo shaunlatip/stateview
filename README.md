@@ -4,6 +4,8 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 ## Try it
 
+Live at https://stateview-wine.vercel.app
+
 - `/` is the hub: every state for the change, one row per section, with live thumbnails. The index on the left jumps to a section, and the button at the top right copies every open comment for a coding agent.
 - Open a state to see the real page in that state, with a filmstrip of every state down the left (`F` shows and hides it). `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut. The app runs in a frame of its own, so keys pressed inside it belong to the app: the shortcuts work from Stateview's bar and filmstrip. "Skip to app", the first Tab stop, moves focus into the app.
 - `C` (or Comment in the viewer bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
@@ -33,7 +35,7 @@ CI runs lint, typecheck and build on every push (`.github/workflows/ci.yml`).
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Phosphor icons
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Phosphor icons (Stateview) · Lucide icons (the sample app)
 
 ## Design language
 
@@ -81,12 +83,11 @@ A running list of interaction and visual details, kept while building.
 - Thumbnails are the real screen rendered at 1088 px and scaled down to the card, so they always match the build. They are inert and hidden from assistive tech, animations inside them are off (a loading skeleton doesn't pulse in every card), and `content-visibility: auto` skips the ones far off screen.
 - The viewer shows the app in a same-origin iframe, so the app has a window of its own. Media queries, viewport units, `innerWidth` and `matchMedia` measure the frame (393 px in the phone state), fixed elements stay inside it, and its focus and keys are its own: Escape or an arrow key in the app never steps the review, and when the app drops focus (removing a member drops it to the page body), that stays the app's bug to see rather than handing the keyboard to Stateview. After the first load the viewer sends each state by message, so stepping doesn't reload the frame. The comment engine runs inside the frame and shares comments with the viewer through localStorage.
 - Thumbnails stay inline renders rather than iframes, so a phone-state thumbnail of an app that uses media queries shows its desktop layout. The sample screen uses container queries, so its thumbnails reflow correctly.
-- The whole state card is one link, named by its title and described by its why line and chips, so element pickers and screen readers each get one clear target.
-- Each section is a row: its title and why line on the left, its cards wrapping on the right. Below 1024 px the title goes above the cards. The index marks the section at the top of the window.
-- A card shows a dot until its state has been opened, and a comment count when it has open comments. The screen and the title are separate links to the state: the screen for the pointer, the title (underlined on hover) for the keyboard and screen readers. A flow shows as a stack of cards with its step count; the stack fans out on hover.
-- Combinations of inputs that no state shows are the last row, "Not covered", as dashed cards listing the inputs, with the combinations left out on purpose beside them.
+- A state card has one keyboard stop: its title, a link described by the why line and chips. The screen above it links to the same state for the pointer but is out of the tab order and hidden from assistive tech, so element pickers and screen readers each get one clear target.
+- Each section is a band: its title and why line, then its cards in one row that scrolls sideways rather than wrapping. The index marks the section at the top of the window.
+- A card shows a dot until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards with its step count.
 - Coming back to the hub (Escape, the logo or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
-- The viewer bar runs across the top and is always dark, so it reads as Stateview's frame around the app. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. The strip scrolls to the state on screen without `scrollIntoView`, which in Chrome would also move the Tab starting point into the strip. Its right edge drags (or takes arrow keys) to resize it between 112 and 320 px thumbnails, and the width is remembered. On phones the filmstrip starts closed and covers the app when opened.
+- The viewer bar runs across the top, ruled off from the app, so it reads as Stateview's frame around it. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. The strip scrolls to the state on screen without `scrollIntoView`, which in Chrome would also move the Tab starting point into the strip. Its right edge drags (or takes arrow keys) to resize it between 112 and 320 px thumbnails, and the width is remembered. On phones the filmstrip starts closed and covers the app when opened.
 - The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.

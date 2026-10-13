@@ -2,10 +2,9 @@ import type { Manifest } from "@/stateview/manifest";
 import { membersInputValues as v, type MembersState } from "./state";
 
 /**
- * The review for `feat/member-management`, written by hand by applying the
- * composition rules in the README: a realistic baseline first, one question
- * per state, one or two inputs changed from the baseline, only combinations a
- * real account can be in, and an honest list of what isn't covered.
+ * The review for `feat/member-management`, written by hand: a realistic
+ * baseline first, one question per state, one or two inputs changed from the
+ * baseline, and only combinations a real account can be in.
  */
 export const membersManifest: Manifest<MembersState> = {
   id: "team-members",
