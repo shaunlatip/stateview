@@ -21,6 +21,8 @@
   --motion-large-easing: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-popup-scale: 0.96;
   --motion-press-distance: 1px;
+  --motion-press-scale: 0.98;
+  --motion-hover-scale: 1.02;
 
   --option-badge-background: #f0f0f0;
   --option-badge-foreground: #000000;
@@ -39,15 +41,32 @@
 
   /*
    * Code readout (selector and HTML in the comment composer): a dark, IDE-like
-   * surface in both schemes, with syntax roles drawn from the palette. Blue is
-   * left out because it means selection. Every role measures ≥ 5:1 on the surface.
+   * surface in both schemes. Syntax roles are steps of grey, since Stateview
+   * has no accent colour; blue would read as selection. Every role measures
+   * ≥ 5:1 on the surface.
    */
   --code-surface: #202020;
   --code-text: #e5e5e5;
   --code-muted: #a3a3a3;
-  --code-tag: #e864ff;
-  --code-attribute: #00c9bb;
-  --code-string: #e0e708;
+  --code-tag: #ffffff;
+  --code-attribute: #a3a3a3;
+  --code-string: #c6c6c6;
+
+  /*
+   * The hub's night sky, seen when the page is pulled past either end: near
+   * black for empty space, three navy shades dithered in where it's crowded,
+   * three star tints, and two dimmer steps stars pass through as they twinkle
+   * (the fainter one doubles as dust). The same in both schemes.
+   */
+  --night-sky-1: #010103;
+  --night-sky-2: #040619;
+  --night-sky-3: #0a0e2c;
+  --night-sky-4: #141a46;
+  --night-star-1: #ffffff;
+  --night-star-2: #fff1c4;
+  --night-star-3: #cfdcff;
+  --night-star-dim: #7880ad;
+  --night-star-faint: #2e3462;
 
   --space-zero: 0px;
   --space-xxs: 4px;
@@ -119,15 +138,8 @@
   --weight-data-medium: 500;
   --weight-data-heavy: 600;
 
+  /* Changed from the export: Colors 1–4 (the yellow-green brand palette) are dropped. Stateview is neutral throughout. */
   --color-none: transparent;
-  --color-1: #e0e708;
-  --color-1-transparent: #e0e70833;
-  --color-2: #00c9bb;
-  --color-2-transparent: #00c9bb33;
-  --color-3: #e0e709;
-  --color-3-transparent: #e0e70933;
-  --color-4: #e864ff;
-  --color-4-transparent: #e864ff33;
   --neutral-1: #ffffff;
   --neutral-1-transparent: #ffffff33;
   --neutral-2: #fafafa;
@@ -160,9 +172,26 @@
   --shadow-s: 0px 1px 2px 0px #0000001f;
   --shadow-m: 0px 8px 24px 0px #0000001f;
   --shadow-l: 0px 12px 30px 0px #0000001f;
+  /* A hovered hub card: a soft contact shadow plus a short ambient one, well under M. */
+  --shadow-card-hover: 0px 1px 2px 0px #0000000f, 0px 4px 12px 0px #0000000f;
 
   /* Toolbar group fill: Neutral 1 in light, Neutral 2 in dark (Toolbar assignment). */
   --toolbar-background: var(--neutral-1);
+
+  /*
+   * Cutting mat behind the phone frame (gui-cutting-mat), after the hero on
+   * paper.design: a 120px grid of 0.5px hairlines, dashed down and solid
+   * across, at 30%, and rulers ticked every 10px (longer at 30 and 120) at 40%
+   * along the sides and bottom. Redrawn here with Paper's geometry. The SVGs
+   * are masks, so only their alpha counts; --mat-line colours the lines.
+   */
+  --mat-line: #000000;
+  --mat-tile: 120px;
+  --mat-ruler: 30px;
+  --mat-grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.3' stroke-linecap='square'%3E%3Cpath d='M60.25 0.25V119.75' stroke-dasharray='7.56 7.56'/%3E%3Cpath d='M0.25 60.25H119.75'/%3E%3C/svg%3E");
+  --mat-ruler-start: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M2 0.25H29M2 10.25H16.14M2 20.25H16.14M2 30.25H21.73M2 40.25H16.14M2 50.25H16.14M2 70.25H16.14M2 80.25H16.14M2 90.25H21.73M2 100.25H16.14M2 110.25H16.14'/%3E%3C/svg%3E");
+  --mat-ruler-end: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M28 0.25H1M28 10.25H13.86M28 20.25H13.86M28 30.25H8.27M28 40.25H13.86M28 50.25H13.86M28 70.25H13.86M28 80.25H13.86M28 90.25H8.27M28 100.25H13.86M28 110.25H13.86'/%3E%3C/svg%3E");
+  --mat-ruler-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M0.25 28V1M10.25 28V13.86M20.25 28V13.86M30.25 28V8.27M40.25 28V13.86M50.25 28V13.86M70.25 28V13.86M80.25 28V13.86M90.25 28V8.27M100.25 28V13.86M110.25 28V13.86'/%3E%3C/svg%3E");
 }
 
 /* Base type for every Stateview surface. In the base layer so utilities on the same element win. */
@@ -199,6 +228,8 @@
 .stateview-theme.dark {
   --focus-ring-outline: 2px solid color-mix(in srgb, #ffffff 50%, transparent);
   --toolbar-background: var(--neutral-2);
+  /* Paper's dark mat draws the same lines in white at about half the strength (15% grid, 20% rulers). */
+  --mat-line: color-mix(in srgb, #ffffff 50%, transparent);
 
   --option-badge-background: #2b2b2b;
   --option-badge-foreground: #ffffff;
@@ -212,8 +243,6 @@
   /* One step lighter than the dark popover so the code block still reads as an inset. */
   --code-surface: #2b2b2b;
 
-  --color-3: #f4f83b;
-  --color-3-transparent: #f4f83b33;
   --neutral-1: #000000;
   --neutral-1-transparent: #00000033;
   --neutral-2: #202020;
@@ -252,8 +281,6 @@
   --color-gui-neutral-9: var(--neutral-9);
   --color-gui-neutral-10: var(--neutral-10);
   --color-gui-neutral-10-transparent: var(--neutral-10-transparent);
-  --color-gui-1-transparent: var(--color-1-transparent);
-  --color-gui-1: var(--color-1);
   --color-gui-error: var(--error);
   --color-gui-border: var(--border-default-color);
   --color-gui-option-badge: var(--option-badge-background);
@@ -305,6 +332,7 @@
 
   --shadow-gui-s: var(--shadow-s);
   --shadow-gui-m: var(--shadow-m);
+  --shadow-gui-card-hover: var(--shadow-card-hover);
 
   --ease-gui: var(--motion-easing);
   --ease-gui-large: var(--motion-large-easing);
@@ -315,7 +343,7 @@
   outline: var(--focus-ring-outline);
 }
 
-/* Small motion for controls; large for surfaces like the review bar and the state panel. */
+/* Small motion for controls and popups (menus, the state panel); large for surfaces that move across the window, like the filmstrip. */
 @utility duration-gui {
   --tw-duration: var(--motion-duration);
   transition-duration: var(--motion-duration);
@@ -326,8 +354,23 @@
   transition-duration: var(--motion-large-duration);
 }
 
+/* The app's frame eases its left edge as the filmstrip opens and closes, and nothing else. */
+@utility gui-transition-left {
+  transition-property: left;
+}
+
 @utility gui-press {
   translate: 0 var(--motion-press-distance);
+}
+
+/* Pressing a surface (a hub screen) shrinks it about its centre rather than nudging it down. */
+@utility gui-press-scale {
+  scale: var(--motion-press-scale);
+}
+
+/* Hovering one lifts it a touch; the press scale then takes it below rest. */
+@utility gui-hover-scale {
+  scale: var(--motion-hover-scale);
 }
 
 /* Controls size from content plus padding: one line of M text with XS padding above and below. */
@@ -350,10 +393,11 @@
 }
 
 /*
- * The viewer's frame: a bar along the top, one toolbar control tall inside
- * XXS padding, and a filmstrip down the left, one strip thumbnail wide. The
- * strip's side inset is the bar's XXS padding plus a control's XS padding, so
- * the thumbnails line up under the logo. On wide screens the reviewer can
+ * The viewer's frame: a bar along the top, as tall as a toolbar control
+ * inside XXS padding (its own controls are a step smaller, 32px, centred in
+ * it), and a filmstrip down the left, one strip thumbnail wide. The strip's
+ * side inset (XXS + XS) lines the thumbnails up under the logo, which sits
+ * the bar's XS padding plus 4.5px in. On wide screens the reviewer can
  * resize the strip: the viewer sets --thumb-strip-chosen (unitless px) inline
  * on each surface that reads it. On phones the strip overlays the app and
  * stays at its default width. The app under review fills the rest.
@@ -369,9 +413,79 @@
   }
 }
 
+/*
+ * A phone state on a wide screen: the app sits in a phone-sized frame on a
+ * Neutral 3 cutting mat. The grid and rulers are centred on the mat, so the
+ * centred frame always sits square on them.
+ */
+@utility gui-cutting-mat {
+  position: relative;
+  background-color: var(--neutral-3);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--mat-line);
+    mask-image: var(--mat-ruler-start), var(--mat-ruler-end), var(--mat-ruler-bottom), var(--mat-grid);
+    mask-position: left center, right center, center bottom, center;
+    mask-size:
+      var(--mat-ruler) var(--mat-tile),
+      var(--mat-ruler) var(--mat-tile),
+      var(--mat-tile) var(--mat-ruler),
+      var(--mat-tile) var(--mat-tile);
+    mask-repeat: repeat-y, repeat-y, repeat-x, repeat;
+  }
+}
+
+/* The phone frame's size, set inline as unitless px (--device-width, --device-height); the mat's room caps it. */
+@utility gui-device-size {
+  width: calc(var(--device-width) * 1px);
+  height: calc(var(--device-height) * 1px);
+  max-width: 100%;
+  max-height: 100%;
+}
+
 /* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
 @utility gui-panel-height {
   max-height: calc(100dvh - var(--viewer-bar) - 2 * var(--space-xs));
+}
+
+/*
+ * The hub's night sky: fixed behind the page, reaching 60% of a window past
+ * the top and bottom, so it fills the gap whether the browser's rubber band
+ * moves fixed layers with the page or leaves them in place (REACH in
+ * night-sky.tsx). Scaled up from a small canvas without smoothing, so every
+ * sky pixel stays a hard square. Sized outright: a canvas keeps its own
+ * pixel size when only its edges are set.
+ */
+@utility gui-night-sky {
+  position: fixed;
+  left: 0;
+  top: -60dvh;
+  width: 100%;
+  height: 220dvh;
+  z-index: -1;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+/*
+ * The state panel's rows share two columns across every group (each group and
+ * row is a subgrid): labels as wide as the longest label, controls in the
+ * rest. A control can then never reach left past any row's label. Side by
+ * side needs about 298px (longest label, M, three segments), so under 18rem
+ * of content (320px phones) a label sits above its control instead.
+ */
+@utility gui-panel-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--space-m);
+
+  @container (width < 18rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Edges and dividers are drawn with inset shadows, never native borders. */
@@ -410,17 +524,66 @@
 }
 
 /*
- * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90 by
- * default, any width the reviewer drags it to), both 16:10. Sizes are
- * unitless so the screen inside can scale from them: a desktop render
- * (1088px wide) fills the width; a phone render (375px wide) shows its top
- * 400px.
+ * The hub's header and index. The header's height is measured (it wraps on
+ * narrower screens) and set as --hub-header on the hub, so the index's top
+ * block matches it and Stateview's name sits level with the repo name. The
+ * index's first link is then placed on the first section title's baseline,
+ * also measured, since the title's size and position change with the layout.
  */
-@utility gui-thumb-card {
-  --thumb-width: 208;
-  --thumb-height: 130;
-  width: calc(var(--thumb-width) * 1px);
-  height: calc(var(--thumb-height) * 1px);
+@utility gui-hub-header-height {
+  height: var(--hub-header, calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-l)));
+}
+
+/*
+ * The rule under a hub section. It's drawn over the section's contents rather
+ * than inset on the section, so the grey states row can't cover it.
+ */
+@utility gui-band-rule {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: var(--border-s);
+    background: var(--border-default-color);
+    pointer-events: none;
+  }
+}
+
+/*
+ * A state in a section's row: 352px wide, so three sit side by side beside the
+ * index on a 1440px screen and the rest scroll. On phones each leaves an XXL
+ * peek of the next.
+ */
+@utility gui-state-row-item {
+  flex: none;
+  width: min(352px, calc(100% - var(--space-xxl)));
+}
+
+/*
+ * Thumbnails, both 16:10: a hub screen, as wide as its column, or a filmstrip
+ * frame (144 × 90 by default, any width the reviewer drags it to). A desktop
+ * render (1088px wide) fills the width; a phone render (375px wide) shows its
+ * top 400px. The strip's sizes are unitless so the screen can scale from them.
+ * The hub's is a size container, and tan(atan2(a, b)) turns its width over the
+ * render's into the unitless scale.
+ */
+@utility gui-thumb-fluid {
+  width: 100%;
+  aspect-ratio: 208 / 130;
+  container-type: inline-size;
+}
+
+@utility gui-thumb-fluid-desktop {
+  width: 1088px;
+  scale: tan(atan2(100cqw, 1088px));
+}
+
+@utility gui-thumb-fluid-mobile {
+  width: 375px;
+  scale: tan(atan2(100cqw * 130 / 208, 400px));
 }
 
 @utility gui-thumb-strip {

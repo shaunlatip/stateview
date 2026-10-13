@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "./cn";
 import { changedInputs, valueLabel, type Inputs, type Manifest } from "./manifest";
 
-type Size = "card" | "strip";
+type Size = "fluid" | "strip";
 
 /**
  * A live, scaled-down render of the real screen. Inert and hidden from
@@ -10,8 +10,9 @@ type Size = "card" | "strip";
  * browser until it scrolls near the viewport. The screen inside starts from
  * the host app's own typography, not Stateview's.
  *
- * "card" is the hub's 208 × 130 and "strip" the viewer filmstrip's 144 × 90
- * (theme.css). A desktop render fills the width; a phone render is centred.
+ * "fluid" is the hub's, as wide as its column, and "strip" the viewer
+ * filmstrip's 144 × 90 (theme.css). A desktop render fills the width; a phone
+ * render is centred.
  */
 export function Thumbnail({
   children,
@@ -24,6 +25,7 @@ export function Thumbnail({
   size: Size;
   className?: string;
 }) {
+  const fluid = size === "fluid";
   return (
     <div
       aria-hidden
@@ -31,7 +33,7 @@ export function Thumbnail({
       ref={makeInert}
       className={cn(
         "content-auto relative shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
-        size === "card" ? "gui-thumb-card" : "gui-thumb-strip",
+        fluid ? "gui-thumb-fluid" : "gui-thumb-strip",
         className,
       )}
     >
@@ -39,7 +41,9 @@ export function Thumbnail({
       <div
         className={cn(
           "host-frame pointer-events-none absolute top-0 h-200 bg-background select-none **:animate-none",
-          viewport === "mobile" ? "gui-thumb-mobile left-1/2 origin-top -translate-x-1/2" : "gui-thumb-desktop left-0 origin-top-left",
+          viewport === "mobile"
+            ? [fluid ? "gui-thumb-fluid-mobile" : "gui-thumb-mobile", "left-1/2 origin-top -translate-x-1/2"]
+            : [fluid ? "gui-thumb-fluid-desktop" : "gui-thumb-desktop", "left-0 origin-top-left"],
         )}
       >
         {children}
@@ -71,7 +75,7 @@ export function InputsThumbnail({ changes, size, className }: { changes: { label
       aria-hidden
       className={cn(
         "flex shrink-0 flex-col overflow-hidden rounded-gui-s bg-gui-neutral-2 pr-gui-l text-gui-xs ring-1 ring-gui-border",
-        size === "card" ? "gui-thumb-card py-gui-s pl-gui-s" : "gui-thumb-strip py-gui-xs pl-gui-xs",
+        size === "fluid" ? "gui-thumb-fluid py-gui-s pl-gui-s" : "gui-thumb-strip py-gui-xs pl-gui-xs",
         className,
       )}
     >

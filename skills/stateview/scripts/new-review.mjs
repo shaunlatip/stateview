@@ -32,8 +32,6 @@ const manifest = {
   baseline: {},
   inputs: [],
   sections: [],
-  uncovered: [],
-  excluded: [],
 };
 
 const written = [

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { stateContext } from "./agent-export";
+import { DeviceFrame } from "./device-frame";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
 import { EmbeddedScreen } from "./embedded-screen";
@@ -17,6 +18,7 @@ import { useReview } from "./store";
 import { setStripWidth, useStripWidth } from "./strip-width";
 import { StateviewToaster, notify } from "./toast";
 import { ThemeScope, buttonVariants } from "./ui";
+import { useDocumentTitle } from "./use-document-title";
 import { useEffectEvent } from "./use-effect-event";
 import { pushFrame, replaceParams, useFrameQuery, type FrameQuery } from "./use-frame-query";
 
@@ -109,9 +111,21 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
   const [stripChoice, setStripChoice] = useState<boolean | null>(null);
   const stripOpen = stripChoice ?? wide;
   const stripId = useId();
+  const stripTriggerRef = useRef<HTMLButtonElement>(null);
+  // A closed strip is inert, so focus inside it would drop to the page: hand it back to the button that opens it.
+  const closeStrip = () => {
+    if (document.getElementById(stripId)?.contains(document.activeElement)) stripTriggerRef.current?.focus();
+    setStripChoice(false);
+  };
   const stripWidth = useStripWidth();
-  // While the strip is dragged the app's edge follows the pointer instead of easing after it.
-  const [stripResizing, setStripResizing] = useState(false);
+  // The app's edge eases only when the strip opens or closes; any resize (drag or arrow keys) and the first paint snap.
+  const [stripSnap, setStripSnap] = useState(true);
+  // The button and F. Dropping the snap in the same render as the new edge still animates: a transition starts from the after-change style.
+  const toggleStrip = () => {
+    setStripSnap(false);
+    if (stripOpen) closeStrip();
+    else setStripChoice(true);
+  };
   // Every surface that reads the strip's width re-declares the theme, so each one gets it.
   const stripWidthStyle = { "--thumb-strip-chosen": stripWidth } as CSSProperties;
 
@@ -168,9 +182,16 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
         if (panel === "closed") setPanel("keyboard");
         else closePanel();
         break;
+      case "f":
+      case "F":
+        event.preventDefault();
+        toggleStrip();
+        break;
       case "Escape":
-        // Escape first ends comment mode; only a second Escape leaves the state.
+        // Escape first ends comment mode, then closes what covers the app (the state panel, the strip on a phone); only after that does it leave the state.
         if (commenting) setCommenting(false);
+        else if (panel !== "closed") closePanel();
+        else if (!wide && stripOpen) closeStrip();
         else router.push(hubHref, { scroll: false });
         break;
     }
@@ -182,20 +203,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
-  // Set in an effect rather than with <title>, which React 18 doesn't hoist into
-  // <head>. The app's shell may set its own title here too (next/head applies it
-  // after this effect runs), so put the state's title back whenever <head> changes.
-  const title = frame ? `${frame.item.title} · Stateview` : null;
-  useEffect(() => {
-    if (!title) return;
-    const keepTitle = () => {
-      if (document.title !== title) document.title = title;
-    };
-    keepTitle();
-    const observer = new MutationObserver(keepTitle);
-    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
-  }, [title]);
+  useDocumentTitle(frame ? `${frame.item.title} · Stateview` : null);
 
   // --- The app's frame: told the state and review tools by message ------------------------
 
@@ -301,7 +309,8 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
         hubHref={hubHref}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
-        strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
+        strip={{ id: stripId, open: stripOpen, onToggle: toggleStrip }}
+        stripTriggerRef={stripTriggerRef}
         commenting={commenting}
         onToggleCommenting={toggleCommenting}
         commentCount={openCount}
@@ -310,7 +319,11 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
         onCopyComments={openCount > 0 ? copyComments : null}
         onCopyLink={copyLink}
         onDeleteComments={annotations.length > 0 ? deleteComments : null}
-        panel={{ id: panelId, open: panel !== "closed", onToggle: () => (panel === "closed" ? setPanel("pointer") : closePanel()) }}
+        panel={{
+          id: panelId,
+          open: panel !== "closed",
+          onToggle: (fromKeyboard) => (panel === "closed" ? setPanel(fromKeyboard ? "keyboard" : "pointer") : closePanel()),
+        }}
         panelTriggerRef={panelTriggerRef}
       />
       <Filmstrip
@@ -321,7 +334,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
         auto={stripChoice === null}
         width={stripWidth}
         onResize={(width, settled) => {
-          setStripResizing(!settled);
+          setStripSnap(true);
           setStripWidth(width, settled);
         }}
         viewed={review.viewed}
@@ -329,7 +342,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
         render={thumbnails === "live" ? render : null}
         // On a phone the strip covers the app, so picking a state puts it away.
         onPick={() => {
-          if (!wide) setStripChoice(false);
+          if (!wide) closeStrip();
         }}
       />
       {/*
@@ -342,26 +355,36 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
       <ThemeScope
         style={stripWidthStyle}
         className={cn(
-          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center transition-all duration-gui-large ease-gui-large motion-reduce:transition-none",
+          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center",
           stripOpen && "md:left-(--viewer-strip)",
-          stripResizing && "transition-none",
+          stripSnap ? "transition-none" : "gui-transition-left duration-gui-large ease-gui-large motion-reduce:transition-none",
         )}
       >
-        {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
-        <iframe
-          ref={appFrame}
-          id={APP_FRAME_ID}
-          data-stateview-frame=""
-          data-ready={frameReady ? "" : undefined}
-          title={manifest.screen}
-          src={frameSrc}
-          onLoad={onFrameLoad}
-          className={cn("h-full w-full", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}
-        />
+        {/* Phone states sit in a resizable phone-sized frame on wide screens. */}
+        <DeviceFrame mobile={viewportOf(manifest, inputs) === "mobile"} controls={APP_FRAME_ID}>
+          {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
+          <iframe
+            ref={appFrame}
+            id={APP_FRAME_ID}
+            data-stateview-frame=""
+            data-ready={frameReady ? "" : undefined}
+            title={manifest.screen}
+            src={frameSrc}
+            onLoad={onFrameLoad}
+            className="size-full"
+          />
+        </DeviceFrame>
       </ThemeScope>
-      {panel !== "closed" ? (
-        <StatePanel id={panelId} onElement={setPanelElement} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
-      ) : null}
+      <StatePanel
+        id={panelId}
+        onElement={setPanelElement}
+        open={panel !== "closed"}
+        manifest={manifest}
+        inputs={inputs}
+        onChange={setInput}
+        onClose={closePanel}
+        focusOnOpen={panel === "keyboard"}
+      />
       <StateviewToaster />
     </>
   );
@@ -376,6 +399,8 @@ function copyLink() {
 }
 
 function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
+  // Pages set their own titles (app/layout.tsx), so this one needs its own too.
+  useDocumentTitle("Stateview");
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">

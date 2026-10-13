@@ -7,6 +7,7 @@ import { post, receive, type FrameState } from "./frame-protocol";
 import { findFrameIndex, listFrames, type Inputs, type Manifest } from "./manifest";
 import { inputsKey, withOverrides } from "./overrides";
 import { useReview } from "./store";
+import { useDocumentTitle } from "./use-document-title";
 import type { FrameQuery } from "./use-frame-query";
 
 type EmbeddedScreenProps<T extends Inputs> = {
@@ -32,9 +33,13 @@ export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationL
   const frames = listFrames(manifest);
   const fromUrl = frames[findFrameIndex(frames, query.sv, query.step)];
   const stateId = sent?.stateId ?? fromUrl?.key;
+  const frame = frames.find((candidate) => candidate.key === stateId);
   const inputs = (sent?.inputs as T | undefined) ?? (fromUrl ? withOverrides(manifest, fromUrl.inputs, query.params) : null);
   const commenting = sent?.commenting ?? false;
   const pinsVisible = sent?.pinsVisible ?? true;
+
+  // The frame is a document of its own, opened directly too, so it needs its own title.
+  useDocumentTitle(frame ? `${frame.item.title} · ${manifest.screen}` : manifest.screen);
 
   useEffect(() => {
     // Whichever side hydrates first, its first message is lost: say ready on load and again on the first state.

@@ -38,7 +38,7 @@ test("the sample manifest is clean", () => {
   const { errors, warnings, summary } = checkManifest(sample);
   assert.deepEqual(errors, []);
   assert.deepEqual(warnings, []);
-  assert.deepEqual(summary, { items: 13, frames: 16, sections: 9, inputs: 10, uncovered: 3, excluded: 1 });
+  assert.deepEqual(summary, { items: 13, frames: 16, sections: 9, inputs: 10 });
 });
 
 // ---------- errors
@@ -97,19 +97,14 @@ test("section", () => {
   ]);
 });
 
-test("uncovered", () => {
+test("scope.base and scope.icon are optional", () => {
   const { errors } = check((m) => {
-    m.uncovered[0].title = "";
-    m.uncovered[1].set = {};
-    m.uncovered[2].set.role = "admin";
-    m.uncovered.push("Phone in dark mode");
+    delete m.scope.base;
+    delete m.scope.icon;
   });
-  assert.deepEqual(errors.map((e) => [e.rule, e.path]), [
-    ["uncovered", "uncovered[0].title"],
-    ["uncovered", "uncovered[1].set"],
-    ["set", "uncovered[2].set.role"],
-    ["uncovered", "uncovered[3]"],
-  ]);
+  assert.deepEqual(errors, []);
+  const { errors: wrong } = check((m) => (m.scope.base = 1));
+  only(wrong, "shape", "scope.base");
 });
 
 test("item", () => {
@@ -223,7 +218,7 @@ const run = (...args) => spawnSync(process.execPath, [script, ...args], { encodi
 test("CLI: clean file exits 0; usage errors exit 2", () => {
   const clean = run(samplePath);
   assert.equal(clean.status, 0);
-  assert.match(clean.stdout, /13 states \(16 frames\) in 9 sections · 10 inputs · 3 not covered · 1 excluded\n✓ no problems/);
+  assert.match(clean.stdout, /13 states \(16 frames\) in 9 sections · 10 inputs\n✓ no problems/);
   assert.equal(run().status, 2);
   assert.equal(run("missing.json").status, 2);
 });

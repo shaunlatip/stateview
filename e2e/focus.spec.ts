@@ -36,7 +36,8 @@ test("keys typed in the app stay in the app", async ({ page }) => {
   await settle(page);
   // None of these reached Stateview: same state, no panel, no comment mode.
   await expectState(page, "typical-team");
-  await expect(page.locator("[data-state-panel]")).toHaveCount(0);
+  // The panel is always mounted, so it can animate out; closed, it's hidden.
+  await expect(page.locator("[data-state-panel]")).toBeHidden();
   await expect(commentToggle(page)).toHaveAttribute("aria-pressed", "false");
   await expect(remove).toBeFocused();
 });
@@ -111,14 +112,15 @@ test("Escape in the app while commenting ends comment mode and stays", async ({ 
 });
 
 test.describe("media queries see the frame, not the viewer", () => {
-  test("a phone state gets a 375px window", async ({ page }) => {
+  // The phone frame opens at DEVICE_SIZE.initial (src/stateview/device-size.ts), the iPhone 15's 393 CSS px.
+  test("a phone state gets a phone-sized window", async ({ page }) => {
     await open(page, "/app/members?sv=mobile");
     const box = await page.locator(APP_FRAME).boundingBox();
-    expect(Math.round(box?.width ?? 0)).toBe(375);
+    expect(Math.round(box?.width ?? 0)).toBe(393);
     const inside = await app(page)
       .locator("body")
       .evaluate(() => ({ width: window.innerWidth, phone: window.matchMedia("(max-width: 767px)").matches }));
-    expect(inside).toEqual({ width: 375, phone: true });
+    expect(inside).toEqual({ width: 393, phone: true });
   });
 
   test("a desktop state gets the room beside the filmstrip", async ({ page }) => {

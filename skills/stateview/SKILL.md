@@ -54,19 +54,19 @@ Make the screen renderable from a plain object of string inputs, then write the 
 - Prefer splitting a container (gathers real state, unchanged behavior) from a screen (takes everything as props). Use an override context only for state read deep in the tree.
 - Request states are inputs: canned data for ready, a promise that never resolves for loading, a rejection for error. Actions answer from canned responses after a short delay, so every state is live and clickable. Never call real APIs or write real data from a review.
 - Moments (open sheet, typed draft, selected row) become optional `initial*` props.
-- The screen renders in an iframe below the viewer bar, a window of its own, and the review narrows it to 375 px for the `mobile` value of the environment input. Media queries, `matchMedia`, `innerWidth`, `h-dvh` and fixed positioning all measure the frame, so the screen's breakpoints and full-height layouts need no changes. Only thumbnails render inline, so a mobile thumbnail of a media-query screen shows the desktop layout; don't edit production CSS for that.
+- The screen renders in an iframe below the viewer bar, a window of its own, and for the `mobile` value of the environment input the review puts it in a phone-sized frame (393 × 852 px to start, resizable by the reviewer; full width on a phone). Media queries, `matchMedia`, `innerWidth`, `h-dvh` and fixed positioning all measure the frame, so the screen's breakpoints and full-height layouts need no changes. Only thumbnails render inline, so a mobile thumbnail of a media-query screen shows the desktop layout; don't edit production CSS for that.
 - The app's shell (`_app.tsx` or the root layout) wraps the review routes, in the viewer and again inside the frame: skip its global nav, analytics and dev toolbars under `/stateview`.
 - Production behavior doesn't change: every prop and override you add is optional and defaults to today's behavior. Keep a list of every production file you edit; it goes in your report.
 - For WebGL, canvas or video screens, pass `{ thumbnails: "off" }` to `defineReview`: the hub and filmstrip show each state's changed inputs instead of a live render, since browsers cap active WebGL contexts at about 16.
 
 ### 5. Write the manifest
 
-Fill in `review.json`: `baseline`, `inputs`, `sections` of states and sequences, `uncovered` and `excluded`. Apply the composition rules in `references/composition.md`:
+Fill in `review.json`: `baseline`, `inputs` and `sections` of states and sequences. Apply the composition rules in `references/composition.md`:
 
 - The realistic baseline comes first. Each state is one moment a real person could be in, answering one question, changing one or two inputs from the baseline.
 - Only stack what can be true at the same moment: who, config and data combine freely; one request state and one moment per state unless they truly co-occur. Use a sequence for anything that needs order (a flow, error then retry).
 - Mark flag- and entitlement-gated states and sub-component loading/error states `"code-only"` (the hub labels them "Not in designs"). They're the states nobody draws, and the most valuable ones here.
-- About 8–15 states in the standard section order, a short "Nearby features" section for unchanged things the change could break, and an honest `uncovered` list (each a `title` and the `set` it would need) and `excluded` list.
+- About 8–15 states in the standard section order, a short "Nearby features" section for unchanged things the change could break. Note as you go the combinations you leave out, possible or impossible, for your report.
 - Each input's `values` in reading order, not baseline first; add `labels` where sentence-casing a value reads wrong.
 - Titles name the state ("Viewer checking who's on the team"); each `why` is one sentence written as a person doing something; `checks` are short, observable things to verify.
 
@@ -94,8 +94,9 @@ It opens the hub and every state, reports page errors, console errors, failed re
 
 Tell the user, briefly:
 
-- The hub URL (`/stateview/<id>`), and the count: states, sections, what's not covered.
+- The hub URL (`/stateview/<id>`), and the count of states and sections.
 - The states, by section, one line each, with code-only ones marked.
+- What's not covered: possible combinations no state shows, each named the way a state would be with the inputs it would set, and impossible ones, each with the reason.
 - Every production file you changed for the boundary and what you added (optional props, an override context), so they can confirm behavior didn't change.
 - Inputs and values you inferred, and any checker warnings you kept on purpose.
 - That the review routes are served in development and on preview deployments, and 404 on Vercel production unless `STATEVIEW=1`.

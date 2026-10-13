@@ -68,8 +68,14 @@ export function ReviewIndex({ reviews, basePath }: { reviews: Review[]; basePath
                   </Link>
                 </h2>
                 <p className="text-gui-s text-gui-neutral-7 tabular-nums">
-                  <code className="font-gui-data">{manifest.scope.branch}</code> against{" "}
-                  <code className="font-gui-data">{manifest.scope.base}</code> · {listItems(manifest).length} states in{" "}
+                  <code className="font-gui-data">{manifest.scope.branch}</code>
+                  {manifest.scope.base ? (
+                    <>
+                      {" "}
+                      against <code className="font-gui-data">{manifest.scope.base}</code>
+                    </>
+                  ) : null}{" "}
+                  · {listItems(manifest).length} states in{" "}
                   {manifest.sections.length} sections
                 </p>
               </li>

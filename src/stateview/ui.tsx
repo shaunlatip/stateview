@@ -46,25 +46,28 @@ export const ThemeScope = forwardRef(function ThemeScope(
  * natively disabled or kept focusable (`focusableWhenDisabled`).
  */
 export const buttonVariants = cva(
-  "gui-control inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press data-disabled:text-gui-neutral-6 data-disabled:active:translate-none motion-reduce:transition-none",
+  "inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press data-disabled:text-gui-neutral-6 data-disabled:active:translate-none motion-reduce:transition-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent not-data-disabled:hover:bg-gui-neutral-9 not-data-disabled:hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
+          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent not-data-disabled:hover:bg-gui-neutral-9 not-data-disabled:hover:shadow-gui-s data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
         outline:
-          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 not-data-disabled:hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
+          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 not-data-disabled:hover:bg-gui-neutral-3-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
         // Neutral 4 hover, like the toolbar: the export's Neutral 3 at 20% was invisible on Neutral 1.
-        ghost: "text-gui-neutral-10 hover:bg-gui-neutral-4 focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
+        ghost: "text-gui-neutral-10 hover:bg-gui-neutral-4",
         // A secondary action that shouldn't compete, e.g. Delete beside Cancel and Save.
-        quiet: "text-gui-neutral-7 hover:bg-gui-neutral-4 hover:text-gui-neutral-10 focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
+        quiet: "text-gui-neutral-7 hover:bg-gui-neutral-4 hover:text-gui-neutral-10",
         // Neutral 4, not the export's Neutral 3: a 3-on-1 hover is a 1.15:1 step and reads as no change.
         toolbar: "text-gui-neutral-10 hover:bg-gui-neutral-4 aria-pressed:bg-gui-neutral-4 aria-expanded:bg-gui-neutral-4 data-disabled:hover:bg-transparent",
       },
       size: {
-        default: "px-gui-m py-gui-xs",
-        toolbar: "px-gui-s py-gui-xs",
-        icon: "gui-control-square p-gui-xs",
+        default: "gui-control px-gui-m py-gui-xs",
+        toolbar: "gui-control px-gui-s py-gui-xs",
+        icon: "gui-control gui-control-square p-gui-xs",
+        // The viewer bar's controls: a step smaller than a control (32px against 37px) inside the same bar.
+        bar: "size-8",
+        "bar-text": "h-8 px-gui-xs",
       },
     },
     defaultVariants: { variant: "primary", size: "default" },
@@ -99,29 +102,14 @@ export function Badge({ className, variant, ...props }: ComponentProps<"span"> &
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-/** A keyboard shortcut hint. Decorative: the control carries aria-keyshortcuts. */
-export function Kbd({ className, ...props }: ComponentProps<"kbd">) {
-  return (
-    <kbd
-      aria-hidden
-      className={cn(
-        "inline-flex items-center justify-center rounded-gui-xs bg-gui-option-badge px-gui-xxs font-gui-data text-gui-xs text-gui-option-badge-foreground",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
 export type ControlOption = { value: string; label: string; icon?: ReactNode };
 
 /**
  * One choice among a few short options, all visible at once. A radio group
- * rather than a toggle group: exactly one value is always set. Segments split
- * the width evenly so options line up from row to row. Selected is the
- * inverted fill, which keeps Color 1 for focus. Fill and text swap in the
- * same frame, and hover only lightens unselected text: a fade or a hover
- * color on the selected segment leaves light text on its light fill.
+ * rather than a toggle group: exactly one value is always set. Each segment is
+ * as wide as its option, for a control at the end of a row.
+ * Selected is a Neutral 1 segment edged in Neutral 4 on the Neutral 3 track,
+ * quieter than an inverted fill; hover only darkens unselected text.
  */
 export function SegmentedControl({
   value,
@@ -138,14 +126,14 @@ export function SegmentedControl({
     <RadioGroup
       value={value}
       onValueChange={(next) => onValueChange(String(next))}
-      className={cn("flex h-8 rounded-gui-s bg-gui-neutral-3 p-0.5", className)}
+      className={cn("flex h-7 shrink-0 rounded-gui-s bg-gui-neutral-3 p-0.5", className)}
       {...props}
     >
       {options.map((option) => (
         <Radio.Root
           key={option.value}
           value={option.value}
-          className="flex min-w-0 flex-1 basis-0 cursor-default items-center justify-center gap-gui-xs rounded-gui-segment text-gui-s whitespace-nowrap text-gui-neutral-7 outline-none select-none hover:not-data-checked:text-gui-neutral-10 focus-visible:gui-focus-ring data-checked:bg-gui-neutral-10 data-checked:text-gui-neutral-1"
+          className="flex min-w-0 cursor-default items-center justify-center gap-gui-xs rounded-gui-segment px-gui-xs text-gui-s whitespace-nowrap text-gui-neutral-7 outline-none select-none hover:not-data-checked:text-gui-neutral-10 focus-visible:gui-focus-ring data-checked:bg-gui-neutral-1 data-checked:text-gui-neutral-10 data-checked:inset-ring data-checked:inset-ring-gui-neutral-4"
         >
           {option.icon}
           {option.label}
@@ -155,12 +143,12 @@ export function SegmentedControl({
   );
 }
 
-/** Graphical Switch: Neutral 5 track, Color 1 when on. The thumb inverts with the scheme so it reads on both tracks. */
+/** Graphical Switch: Neutral 5 track, Neutral 10 when on, like a selected segment. The thumb inverts with the scheme so it reads on both tracks. */
 export function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "inline-flex h-5 w-9 shrink-0 cursor-default items-center rounded-full bg-gui-neutral-5 p-0.5 outline-none transition-colors duration-gui ease-gui focus-visible:gui-focus-ring data-checked:bg-gui-1 motion-reduce:transition-none",
+        "inline-flex h-5 w-9 shrink-0 cursor-default items-center rounded-full bg-gui-neutral-5 p-0.5 outline-none transition-colors duration-gui ease-gui focus-visible:gui-focus-ring data-checked:bg-gui-neutral-10 motion-reduce:transition-none",
         className,
       )}
       {...props}
@@ -172,9 +160,11 @@ export function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
 
 /**
  * Graphical Select, for inputs with too many or too long options to show at
- * once. The list is portalled to <body>, so it takes the trigger's scheme
- * explicitly. In dark it's lifted to Neutral 3 with a Neutral 5 edge, since a
- * shadow doesn't show against a dark panel.
+ * once. The value and caret alone, filled only on hover or while open, for
+ * the end of a row in a flyout (as in Linear's and OpenAI's settings
+ * popovers). The list is portalled to <body>, so it
+ * takes the trigger's scheme explicitly. In dark it's lifted to Neutral 3
+ * with a Neutral 5 edge, since a shadow doesn't show against a dark panel.
  */
 export function Select({
   value,
@@ -193,7 +183,7 @@ export function Select({
     <SelectPrimitive.Root items={options} value={value} onValueChange={(next) => next !== null && onValueChange(String(next))}>
       <SelectPrimitive.Trigger
         className={cn(
-          "flex h-8 cursor-default items-center justify-between gap-gui-xs rounded-gui-s bg-gui-neutral-3 px-gui-s text-gui-s text-gui-neutral-10 outline-none select-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-4 focus-visible:gui-focus-ring data-popup-open:bg-gui-neutral-4 motion-reduce:transition-none",
+          "flex h-7 shrink-0 cursor-default items-center justify-between gap-gui-xs rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none select-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring data-popup-open:bg-gui-neutral-3 motion-reduce:transition-none",
           className,
         )}
         {...props}
@@ -228,8 +218,23 @@ export function Select({
 }
 
 /**
+ * Tooltips that sit side by side, like a toolbar's. The first waits for the
+ * pointer to rest (Base UI's 600ms), so a pass across the group on the way to
+ * somewhere else opens nothing; its neighbours then open at once, with no
+ * transition, until the pointer has been away for 400ms. Nested inside the
+ * app's zero-delay provider, it sets the delay for its own tooltips only.
+ */
+export function TooltipGroup({ children }: { children: ReactNode }) {
+  return <TooltipPrimitive.Provider>{children}</TooltipPrimitive.Provider>;
+}
+
+/**
  * Graphical Tooltip. The popup is portalled to <body>, outside any themed
- * subtree, so it carries the theme scope itself.
+ * subtree, so it carries the theme scope itself. It scales from its trigger
+ * on a transition rather than a keyframe, so one that closes while still
+ * opening reverses from where it is. Whenever Base UI marks it instant (a
+ * neighbour in a group, an open from focus, a close from a click or Escape)
+ * it skips the transition.
  */
 export function Tooltip({
   label,
@@ -249,7 +254,7 @@ export function Tooltip({
       <TooltipPrimitive.Trigger render={children} />
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Positioner side={side} sideOffset={8} className="z-50">
-          <TooltipPrimitive.Popup className="stateview-theme flex items-center gap-gui-xs rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-neutral-1 shadow-gui-s duration-gui ease-gui motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-closed:animate-out motion-safe:data-closed:fade-out-0">
+          <TooltipPrimitive.Popup className="stateview-theme flex origin-(--transform-origin) items-center gap-gui-xs rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-neutral-1 shadow-gui-s transition duration-gui ease-gui data-ending-style:opacity-0 data-starting-style:opacity-0 data-instant:transition-none motion-safe:data-ending-style:scale-(--motion-popup-scale) motion-safe:data-starting-style:scale-(--motion-popup-scale)">
             {label}
             {shortcut ? (
               <kbd className="font-gui-data text-gui-xs text-gui-neutral-6">{shortcut}</kbd>
@@ -262,25 +267,9 @@ export function Tooltip({
 }
 
 /** Graphical Toolbar separator. */
-export function ToolbarSeparator() {
-  return <SeparatorPrimitive orientation="vertical" className="gui-divider-vertical my-gui-xxs self-stretch" />;
+export function ToolbarSeparator({ className }: { className?: string }) {
+  return <SeparatorPrimitive orientation="vertical" className={cn("gui-divider-vertical my-gui-xxs self-stretch", className)} />;
 }
-
-type IconButtonProps = Omit<ButtonPrimitive.Props, "aria-label"> & {
-  /** Accessible name, also shown as the tooltip. */
-  label: string;
-  /** Shortcut shown in the tooltip. Pass `aria-keyshortcuts` separately. */
-  shortcut?: string;
-};
-
-/** An icon-only toolbar control, named by `label` and explained by a tooltip. forwardRef so a menu trigger can use it on React 18. */
-export const IconButton = forwardRef(function IconButton({ label, shortcut, ...props }: IconButtonProps, ref: Ref<HTMLElement>) {
-  return (
-    <Tooltip label={label} shortcut={shortcut}>
-      <Button ref={ref} variant="toolbar" size="icon" aria-label={label} {...props} />
-    </Tooltip>
-  );
-});
 
 /** Graphical Menu. Compose `Menu` > `MenuTrigger` + `MenuPopup` > `MenuItem`. */
 export const Menu = MenuPrimitive.Root;

@@ -55,12 +55,6 @@ export type Section<T extends Inputs = Inputs> = {
   items: Item<T>[];
 };
 
-/** A combination of inputs no state shows, named the way a state would be. */
-export type Uncovered<T extends Inputs = Inputs> = {
-  title: string;
-  set: Partial<T>;
-};
-
 export type Manifest<T extends Inputs = Inputs> = {
   id: string;
   /** Bump when states change, so stored reviews and comments never map onto the wrong state. */
@@ -68,15 +62,18 @@ export type Manifest<T extends Inputs = Inputs> = {
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
   screen: string;
-  /** The repo and branch under review; `icon` is the app's own favicon, as a URL path. */
-  scope: { repo: string; icon?: string; branch: string; base: string };
+  /**
+   * The repo and change under review, which the agent drafting the manifest
+   * reads from git: `repo` from the remote (or the folder's name without one),
+   * `branch` from HEAD (a short SHA when detached), `base` from the branch the
+   * change will merge into. `base` is left out when there's nothing to compare
+   * against, such as uncommitted work on the default branch. `icon` is the
+   * app's own favicon, as a URL path, if it has one.
+   */
+  scope: { repo: string; branch: string; base?: string; icon?: string };
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];
-  /** Combinations no state covers, listed rather than forced into an unreadable composite. */
-  uncovered: Uncovered<T>[];
-  /** Combinations left out because no real account can be in them. */
-  excluded: string[];
 };
 
 /** One thing the reviewer can look at: a state, or one step of a sequence. */
@@ -149,7 +146,7 @@ export function valueLabel(input: { labels?: Partial<Record<string, string>> }, 
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Width to render a frame at, from the manifest's environment input ("mobile" → 375px). */
+/** Whether a frame renders as a phone, from the manifest's environment input ("mobile"). */
 export function viewportOf<T extends Inputs>(manifest: Manifest<T>, inputs: T): "desktop" | "mobile" {
   const environment = manifest.inputs.find((input) => input.class === "environment");
   return environment && inputs[environment.id] === "mobile" ? "mobile" : "desktop";

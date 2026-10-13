@@ -223,11 +223,5 @@
         }
       ]
     }
-  ],
-  "uncovered": [
-    { "title": "Viewer on a Free team at its seat limit", "set": { "role": "viewer", "plan": "free", "members": "at-limit" } },
-    { "title": "Member with the SSO beta on", "set": { "role": "member", "ssoBeta": "on" } },
-    { "title": "Phone while the members list loads", "set": { "breakpoint": "mobile", "membersRequest": "loading" } }
-  ],
-  "excluded": ["Free plan with the SSO beta on (SSO is Pro-only)"]
+  ]
 }

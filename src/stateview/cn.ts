@@ -4,11 +4,17 @@ import { createCn } from "cn/config";
  * Class merging that knows Stateview's theme utilities (theme.css). Without
  * this, `text-gui-xs` reads as a text color and `font-gui-ui` as a weight, so
  * merging them with a color or weight class silently drops the size or
- * family. Part of the engine, so a copy in another app doesn't depend on that
- * app's own `cn`, which wouldn't know these classes.
+ * family. The spacing and radius scales are registered too, so a later
+ * `px-0` replaces an earlier `px-gui-s` instead of both applying. Part of the
+ * engine, so a copy in another app doesn't depend on that app's own `cn`,
+ * which wouldn't know these classes.
  */
 export const cn = createCn({
   extend: {
+    theme: {
+      spacing: ["gui-zero", "gui-xxs", "gui-xs", "gui-s", "gui-m", "gui-l", "gui-xl", "gui-xxl"],
+      radius: ["gui-xs", "gui-s", "gui-m", "gui-l", "gui-segment"],
+    },
     classGroups: {
       "font-size": [{ text: ["gui-xxs", "gui-xs", "gui-s", "gui-m", "gui-l", "gui-xl", "gui-xxl"] }],
       "font-family": [{ font: ["gui-ui", "gui-brand", "gui-editorial", "gui-data"] }],

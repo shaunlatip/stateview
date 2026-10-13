@@ -74,14 +74,13 @@ function collector() {
 export function checkManifest(manifest) {
   const f = collector();
   if (!isObject(manifest)) {
-    f.error("shape", "$", "The manifest should be a JSON object with id, version, route, screen, scope, baseline, inputs, sections, uncovered and excluded.");
+    f.error("shape", "$", "The manifest should be a JSON object with id, version, route, screen, scope, baseline, inputs and sections.");
     return { errors: f.errors, warnings: f.warnings, summary: summarize({}) };
   }
   checkShape(manifest, f);
   const model = checkInputs(manifest, f);
   model.baseline = checkBaseline(manifest, model, f);
   const entries = checkSections(manifest, model, f);
-  checkUncovered(manifest, model, f);
   checkComposition(manifest, entries, model, f);
   return { errors: f.errors, warnings: f.warnings, summary: summarize(manifest) };
 }
@@ -93,14 +92,16 @@ function checkShape(m, f) {
   f.expect(Number.isInteger(m.version) && m.version >= 1, "shape", "version", `version should be a whole number of 1 or more${got(m.version)}.`);
   f.expect(typeof m.route === "string" && m.route.startsWith("/"), "shape", "route", `route should be the path that renders the screen, starting with "/"${got(m.route)}.`);
   f.expect(isText(m.screen), "shape", "screen", `screen should name the screen under review, like "Team settings › Members"${got(m.screen)}.`);
-  if (f.expect(isObject(m.scope), "shape", "scope", `scope should be an object with repo, branch and base${got(m.scope)}.`)) {
+  if (f.expect(isObject(m.scope), "shape", "scope", `scope should be an object with repo and branch${got(m.scope)}.`)) {
     const { repo, icon, branch, base } = m.scope;
     f.expect(isText(repo), "shape", "scope.repo", `scope.repo should name the repository, like "acme-web"${got(repo)}.`);
     if (icon !== undefined) {
       f.expect(typeof icon === "string" && icon.startsWith("/"), "shape", "scope.icon", `scope.icon should be the app's favicon as a path, like "/favicon.ico", or left out${got(icon)}.`);
     }
     f.expect(typeof branch === "string", "shape", "scope.branch", `scope.branch should be the branch name${got(branch)}.`);
-    f.expect(typeof base === "string", "shape", "scope.base", `scope.base should be the branch it merges into, like "main"${got(base)}.`);
+    if (base !== undefined) {
+      f.expect(typeof base === "string", "shape", "scope.base", `scope.base should be the branch it merges into, like "main", or left out${got(base)}.`);
+    }
   }
   if (f.expect(isObject(m.baseline), "shape", "baseline", `baseline should be an object with a value for every input${got(m.baseline)}.`)) {
     for (const [key, value] of Object.entries(m.baseline)) {
@@ -109,8 +110,6 @@ function checkShape(m, f) {
   }
   f.expect(Array.isArray(m.inputs) && m.inputs.length > 0, "shape", "inputs", `inputs should list at least one input${got(m.inputs)}.`);
   f.expect(Array.isArray(m.sections) && m.sections.length > 0, "shape", "sections", `sections should list at least one section${got(m.sections)}.`);
-  f.expect(Array.isArray(m.uncovered), "shape", "uncovered", `uncovered should be a list of { title, set } combinations; use [] if every combination is covered${got(m.uncovered)}.`);
-  f.expect(isStringArray(m.excluded), "shape", "excluded", `excluded should be a list of strings; use [] if nothing is excluded${got(m.excluded)}.`);
 }
 
 /**
@@ -264,20 +263,6 @@ function sequenceFrames(item, path, model, f) {
   return frames;
 }
 
-/** Each uncovered combination is named like a state and sets real inputs to real values. */
-function checkUncovered(m, model, f) {
-  if (!Array.isArray(m.uncovered)) return;
-  m.uncovered.forEach((entry, index) => {
-    const path = at("uncovered", index);
-    if (!f.expect(isObject(entry), "uncovered", path, "Each uncovered entry should be an object with a title and the set of inputs no state shows.")) return;
-    f.expect(isText(entry.title), "uncovered", at(path, "title"), `Title should name the combination the way a state would be, like "Viewer on a Free team"${got(entry.title)}.`);
-    const setPath = at(path, "set");
-    if (f.expect(isObject(entry.set) && Object.keys(entry.set).length > 0, "uncovered", setPath, `set should list the inputs in this combination, like { "role": "viewer", "plan": "free" }${got(entry.set)}.`)) {
-      checkSet(entry.set, setPath, model, f);
-    }
-  });
-}
-
 /**
  * Reports unknown keys and invalid values. Returns `{ set, broken }`: the valid
  * entries, and whether any were dropped. A broken frame is left out of the
@@ -314,7 +299,7 @@ function checkComposition(m, entries, model, f) {
 
 function checkBudget(m, f) {
   const { items, sections } = summarize(m);
-  if (items > MAX_ITEMS) f.warn("budget", "sections", `This manifest has ${items} items; keep it to ${MAX_ITEMS} or fewer and list the rest under uncovered.`);
+  if (items > MAX_ITEMS) f.warn("budget", "sections", `This manifest has ${items} items; keep it to ${MAX_ITEMS} or fewer and name the rest in your report as not covered.`);
   if (items < MIN_ITEMS) f.warn("budget", "sections", `This manifest has ${plural(items, "item")}; a review needs at least ${MIN_ITEMS}: the baseline plus the states the change affects.`);
   if (sections > MAX_SECTIONS) f.warn("budget", "sections", `This manifest has ${sections} sections; keep it to ${MAX_SECTIONS} or fewer by merging related ones.`);
 }
@@ -344,7 +329,7 @@ function checkEnvironmentValues(model, f) {
   if (!model.inputs) return;
   for (const input of model.inputs.values()) {
     if (input.class === "environment" && !input.values.includes("mobile")) {
-      f.warn("environment-values", at(at("inputs", input.index), "values"), `${input.id} has no "mobile" value, so no frame will render at 375px; add "mobile" if the layout changes on phones.`);
+      f.warn("environment-values", at(at("inputs", input.index), "values"), `${input.id} has no "mobile" value, so no frame will render in the phone frame; add "mobile" if the layout changes on phones.`);
     }
   }
 }
@@ -392,7 +377,7 @@ function checkFrames(entries, model, f) {
 /** too-many-changes, stacked-system and stacked-moment for one frame. */
 function checkChangeCount(changed, path, f) {
   if (changed.length > MAX_CHANGES) {
-    f.warn("too-many-changes", path, `This frame changes ${changed.length} inputs from the baseline (${ids(changed)}); vary one or two axes, at most ${MAX_CHANGES}, and list the rest under uncovered.`);
+    f.warn("too-many-changes", path, `This frame changes ${changed.length} inputs from the baseline (${ids(changed)}); vary one or two axes, at most ${MAX_CHANGES}, and name the rest in your report as not covered.`);
   }
   const system = changed.filter((input) => input.class === "system");
   if (system.length > 1) {
@@ -422,8 +407,6 @@ function summarize(m) {
     frames,
     sections: sections.length,
     inputs: length(m.inputs),
-    uncovered: length(m.uncovered),
-    excluded: length(m.excluded),
   };
 }
 
@@ -458,8 +441,8 @@ function formatResult({ file, errors, warnings, summary }) {
   for (const finding of errors) lines.push(`error  ${finding.path}  ${finding.message}`);
   for (const finding of warnings) lines.push(`warn   ${finding.path}  ${finding.message}`);
   if (summary) {
-    const { items, frames, sections, inputs, uncovered, excluded } = summary;
-    lines.push(`${plural(items, "state")} (${plural(frames, "frame")}) in ${plural(sections, "section")} · ${plural(inputs, "input")} · ${uncovered} not covered · ${excluded} excluded`);
+    const { items, frames, sections, inputs } = summary;
+    lines.push(`${plural(items, "state")} (${plural(frames, "frame")}) in ${plural(sections, "section")} · ${plural(inputs, "input")}`);
   }
   const counts = [errors.length && plural(errors.length, "error"), warnings.length && plural(warnings.length, "warning")].filter(Boolean);
   lines.push(counts.length ? counts.join(", ") : "✓ no problems");

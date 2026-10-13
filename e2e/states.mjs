@@ -1,17 +1,58 @@
 // Interaction states for the runtime gate (`harden-check --prod` reads this via .harden.json "steps").
 // Each state is reached at 1440 and 375 and scanned like a route: axe (scoped to the dialog if one
-// is open), focus inside open dialogs, overflow, screenshot. Add one per dialog-with-errors,
-// failed request, filled form or other state you can only reach by doing something.
-//
-// export default [
-//   { name: "create-dialog-errors", route: "/", run: async (page) => {
-//       await page.getByRole("button", { name: "New project" }).click();
-//       await page.getByRole("button", { name: "Create" }).click();
-//   } },
-//   { name: "load-failed", route: "/", run: async (page) => {
-//       await page.route("**/api/**", (r) => r.fulfill({ status: 500 }));
-//       await page.reload();
-//   } },
-// ];
+// is open), focus inside open dialogs, overflow, screenshot.
 
-export default [];
+const VIEWER = "/app/members?sv=typical-team";
+
+/** Waits until the app's frame has rendered its state and both documents are listening. */
+async function viewerReady(page) {
+  await page.locator("iframe[data-stateview-frame][data-ready]").waitFor({ state: "attached", timeout: 10_000 });
+}
+
+const bar = (page) => page.locator('header[aria-label="Review"]');
+
+export default [
+  {
+    name: "state-panel-from-keyboard",
+    route: VIEWER,
+    run: async (page) => {
+      await viewerReady(page);
+      await page.locator("body").focus();
+      await page.keyboard.press("s");
+      await page.locator("[data-state-panel]").waitFor();
+    },
+  },
+  {
+    name: "comment-options-menu",
+    route: VIEWER,
+    run: async (page) => {
+      await viewerReady(page);
+      await bar(page).getByRole("button", { name: "Comment options" }).click();
+      await page.getByRole("menu").waitFor();
+    },
+  },
+  {
+    name: "filmstrip-toggled",
+    route: VIEWER,
+    run: async (page) => {
+      await viewerReady(page);
+      await bar(page).getByRole("button", { name: "Filmstrip", exact: true }).click();
+    },
+  },
+  {
+    name: "comment-composer",
+    route: VIEWER,
+    run: async (page) => {
+      await viewerReady(page);
+      await bar(page).getByRole("button", { name: /^Comment/ }).and(page.locator("[aria-pressed]")).click();
+      const app = page.frameLocator("iframe[data-stateview-frame]");
+      await app.getByRole("heading").first().click();
+      await app.getByRole("textbox", { name: "Comment" }).waitFor();
+    },
+  },
+  {
+    name: "unknown-state",
+    route: "/app/members?sv=nope",
+    run: async () => {},
+  },
+];

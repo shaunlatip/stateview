@@ -192,7 +192,7 @@ Review pages are server-rendered like any other route. A moment that renders dif
 
 ## 7. Environment
 
-The viewer renders the app in an iframe below its bar (and beside the filmstrip on wide screens), loading the review route with `&embed=1`. The frame is a window of its own, so everything that measures the window measures the frame: CSS media queries (Tailwind's `sm:`, `md:` and so on), `100vw`, `dvh` and `vh`, `window.matchMedia`, `window.innerWidth`/`innerHeight`, scroll position, and hooks built on them. When the environment input's value is `mobile`, the viewer narrows the frame to 375 px, and the screen reflows the way it does on a phone with no change at the boundary.
+The viewer renders the app in an iframe below its bar (and beside the filmstrip on wide screens), loading the review route with `&embed=1`. The frame is a window of its own, so everything that measures the window measures the frame: CSS media queries (Tailwind's `sm:`, `md:` and so on), `100vw`, `dvh` and `vh`, `window.matchMedia`, `window.innerWidth`/`innerHeight`, scroll position, and hooks built on them. When the environment input's value is `mobile`, the viewer puts the app in a phone-sized frame (393 × 852 px to start, resizable from its edges; full width when the viewer itself is on a phone), and the screen reflows the way it does on a phone with no change at the boundary.
 
 - **The render function doesn't need to read the environment input.** The viewer reads it to size the frame. Leave the screen's breakpoint classes and viewport hooks as they are; don't convert them to container queries for the review.
 - **Thumbnails are the exception.** Hub cards and the filmstrip render each state inline, scaled into the card, not in a frame. A mobile state's thumbnail of a screen that uses media queries shows the desktop layout squeezed into a phone-sized card. That's expected, and the state itself opens correctly, so don't edit production CSS to fix a thumbnail. If the screen branches in JavaScript on a viewport hook, an optional `isMobile` prop that defaults to the hook makes its thumbnail right too, and costs little:
@@ -242,7 +242,7 @@ The hub then shows each state's changed inputs in place of the thumbnail. Focus 
 - [ ] Every new prop, context and override is optional and defaults to today's behavior; production code paths are unchanged.
 - [ ] No review state calls a real API, writes data, patches `fetch` or reads secrets.
 - [ ] Loading never resolves, errors reject, and actions answer from canned responses after a short delay.
-- [ ] The mobile state shows the phone layout in the 375 px frame (open the state; its thumbnail may still show desktop).
+- [ ] The mobile state shows the phone layout in the phone frame (open the state; its thumbnail may still show desktop).
 - [ ] The app's shell (nav, analytics, dev toolbars) doesn't render under `/stateview`.
 - [ ] Opening the same state twice renders the same screen.
 - [ ] The app's typecheck passes (its `typecheck` script, or `tsc --noEmit` from its own `node_modules` if it has none), and its lint, if it has one.

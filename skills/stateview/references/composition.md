@@ -47,13 +47,13 @@ Each rule is followed by how to apply it in the manifest.
 2. **One question per state.** Each state has a title and a `why` written as a person doing something. If you can't write that sentence, split the state.
    *Manifest:* `title` and `why` on every item. See "Writing titles, `why` lines and checks" below.
 3. **Only stack what can be true at the same moment for the same person.** Who, configuration and data combine freely. System and moment get one each per state, unless they really co-occur (submitting a form shows every field error at once). Combinations no real account can be in are excluded, not shown.
-   *Manifest:* no more than one `system` input and one `moment` input differ from the baseline in a state's `set`. Impossible combinations go in `excluded` with the reason in parentheses.
+   *Manifest:* no more than one `system` input and one `moment` input differ from the baseline in a state's `set`. Leave impossible combinations out, and name them in your report with the reason.
 4. **Change one or two inputs from the baseline.** Two binary inputs become A, B and A + B; "neither" is the baseline. The state panel highlights what differs from the baseline, so fewer differences read faster.
    *Manifest:* `set` lists only the inputs that differ from `baseline`, usually one or two, never more than three.
 5. **Push extremes through data, not through impossibility.** The longest real name, 40 members, a missing avatar: values a production account could have.
    *Manifest:* extremes are values of a `data` input (`many-long`), backed by fixtures with real-looking content.
 6. **Separate things that compete for the same region of the screen.** Two banners in one slot, or a dialog over a loading table, hide each other.
-   *Manifest:* put them in separate states, even when the combination is possible. List the combination in `uncovered` if it matters.
+   *Manifest:* put them in separate states, even when the combination is possible. If the combination matters, name it in your report as not covered.
 7. **Use sequences for anything that needs time or order:** a multi-step flow, an error then a retry, dismiss then reload. Each step is still a plausible moment.
    *Manifest:* `kind: "sequence"` with `steps`, each step a `title` and a `set`. Each step's `set` is relative to the baseline, not to the previous step.
 8. **Name every input.** Each state lists the inputs it sets; nothing varies without a name.
@@ -63,7 +63,7 @@ Each rule is followed by how to apply it in the manifest.
 10. **Scope to the change.** Only inputs the diff reads, plus a short "Nearby features" section for unchanged things the change could break.
     *Manifest:* `scope` records the repo, branch and base, and optionally the app's favicon path as `icon`. Inputs the diff doesn't touch are left out of `inputs`.
 11. **Report coverage honestly.** Combinations no state covers are listed, not forced into unreadable states.
-    *Manifest:* `uncovered` lists combinations that are possible but not shown, each a `title` named the way a state would be and the `set` it would need; the hub shows them as dashed cards. `excluded` lists combinations that are impossible, as strings with the reason.
+    *Manifest:* nothing; the manifest holds only what's shown. Your report lists the combinations that are possible but not shown, each named the way a state would be with the inputs it would set, and the combinations that are impossible, each with the reason.
 12. **Keep the budget small.** About 8 to 15 states per review, in no more than the nine hub sections below. More than that means the scope is too wide; split the review by screen.
     *Manifest:* count items (a sequence counts as one item).
 13. **Keep process material out.** Option comparisons, references, competitor screenshots and before/after notes are not states.
@@ -159,7 +159,7 @@ The checker script validates the manifest's shape and warns on the rules that ca
 | `repeated-step` | two consecutive steps in a sequence resolve to the same inputs | 7 |
 | `flag-origin` | a state that changes a `flag` input is marked `design` | 9 |
 | `unused-input` | an input is declared but no state or step changes it from the baseline | 8, 10 |
-| `environment-values` | an `environment` input has no `mobile` value (the viewer narrows the frame to 375 px only for `mobile`) | Taxonomy, class 6 |
+| `environment-values` | an `environment` input has no `mobile` value (the viewer puts the app in a phone-sized frame only for `mobile`) | Taxonomy, class 6 |
 | `budget` | more than 15 items, fewer than 3, or more than 9 sections | 12 |
 | `title-length` | a title is longer than 60 characters | 2 |
 
