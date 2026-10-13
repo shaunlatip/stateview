@@ -25,7 +25,7 @@ export function agentBrief<T extends Inputs>(manifest: Manifest<T>, statusPath?:
   return [
     `# Review comments: ${manifest.screen}`,
     "",
-    "A reviewer stepped through this screen's states in Stateview and left these comments. Each state is the app's real screen, started with the inputs listed under its heading (role, plan, data, request states). Those inputs come from the review's fixtures, so make each change in the screen's own components, not in the fixtures or the review.",
+    "A reviewer stepped through this screen's states in Stateview and left these comments. Each state is the app's real screen, started with the inputs listed under its heading (role, plan, data, request states). Those inputs come from the review's fixtures, so make each change in the screen's own components, not in the fixtures or the review. Use the app's own styles and components; the `gui-*` tokens and classes are Stateview's, even where a linter suggests them.",
     "",
     "For each comment:",
     "1. Find the code. Start with the component names, then the element's text. Labels are often built from variables (`Remove ${name}`), so search for a fixed part of them. The selector only works inside the rendered screen, so use it in the browser, not to search files.",
