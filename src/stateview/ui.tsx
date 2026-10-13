@@ -95,20 +95,6 @@ export function Badge({ className, variant, ...props }: ComponentProps<"span"> &
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-/** A keyboard shortcut hint. Decorative: the control carries aria-keyshortcuts. */
-export function Kbd({ className, ...props }: ComponentProps<"kbd">) {
-  return (
-    <kbd
-      aria-hidden
-      className={cn(
-        "inline-flex items-center justify-center rounded-gui-xs bg-gui-option-badge px-gui-xxs font-gui-data text-gui-xs text-gui-option-badge-foreground",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
 export type ControlOption = { value: string; label: string; icon?: ReactNode };
 
 /**
@@ -261,22 +247,6 @@ export function Tooltip({
 /** Graphical Toolbar separator. */
 export function ToolbarSeparator({ className }: { className?: string }) {
   return <SeparatorPrimitive orientation="vertical" className={cn("gui-divider-vertical my-gui-xxs self-stretch", className)} />;
-}
-
-type IconButtonProps =Omit<ButtonPrimitive.Props, "aria-label"> & {
-  /** Accessible name, also shown as the tooltip. */
-  label: string;
-  /** Shortcut shown in the tooltip. Pass `aria-keyshortcuts` separately. */
-  shortcut?: string;
-};
-
-/** An icon-only toolbar control, named by `label` and explained by a tooltip. */
-export function IconButton({ label, shortcut, ...props }: IconButtonProps) {
-  return (
-    <Tooltip label={label} shortcut={shortcut}>
-      <Button variant="toolbar" size="icon" aria-label={label} {...props} />
-    </Tooltip>
-  );
 }
 
 /** Graphical Menu. Compose `Menu` > `MenuTrigger` + `MenuPopup` > `MenuItem`. */
