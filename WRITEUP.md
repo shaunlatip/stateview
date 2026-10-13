@@ -1,6 +1,6 @@
 # Stateview write-up
 
-[Live app](https://stateview-wine.vercel.app) · Time spent: about 6 hours 25 minutes, 25 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
+[Live app](https://stateview-wine.vercel.app) · Time spent: about 6 hours 15 minutes, 15 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
 
 ### What problem I solved
 
@@ -22,6 +22,8 @@ Stateview has two main states; a high-level navigational hub where you can look 
 
 **Viewer.** The viewer started with a floating bar centered at the bottom of the screen ([floating bar](https://stateview-v1.vercel.app/app/members?sv=typical-team)). The state's title matters in a review tool and takes up a lot of space, and once I added the state panel, the floating pieces felt scattered and got in the way of the app. So I moved everything into a fixed header. It takes some vertical space, but it pushes the app down instead of covering it.
 
+**Accessibility.** Everything in Stateview works from the keyboard, including picking elements to comment on, and axe finds no violations on the hub or the viewer at desktop and phone widths. The end-to-end tests run in Chromium, WebKit and Firefox.
+
 **State panel.** I considered making the panel read-only, since the agent sets each state, but decided to keep every input editable to allow for maximum control. I compared several layout and field options before settling on inline rows that drop down from the header ([state panel explorer](https://stateview-panel-explorer.vercel.app/app/members?sv=typical-team&__panel=columns), press S).
 
 ### Tradeoffs I made and what I gave up
@@ -34,7 +36,7 @@ The iframe only works for apps served from the same origin, and it can't emulate
 
 ### Assumptions I operated under
 
-- The reviewer is a designer, PM or engineer checking a change an agent built, on a desktop browser.
+- The reviewer is a designer, PM or engineer checking a change an agent built, usually on a desktop browser. Stateview also works on a phone, and phone states open in a phone-sized frame on desktop.
 - A screen's state can be expressed as a set of inputs (role, plan, feature flags, data, request status), and the agent can find where those inputs enter the screen and fake the network responses.
 - The review runs on the app's own dev server or preview deploy, so it shares the app's origin.
 - The agent proposes the states, and the reviewer judges whether they're the right ones.
@@ -42,6 +44,8 @@ The iframe only works for apps served from the same origin, and it can't emulate
 ### What I'd do with more time
 
 First, I'd build the status file. Then I'd add an MCP, like Agentation does, so the agent can read comments without the reviewer pasting them.
+
+I'd also show each state's checks in the viewer. The manifest already lists what to verify in each state (for the viewer state, that there are no Remove or Revoke actions), but the viewer doesn't show them yet.
 
 After that, I'd make the sync two-way so reviewers don't have to go back to their IDE. A comment in Stateview would queue an agent to work on it, the screens it's changing would show as blocked, and the reviewer could keep reviewing the rest while it works.
 
