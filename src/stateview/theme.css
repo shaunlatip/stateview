@@ -525,17 +525,6 @@
 }
 
 /*
- * The hub's header and index. The header's height is measured (it wraps on
- * narrower screens) and set as --hub-header on the hub, so the index's top
- * block matches it and Stateview's name sits level with the repo name. The
- * index's first link is then placed on the first section title's baseline,
- * also measured, since the title's size and position change with the layout.
- */
-@utility gui-hub-header-height {
-  height: var(--hub-header, calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-l)));
-}
-
-/*
  * The rule under a hub section. It's drawn over the section's contents rather
  * than inset on the section, so the grey states row can't cover it.
  */

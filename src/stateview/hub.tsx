@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -85,55 +85,8 @@ function useCurrentSection(ids: string[]) {
   return current;
 }
 
-/** Where a line of text's baseline sits, from a zero-size inline box placed on it for the moment of measuring. */
-function baselineOf(text: HTMLElement) {
-  const probe = document.createElement("span");
-  probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
-  text.prepend(probe);
-  const y = probe.getBoundingClientRect().top;
-  probe.remove();
-  return y;
-}
-
-/**
- * Lines the index up with the page. The header's height goes on the hub as
- * --hub-header, so the index's top block matches it. The index list is then
- * pushed down until its first link's text shares a baseline with the first
- * section's title. Both are measured, and remeasured whenever the header or
- * the content changes size (wrapping, a new layout, fonts arriving).
- */
-function useIndexAlignment() {
-  const root = useRef<HTMLDivElement>(null);
-  const header = useRef<HTMLElement>(null);
-  const main = useRef<HTMLElement>(null);
-  const index = useRef<HTMLUListElement>(null);
-  useEffect(() => {
-    const align = () => {
-      const headerNode = header.current;
-      const list = index.current;
-      const title = main.current?.querySelector<HTMLElement>("section h2");
-      const label = list?.querySelector<HTMLElement>("[data-index-label]");
-      if (!headerNode || !list || !title || !label) return;
-      root.current?.style.setProperty("--hub-header", `${headerNode.offsetHeight}px`);
-      // The index is sticky at the top; compare both as if the page were scrolled to the top.
-      const titleBaseline = baselineOf(title) + window.scrollY;
-      const nav = list.parentElement;
-      const labelBaseline = baselineOf(label) - (nav?.getBoundingClientRect().top ?? 0) + (nav?.scrollTop ?? 0);
-      const padding = parseFloat(getComputedStyle(list).paddingTop) || 0;
-      list.style.paddingTop = `${Math.max(0, padding + titleBaseline - labelBaseline)}px`;
-    };
-    const observer = new ResizeObserver(align);
-    if (header.current) observer.observe(header.current);
-    if (main.current) observer.observe(main.current);
-    void document.fonts?.ready.then(align);
-    return () => observer.disconnect();
-  }, []);
-  return { root, header, main, index };
-}
-
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   useRestoredScroll();
-  const { root, header, main, index } = useIndexAlignment();
   const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
@@ -142,14 +95,14 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   const current = useCurrentSection(manifest.sections.map((section) => section.id));
 
   return (
-    <ThemeScope ref={root} className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+    <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
       <NightSky />
       <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto bg-gui-neutral-2 px-gui-m gui-divider-end md:flex">
-        {/* As tall as the header with the same top padding, so the name sits level with the repo name. */}
-        <div className="flex gui-hub-header-height shrink-0 items-start pt-gui-l">
+        {/* One control tall with the header's top padding, so the name sits level with the repo name; the sections follow straight after. */}
+        <div className="flex shrink-0 pt-gui-l pb-gui-m">
           <Brand className="gui-control px-gui-xs" />
         </div>
-        <ul ref={index} className="flex flex-col pb-gui-l">
+        <ul className="flex flex-col pb-gui-l">
           {manifest.sections.map((section) => (
             <IndexLink key={section.id} id={section.id} current={current === section.id}>
               {section.title}
@@ -158,10 +111,9 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
         </ul>
       </nav>
 
-      <main ref={main} className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col">
         {/* Grey like the index, ruled off like every band below it, and inset to the same XL start edge. */}
         <header
-          ref={header}
           className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s bg-gui-neutral-2 px-gui-xl py-gui-l gui-divider-bottom"
         >
           <div className="flex min-w-0 flex-col gap-gui-s">
@@ -232,8 +184,7 @@ function IndexLink({ id, current, children }: { id: string; current: boolean; ch
         aria-current={current ? "location" : undefined}
         className="flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none"
       >
-        {/* Its own inline box, so the index can measure the label's baseline (useIndexAlignment). */}
-        <span data-index-label="">{children}</span>
+        {children}
       </a>
     </li>
   );
