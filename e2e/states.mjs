@@ -47,7 +47,7 @@ export default [
       await bar(page).getByRole("button", { name: /^Comment/ }).and(page.locator("[aria-pressed]")).click();
       const app = page.frameLocator("iframe[data-stateview-frame]");
       await app.getByRole("heading").first().click();
-      await app.getByRole("textbox").first().waitFor();
+      await app.getByRole("textbox", { name: "Comment" }).waitFor();
     },
   },
   {
