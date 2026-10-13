@@ -37,7 +37,7 @@ It copies the engine into `src/stateview/` (vendored; don't edit the copy), impo
 node <skill>/scripts/new-review.mjs <review-id> --screen "<Area › Screen>"
 ```
 
-Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git, and the app's favicon as `scope.icon` when it finds one), a render stub in `stateview-reviews/<id>/index.tsx`, and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
+Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git, and the app's favicon as `scope.icon` when it finds one), a render stub in `stateview-reviews/<id>/index.tsx`, an empty `status.json` beside them for agent reports (see Fixing review comments), and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
 
 Paths below assume a `src/` folder; in apps without one, the folders sit at the project root (`stateview/`, `stateview-reviews/`, `app/stateview/`). The scripts print the real paths.
 
@@ -102,6 +102,20 @@ Tell the user, briefly:
 - That the review routes are served in development and on preview deployments, and 404 on Vercel production unless `STATEVIEW=1`.
 
 Don't commit unless asked. If they want the review on the branch's preview deployment, the review files need to be committed with it.
+
+## Fixing review comments
+
+The reviewer copies their comments (Copy comments, in the viewer or the hub) and pastes them to you. The prompt names each comment's state URL, element and `Id`, and the review's status file, `src/stateview-reviews/<id>/status.json`.
+
+1. Fix each comment in the screen's own components, as the prompt says.
+2. Merge one entry per comment id into `status.json`, keeping entries already there, and set `updatedAt`:
+
+   ```json
+   { "version": 1, "updatedAt": "2026-10-13T17:00:00Z", "comments": { "<comment id>": { "status": "fixed", "note": "One sentence on what changed.", "files": ["src/…"] } } }
+   ```
+
+   `status` is `fixed`, `wontfix` (the note says why) or `question` (the note asks the reviewer).
+3. That's the report. The review imports the file, so saving it hot-reloads into the reviewer's open Stateview: each pin gets a badge and the agent's note, a toast says how many comments changed, and the hub counts fixed apart from open. The reviewer accepts (resolves) or reopens each one; a reopened comment comes back in the next copy with your last note.
 
 ## Updating a review
 

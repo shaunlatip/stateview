@@ -34,18 +34,25 @@ const manifest = {
   sections: [],
 };
 
+// Where the coding agent reports what it did with each comment; the copied prompt names it.
+const statusPath = relative(appRoot, join(reviewsDir, id, "status.json")).split("\\").join("/");
+
 const written = [
   [join(reviewsDir, id, "review.json"), `${JSON.stringify(manifest, null, 2)}\n`],
+  [join(reviewsDir, id, "status.json"), `${JSON.stringify({ version: 1, comments: {} })}\n`],
   [
     join(reviewsDir, id, "index.tsx"),
     `import { defineReview } from "../../stateview/review";
 import manifest from "./review.json";
+import status from "./status.json";
 
 /**
  * ${options.screen}: renders the real screen from one state's inputs. Replace
  * the stub with the screen and its fixtures (the skill's references/boundary.md).
+ * status.json is where the coding agent reports on comments; importing it
+ * hot-reloads each report into the open review.
  */
-export default defineReview(manifest, () => null);
+export default defineReview(manifest, () => null, { status, statusPath: ${JSON.stringify(statusPath)} });
 `,
   ],
 ].map(([path, content]) => `${writeOnce(path, content).padEnd(8)} ${relative(appRoot, path)}`);
