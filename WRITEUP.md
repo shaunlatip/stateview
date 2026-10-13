@@ -49,3 +49,7 @@ The iframe only works for apps served from the same origin, and it can't emulate
 ### Fun UI details :)
 
 Try scrolling up/down on the hub and see what's there! Added a small easter egg there. More details are in the [README](README.md#ui-details).
+
+### Inspiration and further reading
+
+Added after the review on Oct 13. The idea started from Matt Rothenberg's [note on pure UI](https://mattrothenberg.com/notes/pure-ui-agentic-era/), that UI should be a pure function of state. Jakub Krehel's [`/state-machine`](https://jakub.kr/skills) skill does something similar for a single component, rendering every state on a throwaway page with mock data and a switcher.
