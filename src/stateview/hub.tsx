@@ -374,20 +374,19 @@ function StateCard<T extends Inputs>({
   const details = chipText(item, viewed);
   return (
     <li className="flex min-w-0 gui-state-row-item snap-start flex-col gap-gui-xs">
-      {/* Out of the tab order and the accessibility tree: the title link below is the same link. */}
-      <Link
-        href={href}
-        tabIndex={-1}
-        aria-hidden
-        onClick={onOpen}
-        className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui motion-safe:hover:gui-hover-scale motion-safe:active:gui-press-scale"
-      >
-        {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
+      {/* The scale sits on the card, so a flow's stacked cards grow and shrink with its first screen as one object. */}
+      <div className="group relative rounded-gui-s transition-transform duration-gui ease-gui motion-safe:hover:gui-hover-scale motion-safe:active:gui-press-scale">
         {item.kind === "sequence" ? <FlowStack steps={item.steps.length} /> : null}
         {preview}
         <CornerChips comments={comments} fixed={fixed} viewed={viewed} />
         <FooterChips item={item} />
-      </Link>
+        {/*
+         * Stretched over the card rather than wrapped around it: the live screen
+         * can hold links of its own, and an <a> inside an <a> is invalid HTML.
+         * Out of the tab order and the accessibility tree: the title link below is the same link.
+         */}
+        <Link href={href} tabIndex={-1} aria-hidden onClick={onOpen} className="absolute inset-0 rounded-gui-s outline-none" />
+      </div>
       <div className="flex flex-col">
         <h3 className="line-clamp-1 text-gui-m">
           <Link

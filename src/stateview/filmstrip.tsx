@@ -103,21 +103,8 @@ function StripSections<T extends Inputs>({
               );
               return (
                 <li key={item.id} className="flex">
-                  <a
-                    // Keep the state on screen in view as the reviewer steps through.
-                    ref={current ? keepInView : undefined}
-                    href={frameHref(manifest, first)}
-                    aria-current={current ? "page" : undefined}
-                    onClick={(event) => {
-                      // A new tab or window opens the link as usual.
-                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                      // The viewer reads its state from the URL through pushFrame, as J and K do; a router navigation wouldn't tell it.
-                      event.preventDefault();
-                      onPick();
-                      pushFrame(event.currentTarget.getAttribute("href") ?? "");
-                    }}
-                    className="group flex w-min flex-col gap-gui-xxs rounded-gui-s outline-offset-2 outline-none focus-visible:gui-focus-ring"
-                  >
+                  {/* Keep the state on screen in view as the reviewer steps through. */}
+                  <div ref={current ? keepInView : undefined} className="group relative flex w-min flex-col gap-gui-xxs">
                     <div className="relative">
                       {render ? (
                         <Thumbnail viewport={viewportOf(manifest, first.inputs)} size="strip" className={ring}>
@@ -129,13 +116,32 @@ function StripSections<T extends Inputs>({
                       <CornerChips comments={comments} viewed={isViewed} />
                       <FooterChips item={item} />
                     </div>
-                    {/* The same for every state: the outline on the screen alone marks the one on screen. */}
-                    <span className="line-clamp-1 text-gui-xs text-gui-neutral-8">
-                      {item.title}
-                      {comments > 0 ? <span className="sr-only">{`, ${comments} open ${comments === 1 ? "comment" : "comments"}`}</span> : null}
-                      {details ? <span className="sr-only">{`, ${details}`}</span> : null}
-                    </span>
-                  </a>
+                    {/*
+                     * The title is the link, and its ::after stretches over the whole card, rather than the
+                     * link wrapping the thumbnail: the live screen can hold links of its own, and an <a>
+                     * inside an <a> is invalid HTML. The focus ring is on the ::after, around the whole card.
+                     */}
+                    <a
+                      href={frameHref(manifest, first)}
+                      aria-current={current ? "page" : undefined}
+                      onClick={(event) => {
+                        // A new tab or window opens the link as usual.
+                        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                        // The viewer reads its state from the URL through pushFrame, as J and K do; a router navigation wouldn't tell it.
+                        event.preventDefault();
+                        onPick();
+                        pushFrame(event.currentTarget.getAttribute("href") ?? "");
+                      }}
+                      className="outline-none after:absolute after:inset-0 after:rounded-gui-s after:outline-offset-2 focus-visible:after:gui-focus-ring"
+                    >
+                      {/* The same for every state: the outline on the screen alone marks the one on screen. */}
+                      <span className="line-clamp-1 text-gui-xs text-gui-neutral-8">
+                        {item.title}
+                        {comments > 0 ? <span className="sr-only">{`, ${comments} open ${comments === 1 ? "comment" : "comments"}`}</span> : null}
+                        {details ? <span className="sr-only">{`, ${details}`}</span> : null}
+                      </span>
+                    </a>
+                  </div>
                 </li>
               );
             })}
