@@ -43,25 +43,28 @@ export function ThemeScope<T extends ElementType = "div">({
  * natively disabled or kept focusable (`focusableWhenDisabled`).
  */
 export const buttonVariants = cva(
-  "gui-control inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press data-disabled:text-gui-neutral-6 data-disabled:active:translate-none motion-reduce:transition-none",
+  "inline-flex shrink-0 items-center justify-center gap-gui-xs rounded-gui-s border-0 font-gui-ui text-gui-m font-gui-medium whitespace-nowrap outline-none select-none transition duration-gui ease-gui focus-visible:gui-focus-ring active:gui-press data-disabled:text-gui-neutral-6 data-disabled:active:translate-none motion-reduce:transition-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent not-data-disabled:hover:bg-gui-neutral-9 not-data-disabled:hover:shadow-gui-s focus-visible:inset-ring-gui-1-transparent data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
+          "bg-gui-neutral-10 text-gui-neutral-1 inset-ring inset-ring-gui-neutral-10-transparent not-data-disabled:hover:bg-gui-neutral-9 not-data-disabled:hover:shadow-gui-s data-disabled:bg-gui-neutral-3 data-disabled:inset-ring-gui-neutral-4-transparent",
         outline:
-          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 not-data-disabled:hover:bg-gui-neutral-3-transparent focus-visible:inset-ring-gui-1-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
+          "text-gui-neutral-10 inset-ring inset-ring-gui-neutral-4 not-data-disabled:hover:bg-gui-neutral-3-transparent data-disabled:inset-ring-gui-neutral-4-transparent",
         // Neutral 4 hover, like the toolbar: the export's Neutral 3 at 20% was invisible on Neutral 1.
-        ghost: "text-gui-neutral-10 hover:bg-gui-neutral-4 focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
+        ghost: "text-gui-neutral-10 hover:bg-gui-neutral-4",
         // A secondary action that shouldn't compete, e.g. Delete beside Cancel and Save.
-        quiet: "text-gui-neutral-7 hover:bg-gui-neutral-4 hover:text-gui-neutral-10 focus-visible:inset-ring focus-visible:inset-ring-gui-1-transparent",
+        quiet: "text-gui-neutral-7 hover:bg-gui-neutral-4 hover:text-gui-neutral-10",
         // Neutral 4, not the export's Neutral 3: a 3-on-1 hover is a 1.15:1 step and reads as no change.
         toolbar: "text-gui-neutral-10 hover:bg-gui-neutral-4 aria-pressed:bg-gui-neutral-4 aria-expanded:bg-gui-neutral-4 data-disabled:hover:bg-transparent",
       },
       size: {
-        default: "px-gui-m py-gui-xs",
-        toolbar: "px-gui-s py-gui-xs",
-        icon: "gui-control-square p-gui-xs",
+        default: "gui-control px-gui-m py-gui-xs",
+        toolbar: "gui-control px-gui-s py-gui-xs",
+        icon: "gui-control gui-control-square p-gui-xs",
+        // The viewer bar's controls: a step smaller than a control (32px against 37px) inside the same bar.
+        bar: "size-8",
+        "bar-text": "h-8 px-gui-xs",
       },
     },
     defaultVariants: { variant: "primary", size: "default" },
@@ -110,11 +113,10 @@ export type ControlOption = { value: string; label: string; icon?: ReactNode };
 
 /**
  * One choice among a few short options, all visible at once. A radio group
- * rather than a toggle group: exactly one value is always set. Segments split
- * the width evenly so options line up from row to row. Selected is the
- * inverted fill, which keeps Color 1 for focus. Fill and text swap in the
- * same frame, and hover only lightens unselected text: a fade or a hover
- * color on the selected segment leaves light text on its light fill.
+ * rather than a toggle group: exactly one value is always set. Each segment is
+ * as wide as its option, for a control at the end of a row.
+ * Selected is a Neutral 1 segment edged in Neutral 4 on the Neutral 3 track,
+ * quieter than an inverted fill; hover only darkens unselected text.
  */
 export function SegmentedControl({
   value,
@@ -131,14 +133,14 @@ export function SegmentedControl({
     <RadioGroup
       value={value}
       onValueChange={(next) => onValueChange(String(next))}
-      className={cn("flex h-8 rounded-gui-s bg-gui-neutral-3 p-0.5", className)}
+      className={cn("flex h-7 shrink-0 rounded-gui-s bg-gui-neutral-3 p-0.5", className)}
       {...props}
     >
       {options.map((option) => (
         <Radio.Root
           key={option.value}
           value={option.value}
-          className="flex min-w-0 flex-1 basis-0 cursor-default items-center justify-center gap-gui-xs rounded-gui-segment text-gui-s whitespace-nowrap text-gui-neutral-7 outline-none select-none hover:not-data-checked:text-gui-neutral-10 focus-visible:gui-focus-ring data-checked:bg-gui-neutral-10 data-checked:text-gui-neutral-1"
+          className="flex min-w-0 cursor-default items-center justify-center gap-gui-xs rounded-gui-segment px-gui-xs text-gui-s whitespace-nowrap text-gui-neutral-7 outline-none select-none hover:not-data-checked:text-gui-neutral-10 focus-visible:gui-focus-ring data-checked:bg-gui-neutral-1 data-checked:text-gui-neutral-10 data-checked:inset-ring data-checked:inset-ring-gui-neutral-4"
         >
           {option.icon}
           {option.label}
@@ -148,12 +150,12 @@ export function SegmentedControl({
   );
 }
 
-/** Graphical Switch: Neutral 5 track, Color 1 when on. The thumb inverts with the scheme so it reads on both tracks. */
+/** Graphical Switch: Neutral 5 track, Neutral 10 when on, like a selected segment. The thumb inverts with the scheme so it reads on both tracks. */
 export function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "inline-flex h-5 w-9 shrink-0 cursor-default items-center rounded-full bg-gui-neutral-5 p-0.5 outline-none transition-colors duration-gui ease-gui focus-visible:gui-focus-ring data-checked:bg-gui-1 motion-reduce:transition-none",
+        "inline-flex h-5 w-9 shrink-0 cursor-default items-center rounded-full bg-gui-neutral-5 p-0.5 outline-none transition-colors duration-gui ease-gui focus-visible:gui-focus-ring data-checked:bg-gui-neutral-10 motion-reduce:transition-none",
         className,
       )}
       {...props}
@@ -165,9 +167,11 @@ export function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
 
 /**
  * Graphical Select, for inputs with too many or too long options to show at
- * once. The list is portalled to <body>, so it takes the trigger's scheme
- * explicitly. In dark it's lifted to Neutral 3 with a Neutral 5 edge, since a
- * shadow doesn't show against a dark panel.
+ * once. The value and caret alone, filled only on hover or while open, for
+ * the end of a row in a flyout (as in Linear's and OpenAI's settings
+ * popovers). The list is portalled to <body>, so it
+ * takes the trigger's scheme explicitly. In dark it's lifted to Neutral 3
+ * with a Neutral 5 edge, since a shadow doesn't show against a dark panel.
  */
 export function Select({
   value,
@@ -186,7 +190,7 @@ export function Select({
     <SelectPrimitive.Root items={options} value={value} onValueChange={(next) => next !== null && onValueChange(String(next))}>
       <SelectPrimitive.Trigger
         className={cn(
-          "flex h-8 cursor-default items-center justify-between gap-gui-xs rounded-gui-s bg-gui-neutral-3 px-gui-s text-gui-s text-gui-neutral-10 outline-none select-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-4 focus-visible:gui-focus-ring data-popup-open:bg-gui-neutral-4 motion-reduce:transition-none",
+          "flex h-7 shrink-0 cursor-default items-center justify-between gap-gui-xs rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none select-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring data-popup-open:bg-gui-neutral-3 motion-reduce:transition-none",
           className,
         )}
         {...props}
@@ -255,8 +259,8 @@ export function Tooltip({
 }
 
 /** Graphical Toolbar separator. */
-export function ToolbarSeparator() {
-  return <SeparatorPrimitive orientation="vertical" className="gui-divider-vertical my-gui-xxs self-stretch" />;
+export function ToolbarSeparator({ className }: { className?: string }) {
+  return <SeparatorPrimitive orientation="vertical" className={cn("gui-divider-vertical my-gui-xxs self-stretch", className)} />;
 }
 
 type IconButtonProps =Omit<ButtonPrimitive.Props, "aria-label"> & {

@@ -55,12 +55,6 @@ export type Section<T extends Inputs = Inputs> = {
   items: Item<T>[];
 };
 
-/** A combination of inputs no state shows, named the way a state would be. */
-export type Uncovered<T extends Inputs = Inputs> = {
-  title: string;
-  set: Partial<T>;
-};
-
 export type Manifest<T extends Inputs = Inputs> = {
   id: string;
   /** Bump when states change, so stored reviews and comments never map onto the wrong state. */
@@ -73,10 +67,6 @@ export type Manifest<T extends Inputs = Inputs> = {
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];
-  /** Combinations no state covers, listed rather than forced into an unreadable composite. */
-  uncovered: Uncovered<T>[];
-  /** Combinations left out because no real account can be in them. */
-  excluded: string[];
 };
 
 /** One thing the reviewer can look at: a state, or one step of a sequence. */

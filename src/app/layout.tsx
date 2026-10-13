@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/*
+ * No title here: each page sets its own. A layout title would be re-applied
+ * on every navigation within the viewer, over the state's title that the
+ * viewer renders itself (FocusView's <title>).
+ */
 export const metadata: Metadata = {
-  title: "Stateview",
   description: "",
 };
 
