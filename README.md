@@ -4,7 +4,7 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 ## Try it
 
-Live at https://stateview-wine.vercel.app
+Live at https://stateview-wine.vercel.app. The write-up (decisions, trade-offs, what's next) is in [WRITEUP.md](WRITEUP.md).
 
 - `/` is the hub: every state for the change, one row per section, with live thumbnails. The index on the left jumps to a section, and the button at the top right copies every open comment for a coding agent.
 - Open a state to see the real page in that state, with a filmstrip of every state down the left (`F` shows and hides it). `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut. The app runs in a frame of its own, so keys pressed inside it belong to the app: the shortcuts work from Stateview's bar and filmstrip. "Skip to app", the first Tab stop, moves focus into the app.
