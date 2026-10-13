@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { agentBrief, formatState } from "./agent-export";
+import { AGENT_STATUS_LABEL, changedIds, type AgentStatus } from "./agent-status";
 import { DeviceFrame } from "./device-frame";
 import type { AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
@@ -53,7 +54,13 @@ type FocusViewProps<T extends Inputs> = {
   hubHref?: string;
   /** "off" for screens that can't render many live copies at once (WebGL maps, video): the filmstrip lists inputs instead. */
   thumbnails?: "live" | "off";
+  /** What the coding agent reported per comment, from the review's imported status.json. */
+  agentStatus?: AgentStatus;
+  /** Where status.json is, from the app's root, for the copied prompt to name. */
+  statusPath?: string;
 };
+
+const NO_STATUS: AgentStatus = {};
 
 // From this width the filmstrip opens by default and takes its own column; below it, it overlays the app.
 const WIDE = "(min-width: 768px)";
@@ -75,7 +82,15 @@ export function FocusView<T extends Inputs>(props: FocusViewProps<T>) {
 }
 
 /** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
-function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails = "live", query }: FocusViewProps<T> & { query: FrameQuery }) {
+function Viewer<T extends Inputs>({
+  manifest,
+  render,
+  hubHref = "/",
+  thumbnails = "live",
+  agentStatus = NO_STATUS,
+  statusPath,
+  query,
+}: FocusViewProps<T> & { query: FrameQuery }) {
   const router = useRouter();
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);
@@ -204,6 +219,28 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
 
   useDocumentTitle(frame ? `${frame.item.title} · Stateview` : null);
 
+  // --- The agent's status: status.json hot-reloads in, and changes to this review's comments are announced ---
+
+  const statusKey = JSON.stringify(agentStatus);
+  const seenStatus = useRef(statusKey);
+
+  const announceStatus = useEffectEvent((previous: AgentStatus, next: AgentStatus) => {
+    const ids = new Set(review.annotations.map((a) => a.id));
+    const changed = changedIds(previous, next).filter((id) => ids.has(id));
+    if (changed.length === 0) return;
+    const counts = Object.entries(AGENT_STATUS_LABEL)
+      .map(([kind, label]) => [label, changed.filter((id) => next[id].status === kind).length] as const)
+      .filter(([, count]) => count > 0)
+      .map(([label, count]) => `${count} ${label.toLowerCase()}`);
+    notify.info(`Agent updated ${changed.length} ${changed.length === 1 ? "comment" : "comments"}`, { description: counts.join(", ") });
+  });
+
+  useEffect(() => {
+    if (statusKey === seenStatus.current) return;
+    announceStatus(JSON.parse(seenStatus.current) as AgentStatus, JSON.parse(statusKey) as AgentStatus);
+    seenStatus.current = statusKey;
+  }, [statusKey]);
+
   // --- The app's frame: told the state and review tools by message ------------------------
 
   const frameMessage: FrameState | null = frame && inputs ? { type: "state", stateId: frame.key, inputs, commenting, pinsVisible } : null;
@@ -270,7 +307,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
 
   const copyComments = () => {
     void navigator.clipboard
-      .writeText(agentBrief(manifest) + formatState(manifest, frame, annotations))
+      .writeText(agentBrief(manifest, statusPath) + formatState(manifest, frame, annotations, agentStatus))
       .then(() => notify.success("Comments copied with this state’s URL and inputs"))
       .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };

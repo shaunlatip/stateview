@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
 import { formatReview } from "./agent-export";
+import { agentStatusOf, type AgentStatus } from "./agent-status";
+import type { Annotation } from "./annotations";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
 import { cn } from "./cn";
 import { Logo } from "./logo";
@@ -22,6 +24,10 @@ type HubProps<T extends Inputs> = {
    * render many live copies at once (WebGL maps, video).
    */
   thumbnails: Record<string, ReactNode>;
+  /** What the coding agent reported per comment, from the review's status.json. */
+  agentStatus?: AgentStatus;
+  /** Where status.json is, for the copied prompt to name. */
+  statusPath?: string;
 };
 
 /*
@@ -88,13 +94,16 @@ function useCurrentSection(ids: string[]) {
   return current;
 }
 
-export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
+export function Hub<T extends Inputs>({ manifest, thumbnails, agentStatus, statusPath }: HubProps<T>) {
   useRestoredScroll();
   const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
-  const commentsOn = (item: Item<T>) =>
-    annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
+  const openOn = (item: Item<T>) => annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`)));
+  // Open comments the agent reports fixed, waiting for the reviewer to accept, count apart from the rest.
+  const isFixed = (annotation: Annotation) => agentStatusOf(agentStatus, annotation)?.status === "fixed";
+  const fixedOn = (item: Item<T>) => openOn(item).filter(isFixed).length;
+  const commentsOn = (item: Item<T>) => openOn(item).length - fixedOn(item);
   const current = useCurrentSection(manifest.sections.map((section) => section.id));
 
   const previewOf = (item: Item<T>) => {
@@ -157,7 +166,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
               </p>
             </div>
           </div>
-          <CopyComments manifest={manifest} />
+          <CopyComments manifest={manifest} agentStatus={agentStatus} statusPath={statusPath} />
         </header>
 
         <div className="flex flex-col pb-gui-xxl">
@@ -169,6 +178,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
                   item={item}
                   href={frameHref(manifest, firstFrameOf(item))}
                   comments={commentsOn(item)}
+                  fixed={fixedOn(item)}
                   viewed={viewed.includes(item.id)}
                   preview={previewOf(item)}
                 />
@@ -212,13 +222,13 @@ function BranchName({ children }: { children: ReactNode }) {
 }
 
 /** Copies every open comment in the review, state by state, as Markdown for a coding agent. */
-function CopyComments<T extends Inputs>({ manifest }: { manifest: Manifest<T> }) {
+function CopyComments<T extends Inputs>({ manifest, agentStatus, statusPath }: { manifest: Manifest<T>; agentStatus?: AgentStatus; statusPath?: string }) {
   const { annotations } = useReview(manifest);
   const open = annotations.filter((a) => a.status === "open");
   const states = new Set(open.map((a) => a.stateId)).size;
   const copy = () => {
     void navigator.clipboard
-      .writeText(formatReview(manifest, annotations))
+      .writeText(formatReview(manifest, annotations, statusPath, agentStatus))
       .then(() =>
         notify.success(`Copied ${open.length} ${open.length === 1 ? "comment" : "comments"} from ${states} ${states === 1 ? "state" : "states"}`, {
           description: "Each with its state’s URL and inputs, ready to paste to your agent.",
@@ -277,12 +287,15 @@ function StateCard<T extends Inputs>({
   item,
   href,
   comments,
+  fixed,
   viewed,
   preview,
 }: {
   item: Item<T>;
   href: string;
   comments: number;
+  /** Open comments the agent reports fixed. */
+  fixed: number;
   viewed: boolean;
   /** The live thumbnail, or the inputs it changes. */
   preview: ReactNode;
@@ -301,7 +314,7 @@ function StateCard<T extends Inputs>({
         {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
         {item.kind === "sequence" ? <FlowStack steps={item.steps.length} /> : null}
         {preview}
-        <CornerChips comments={comments} viewed={viewed} />
+        <CornerChips comments={comments} fixed={fixed} viewed={viewed} />
         <FooterChips item={item} />
       </Link>
       <div className="flex flex-col">
@@ -318,6 +331,7 @@ function StateCard<T extends Inputs>({
         <p id={`card-${item.id}-details`} className="text-gui-s text-gui-neutral-7">
           {item.why}
           {comments > 0 ? <span className="sr-only">{` ${comments} open ${comments === 1 ? "comment" : "comments"}.`}</span> : null}
+          {fixed > 0 ? <span className="sr-only">{` ${fixed} fixed by the agent, waiting for you to accept.`}</span> : null}
           {details ? <span className="sr-only">{` ${details}.`}</span> : null}
         </p>
       </div>

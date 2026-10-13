@@ -10,5 +10,15 @@ import type { Review } from "./review";
  * server; the generated route imports the review registry on the client.
  */
 export function ReviewFocus({ review, hubHref }: { review: Review; hubHref: string }) {
-  return <FocusView manifest={review.manifest} render={review.render} annotationLayer={CommentLayer} hubHref={hubHref} thumbnails={review.thumbnails} />;
+  return (
+    <FocusView
+      manifest={review.manifest}
+      render={review.render}
+      annotationLayer={CommentLayer}
+      hubHref={hubHref}
+      thumbnails={review.thumbnails}
+      agentStatus={review.agentStatus}
+      statusPath={review.statusPath}
+    />
+  );
 }
