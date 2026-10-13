@@ -6,9 +6,9 @@ import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStor
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { stateContext } from "./agent-export";
+import { formatState } from "./agent-export";
 import { DeviceFrame } from "./device-frame";
-import { formatAnnotations, type AnnotationLayer } from "./annotations";
+import type { AnnotationLayer } from "./annotations";
 import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
@@ -206,7 +206,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
 
   useEffect(() => {
     if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
-  }, [frameState]);
+  }, [frameState, appFrame]);
 
   const sendState = useEffectEvent(() => {
     if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
@@ -235,11 +235,11 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     appFrame.current?.contentWindow?.focus();
   };
 
-  if (!frame || !inputs) return <UnknownState id={sv} />;
+  if (!frame || !inputs) return <UnknownState id={sv} flow={frames.find((candidate) => candidate.item.id === sv)?.item.title} step={step} />;
 
   const copyComments = () => {
     void navigator.clipboard
-      .writeText(stateContext(manifest, frame, inputs) + formatAnnotations(annotations))
+      .writeText(formatState(manifest, frame, annotations))
       .then(() => toast.success("Comments copied with this state’s URL and inputs"))
       .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
@@ -368,14 +368,16 @@ function copyLink() {
     .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
 }
 
-function UnknownState({ id }: { id: string | null }) {
+/** A link to a state that isn't in the review, or to a step past the end of a flow that is (`flow` is its title). */
+function UnknownState({ id, flow, step }: { id: string | null; flow?: string; step: number | null }) {
+  const title = flow ? `“${flow}” has no step ${step}` : id ? `There’s no state called “${id}” in this review` : "Choose a state to review";
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
       {/* Pages set their own titles (app/layout.tsx), so this one needs its own too. */}
       <title>Stateview</title>
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
-          {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
+          {title}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
         <Link href={HUB_HREF} scroll={false} className={buttonVariants({ className: "w-fit" })}>
