@@ -1,6 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { APP_FRAME, DEV_CHROME, WCAG_TAGS, app, commentToggle, describeViolations, open } from "./helpers";
+import { APP_FRAME, DEV_CHROME, WCAG_TAGS, app, commentToggle, describeViolations, open, tab } from "./helpers";
 
 // Routes to check. Add stateful URLs too (e.g. "/?state=empty") so empty,
 // error and loading states get the same scan as the default view.
@@ -29,7 +29,7 @@ for (const { route, viewer } of routes) {
 
     test("is reachable by keyboard with a visible focus indicator", async ({ page }) => {
       await open(page, route, { viewer });
-      await page.keyboard.press("Tab");
+      await tab(page);
       const focused = page.locator(":focus");
       test.skip((await focused.count()) === 0, "no focusable element on this route yet");
       if (viewer) {

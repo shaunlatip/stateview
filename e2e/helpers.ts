@@ -6,8 +6,8 @@ type Violation = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"][number
 /** The viewer renders the app under review in this same-origin frame, so the app gets its own window. */
 export const APP_FRAME = "iframe[data-stateview-frame]";
 
-// Dev-only tools injected into the page (Agentation, Next's dev overlay) are not the product.
-export const DEV_CHROME = ["agentation-toolbar", "[data-agentation-root]", "[data-feedback-toolbar]", "nextjs-portal"];
+// Next's dev overlay is injected into the page under `next dev` and isn't the product.
+export const DEV_CHROME = ["nextjs-portal"];
 
 export const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -19,6 +19,14 @@ export function describeViolations(violations: Violation[]) {
 /** The app under review, inside the viewer's frame. */
 export function app(page: Page): FrameLocator {
   return page.frameLocator(APP_FRAME);
+}
+
+/**
+ * One Tab stop forward, links included. Safari's Tab skips links unless the user turns on "Press
+ * Tab to highlight each item"; Option+Tab is how its keyboard users reach them, so WebKit gets that.
+ */
+export function tab(page: Page) {
+  return page.keyboard.press(page.context().browser()?.browserType().name() === "webkit" ? "Alt+Tab" : "Tab");
 }
 
 /** The bar's comment-mode toggle. The comment button is split, and only the toggle half has aria-pressed. */

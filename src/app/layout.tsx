@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { FeedbackToolbar } from "@/components/dev/feedback-toolbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -20,7 +19,7 @@ const geistMono = Geist_Mono({
  * viewer sets itself (FocusView).
  */
 export const metadata: Metadata = {
-  description: "",
+  description: "Review every state of a UI change in one place: the happy path, edge cases and errors, rendered live with comments an agent can act on.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,7 +30,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>{children}</TooltipProvider>
-        {process.env.NODE_ENV === "development" ? <FeedbackToolbar /> : null}
       </body>
     </html>
   );

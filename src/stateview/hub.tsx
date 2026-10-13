@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
 import { formatReview } from "./agent-export";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
@@ -88,55 +88,8 @@ function useCurrentSection(ids: string[]) {
   return current;
 }
 
-/** Where a line of text's baseline sits, from a zero-size inline box placed on it for the moment of measuring. */
-function baselineOf(text: HTMLElement) {
-  const probe = document.createElement("span");
-  probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
-  text.prepend(probe);
-  const y = probe.getBoundingClientRect().top;
-  probe.remove();
-  return y;
-}
-
-/**
- * Lines the index up with the page. The header's height goes on the hub as
- * --hub-header, so the index's top block matches it. The index list is then
- * pushed down until its first link's text shares a baseline with the first
- * section's title. Both are measured, and remeasured whenever the header or
- * the content changes size (wrapping, a new layout, fonts arriving).
- */
-function useIndexAlignment() {
-  const root = useRef<HTMLDivElement>(null);
-  const header = useRef<HTMLElement>(null);
-  const main = useRef<HTMLElement>(null);
-  const index = useRef<HTMLUListElement>(null);
-  useEffect(() => {
-    const align = () => {
-      const headerNode = header.current;
-      const list = index.current;
-      const title = main.current?.querySelector<HTMLElement>("section h2");
-      const label = list?.querySelector<HTMLElement>("[data-index-label]");
-      if (!headerNode || !list || !title || !label) return;
-      root.current?.style.setProperty("--hub-header", `${headerNode.offsetHeight}px`);
-      // The index is sticky at the top; compare both as if the page were scrolled to the top.
-      const titleBaseline = baselineOf(title) + window.scrollY;
-      const nav = list.parentElement;
-      const labelBaseline = baselineOf(label) - (nav?.getBoundingClientRect().top ?? 0) + (nav?.scrollTop ?? 0);
-      const padding = parseFloat(getComputedStyle(list).paddingTop) || 0;
-      list.style.paddingTop = `${Math.max(0, padding + titleBaseline - labelBaseline)}px`;
-    };
-    const observer = new ResizeObserver(align);
-    if (header.current) observer.observe(header.current);
-    if (main.current) observer.observe(main.current);
-    void document.fonts?.ready.then(align);
-    return () => observer.disconnect();
-  }, []);
-  return { root, header, main, index };
-}
-
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   useRestoredScroll();
-  const { root, header, main, index } = useIndexAlignment();
   const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
@@ -157,14 +110,14 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   };
 
   return (
-    <ThemeScope ref={root} className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+    <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
       <NightSky />
       <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto bg-gui-neutral-2 px-gui-m gui-divider-end md:flex">
-        {/* As tall as the header with the same top padding, so the name sits level with the repo name. */}
-        <div className="flex gui-hub-header-height shrink-0 items-start pt-gui-l">
+        {/* One control tall with the header's top padding, so the name sits level with the repo name; the sections follow straight after. */}
+        <div className="flex shrink-0 pt-gui-l pb-gui-m">
           <Brand className="gui-control px-gui-xs" />
         </div>
-        <ul ref={index} className="flex flex-col pb-gui-l">
+        <ul className="flex flex-col pb-gui-l">
           {manifest.sections.map((section) => (
             <IndexLink key={section.id} id={section.id} current={current === section.id}>
               {section.title}
@@ -173,10 +126,9 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
         </ul>
       </nav>
 
-      <main ref={main} className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col">
         {/* Grey like the index, ruled off like every band below it, and inset to the same XL start edge. */}
         <header
-          ref={header}
           className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s bg-gui-neutral-2 px-gui-xl py-gui-l gui-divider-bottom"
         >
           <div className="flex min-w-0 flex-col gap-gui-s">
@@ -243,14 +195,14 @@ function Brand({ className }: { className?: string }) {
 function IndexLink({ id, current, children }: { id: string; current: boolean; children: ReactNode }) {
   return (
     <li className="flex">
-      <a
+      {/* A router link, not a plain anchor: Back from a state to a #section entry the router didn't make would leave the state on screen. */}
+      <Link
         href={`#${id}`}
         aria-current={current ? "location" : undefined}
         className="flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none"
       >
-        {/* Its own inline box, so the index can measure the label's baseline (useIndexAlignment). */}
-        <span data-index-label="">{children}</span>
-      </a>
+        {children}
+      </Link>
     </li>
   );
 }
@@ -347,7 +299,7 @@ function StateCard<T extends Inputs>({
         className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui motion-safe:hover:gui-hover-scale motion-safe:active:gui-press-scale"
       >
         {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
-        {item.kind === "sequence" ? <FlowStack /> : null}
+        {item.kind === "sequence" ? <FlowStack steps={item.steps.length} /> : null}
         {preview}
         <CornerChips comments={comments} viewed={viewed} />
         <FooterChips item={item} />
@@ -374,21 +326,36 @@ function StateCard<T extends Inputs>({
 }
 
 /**
- * Two blank cards fanned out behind a flow's first screen, so a flow reads as
- * several screens. They hold their offsets on hover and take the same shadow
- * as the screen, so the stack lifts as one.
+ * Where each card behind a flow's first screen sits, nearest first. Three at
+ * most: the farthest offset has to stay inside the row's padding, and the
+ * footer chip already gives the exact step count.
  */
-function FlowStack() {
+const FLOW_STACK_CARDS = [
+  "translate-x-gui-xs -translate-y-gui-xxs bg-gui-neutral-1",
+  "translate-x-gui-m -translate-y-gui-xs bg-gui-neutral-2",
+  "translate-x-gui-l -translate-y-gui-s bg-gui-neutral-2",
+];
+
+/**
+ * Blank cards fanned out behind a flow's first screen, one per further step,
+ * so a flow reads as that many screens. They hold their offsets on hover and
+ * take the same shadow as the screen, so the stack lifts as one.
+ */
+function FlowStack({ steps }: { steps: number }) {
+  // Reversed so the farthest card paints first, behind the nearer ones.
+  const cards = FLOW_STACK_CARDS.slice(0, Math.max(0, steps - 1)).toReversed();
   return (
     <>
-      <span
-        aria-hidden
-        className="absolute inset-0 translate-x-gui-m -translate-y-gui-xs rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
-      />
-      <span
-        aria-hidden
-        className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
-      />
+      {cards.map((placement) => (
+        <span
+          key={placement}
+          aria-hidden
+          className={cn(
+            "absolute inset-0 rounded-gui-s ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover",
+            placement,
+          )}
+        />
+      ))}
     </>
   );
 }

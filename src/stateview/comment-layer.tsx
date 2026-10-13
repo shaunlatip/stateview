@@ -359,7 +359,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
                         placeholder="What should change?"
                         rows={1}
                         aria-keyshortcuts="Enter"
-                        className="max-h-48 resize-none rounded-gui-s bg-gui-neutral-1 px-gui-s py-gui-xs font-gui-ui text-gui-m text-gui-neutral-10 ring-1 ring-gui-neutral-4 outline-none transition-shadow duration-gui ease-gui field-sizing-content placeholder:text-gui-neutral-6 hover:ring-gui-neutral-5 focus-visible:gui-focus-ring dark:bg-gui-neutral-2"
+                        className="max-h-48 resize-none rounded-gui-s bg-gui-neutral-1 px-gui-s py-gui-xs font-gui-ui text-gui-m gui-touch-field-size text-gui-neutral-10 ring-1 ring-gui-neutral-4 outline-none transition-shadow duration-gui ease-gui field-sizing-content placeholder:text-gui-neutral-6 hover:ring-gui-neutral-5 focus-visible:gui-focus-ring dark:bg-gui-neutral-2"
                       />
                       <div className="flex items-center gap-gui-xxs">
                         {editing ? (

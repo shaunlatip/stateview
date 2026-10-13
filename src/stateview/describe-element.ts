@@ -10,9 +10,11 @@ const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "i
 const FORM_TAGS = new Set(["input", "select", "textarea"]);
 // React's useId output across versions: `_r_1_`, `_R_abc_`, `«r1»`, `:r1:`.
 const GENERATED_ID = /^_r_|[:«»]/i;
-const FRAMEWORK_NAME = /^(Inner|Outer|Render|Hot|Error|Redirect|HTTPAccess|Loading|Scroll|Layout|Server|Client|Router|App|Root|Suspense|Template)|^Head$|(Provider|Context)$/;
+// Wrappers from Next and UI libraries. Matched by shape rather than by prefix, so app components like AppSidebar or ErrorBanner stay.
+const FRAMEWORK_NAME = /^(Inner|Outer)[A-Z]|^(Head|HotReload|Suspense)$|(Router|Boundary|Handler|Provider|Context)$/;
 const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]{2,}$/;
-const STATEVIEW_WRAPPERS = new Set(["FocusView", "EmbeddedScreen", "ThemeScope", "Hub", "MembersReview"]);
+// The walk up from the picked element stops at the first of these, so nothing above the app's screen is listed.
+const STATEVIEW_WRAPPERS = new Set(["FocusView", "EmbeddedScreen", "ThemeScope", "Hub"]);
 const MAX_COMPONENTS = 4;
 
 type Fiber = { type: unknown; return: Fiber | null };

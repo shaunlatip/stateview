@@ -123,9 +123,17 @@ export function findFrameIndex(frames: { item: { id: string }; step: number | nu
   return frames.findIndex((frame) => frame.item.id === id && (frame.step === null || frame.step === (step ?? 1)));
 }
 
-export function frameHref(manifest: Pick<Manifest, "route">, frame: { item: { id: string }; step: number | null }) {
+/** A frame's link. Pass `inputs` to add the ones that differ from the frame's own, as the state panel writes them. */
+export function frameHref(
+  manifest: Pick<Manifest, "route">,
+  frame: { item: { id: string }; step: number | null; inputs?: Inputs },
+  inputs?: Inputs,
+) {
   const params = new URLSearchParams({ sv: frame.item.id });
   if (frame.step !== null && frame.step > 1) params.set("step", String(frame.step));
+  for (const [id, value] of Object.entries(inputs ?? {})) {
+    if (frame.inputs && frame.inputs[id] !== value) params.set(id, value);
+  }
   return `${manifest.route}?${params}`;
 }
 

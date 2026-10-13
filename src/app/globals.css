@@ -2,7 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "../stateview/theme.css";
-@import "./fonts.css";
 @import "../sample-app/halcyon.css";
 
 @custom-variant dark (&:is(.dark *));

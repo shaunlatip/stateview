@@ -65,11 +65,11 @@ export function orderAnnotations(annotations: Annotation[]) {
   return annotations.toSorted((a, b) => a.createdAt - b.createdAt);
 }
 
-/** Open comments as Markdown for a coding agent, numbered the way the pins are. */
-export function formatAnnotations(annotations: Annotation[]) {
+/** Open comments as Markdown for a coding agent, numbered the way the pins are. `include` picks which of them to write out. */
+export function formatAnnotations(annotations: Annotation[], include: (annotation: Annotation) => boolean = () => true) {
   return orderAnnotations(annotations)
     .flatMap((annotation, index) => {
-      if (annotation.status !== "open") return [];
+      if (annotation.status !== "open" || !include(annotation)) return [];
       const { element } = annotation;
       const lines = [`### ${index + 1}. ${element.title ?? element.label}`, `Element: \`${element.label}\``, `Selector: \`${element.selector}\``];
       if (element.components.length > 0) lines.push(`Components: ${element.components.join(" › ")}`);

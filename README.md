@@ -4,6 +4,8 @@ A review layer for web apps. Instead of clicking around a build from a cold star
 
 ## Try it
 
+Live at https://stateview-wine.vercel.app
+
 - `/` is the hub: every state for the change, one row per section, with live thumbnails. The index on the left jumps to a section, and the button at the top right copies every open comment for a coding agent.
 - Open a state to see the real page in that state, with a filmstrip of every state down the left (`F` shows and hides it). `J` and `K` (or the left and right arrows) step back and forward through states and `Esc` goes back to the hub; hover a control to see its shortcut. The app runs in a frame of its own, so keys pressed inside it belong to the app: the shortcuts work from Stateview's bar and filmstrip. "Skip to app", the first Tab stop, moves focus into the app.
 - `C` (or Comment in the viewer bar) turns on comment mode. Point at or tab to an element and it's outlined and named; click it or press `Enter` to comment on it instead of using it. `Alt` + arrow keys move to the parent, child or sibling element, so elements that can't take focus can still be picked. `Esc` leaves comment mode.
@@ -25,7 +27,7 @@ npm run dev        # http://localhost:3000
 npm run lint       # Oxlint: React (incl. React Compiler rules), jsx-a11y, Next.js, @shadcn/lint design-system rules
 npm run typecheck  # tsc --noEmit (strict)
 npm run test:a11y  # Playwright + axe: WCAG A/AA, visible focus on the first tab stop, no sideways scroll at 375px
-npm run test:e2e   # the above, plus focus and keys across the app's frame and media queries inside it
+npm run test:e2e   # the above, plus focus and keys across the app's frame and media queries inside it, in Chromium, WebKit and Firefox (`npx playwright install` first)
 npm run check:states  # the sample manifest against the composition rules (--strict: warnings fail too)
 npm run test:skill    # tests for the skill's manifest checker
 npm run build
@@ -58,18 +60,13 @@ In the app, the review lives at `/stateview/<review>` (hub) and `/stateview/<rev
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Phosphor icons
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Phosphor icons (Stateview) · Lucide icons (the sample app)
 
 ## Design language
 
 Stateview's own UI (hub, viewer bar, filmstrip, state panel, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app uses the shadcn kit in `src/components/ui` with its own brand, a fictional product called Halcyon: blue, orange and cool-grey tokens in `src/sample-app/halcyon.css`, scoped to `.halcyon`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
 
-**Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/app/fonts.css` (kept out of the engine, so apps it's installed into don't request the files). Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
-
-1. Get the family at [timeless.co/type](https://timeless.co/type) ("Get access"; they email the files).
-2. Copy `TimelessSans-GroteskRegular.woff2`, `TimelessSans-GroteskMedium.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
-
-Without them, Stateview's UI falls back to the system sans-serif and nothing else changes.
+**Fonts.** Stateview's UI uses Geist and its data text Geist Mono, both loaded by `next/font`. The theme export in `gui/` names Timeless Grotesk; its license doesn't allow the files in a public repository, so the build uses Geist instead.
 
 ## Where to look
 
@@ -85,7 +82,6 @@ The Team members screen takes all of its state through one object (`MembersState
 ## Dependencies worth naming
 
 - **Comments** are Stateview's own engine (`src/stateview/comment-layer.tsx`), written from scratch. Everything else depends on the `AnnotationLayer` interface in `src/stateview/annotations.ts`, so the engine could be swapped for another one by changing one file. React component names come from React's development build, so production builds show the selector and HTML without them.
-- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) is a dev dependency only, for commenting on Stateview's own UI while building it (`src/components/dev/feedback-toolbar.tsx`, synced to the local Agentation server). It renders only under `next dev`; production builds contain none of it, and the engine the skill installs doesn't use it. None of its source is copied into this repo.
 - The current state (`?sv=`, `?step=`, and any input changed in the state panel) lives in the URL, so every state has a link and the back button steps back. It's read and written through the History API (`src/stateview/use-frame-query.ts`) rather than a router library, so the same engine runs under the App Router and the Pages Router.
 
 ## Credits
@@ -108,11 +104,12 @@ A running list of interaction and visual details, kept while building.
 - A review of a WebGL or video screen turns live thumbnails off (browsers cap active WebGL contexts at about 16); its cards and filmstrip show the inputs each state changes from the baseline instead, in the same frame.
 - The viewer shows the app in a same-origin iframe, so the app has a window of its own. Media queries, viewport units, `innerWidth` and `matchMedia` measure the frame (a resizable 393 × 852 px phone frame in the phone state on wide screens), fixed elements stay inside it, and its focus and keys are its own: Escape or an arrow key in the app never steps the review, and when the app drops focus (removing a member drops it to the page body), that stays the app's bug to see rather than handing the keyboard to Stateview. After the first load the viewer sends each state by message, so stepping doesn't reload the frame. The comment engine runs inside the frame and shares comments with the viewer through localStorage.
 - Thumbnails stay inline renders rather than iframes, so a phone-state thumbnail of an app that uses media queries shows its desktop layout. The sample screen uses container queries, so its thumbnails reflow correctly.
-- Each section is a row: its title and why line on the left, its cards wrapping on the right. Below 1024 px the title goes above the cards. The index marks the section at the top of the window.
-- A card shows a dot until its state has been opened, and a comment count when it has open comments. The screen and the title are separate links to the state: the screen for the pointer, the title (underlined on hover) for the keyboard and screen readers. A flow shows as a stack of cards with its step count; the stack fans out on hover.
+- A state card has one keyboard stop: its title, a link described by the why line and chips. The screen above it links to the same state for the pointer but is out of the tab order and hidden from assistive tech, so element pickers and screen readers each get one clear target.
+- Each section is a band: its title and why line, then its cards in one row that scrolls sideways rather than wrapping. The index marks the section at the top of the window.
+- A card shows a dot until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards, one per further step up to three, with its step count.
 - Coming back to the hub (Escape, the logo or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
-- The viewer bar runs across the top and is always dark, so it reads as Stateview's frame around the app. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. The strip scrolls to the state on screen without `scrollIntoView`, which in Chrome would also move the Tab starting point into the strip. Its right edge drags (or takes arrow keys) to resize it between 112 and 320 px thumbnails, and the width is remembered. On phones the filmstrip starts closed and covers the app when opened.
-- The bar shows the state's title on one line; a step in a flow adds a "3/4" badge and the step's title, which truncates first.
+- The viewer bar runs across the top, ruled off from the app, so it reads as Stateview's frame around it. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. The strip scrolls to the state on screen without `scrollIntoView`, which in Chrome would also move the Tab starting point into the strip. Its right edge drags (or takes arrow keys) to resize it between 112 and 320 px thumbnails, and the width is remembered. On phones the filmstrip starts closed and covers the app when opened.
+- The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.
 - Shortcuts don't fire inside the app, while typing, or inside a radio group or menu in Stateview's own controls. Escape first ends comment mode; only a second Escape leaves the state.

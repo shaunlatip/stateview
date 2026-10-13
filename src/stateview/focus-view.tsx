@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import { stateContext } from "./agent-export";
+import { formatState } from "./agent-export";
 import { DeviceFrame } from "./device-frame";
-import { formatAnnotations, type AnnotationLayer } from "./annotations";
+import type { AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
 import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
@@ -42,7 +42,6 @@ const OWNS_KEYS = [
   "[role='menu']",
   "[role='radiogroup']",
   "[role='dialog']",
-  "[data-feedback-toolbar]",
 ].join(",");
 
 type FocusViewProps<T extends Inputs> = {
@@ -213,7 +212,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
 
   useEffect(() => {
     if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
-  }, [frameState]);
+  }, [frameState, appFrame]);
 
   const sendState = useEffectEvent(() => {
     if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
@@ -264,11 +263,14 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
     appFrame.current?.contentWindow?.focus();
   };
 
-  if (!frame || !inputs) return <UnknownState id={query.sv} hubHref={hubHref} />;
+  if (!frame || !inputs) {
+    const flow = frames.find((candidate) => candidate.item.id === query.sv)?.item.title;
+    return <UnknownState id={query.sv} flow={flow} step={query.step} hubHref={hubHref} />;
+  }
 
   const copyComments = () => {
     void navigator.clipboard
-      .writeText(stateContext(manifest, frame, inputs) + formatAnnotations(annotations))
+      .writeText(formatState(manifest, frame, annotations))
       .then(() => notify.success("Comments copied with this state’s URL and inputs"))
       .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
@@ -398,14 +400,16 @@ function copyLink() {
     .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
 }
 
-function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {
+/** A link to a state that isn't in the review, or to a step past the end of a flow that is (`flow` is its title). */
+function UnknownState({ id, flow, step, hubHref }: { id: string | null; flow?: string; step: number | null; hubHref: string }) {
   // Pages set their own titles (app/layout.tsx), so this one needs its own too.
   useDocumentTitle("Stateview");
+  const title = flow ? `“${flow}” has no step ${step}` : id ? `There’s no state called “${id}” in this review` : "Choose a state to review";
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
-          {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
+          {title}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
         <Link href={hubHref} scroll={false} className={buttonVariants({ className: "w-fit" })}>
