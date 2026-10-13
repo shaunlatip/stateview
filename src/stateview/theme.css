@@ -46,6 +46,7 @@
   --motion-popup-scale: 0.96;
   --motion-press-distance: 1px;
   --motion-press-scale: 0.98;
+  --motion-hover-scale: 1.02;
 
   --option-badge-background: #f0f0f0;
   --option-badge-foreground: #000000;
@@ -179,9 +180,26 @@
   --shadow-s: 0px 1px 2px 0px #0000001f;
   --shadow-m: 0px 8px 24px 0px #0000001f;
   --shadow-l: 0px 12px 30px 0px #0000001f;
+  /* A hovered hub card: a soft contact shadow plus a short ambient one, well under M. */
+  --shadow-card-hover: 0px 1px 2px 0px #0000000f, 0px 4px 12px 0px #0000000f;
 
   /* Toolbar group fill: Neutral 1 in light, Neutral 2 in dark (Toolbar assignment). */
   --toolbar-background: var(--neutral-1);
+
+  /*
+   * Cutting mat behind the phone frame (gui-cutting-mat), after the hero on
+   * paper.design: a 120px grid of 0.5px hairlines, dashed down and solid
+   * across, at 30%, and rulers ticked every 10px (longer at 30 and 120) at 40%
+   * along the sides and bottom. Redrawn here with Paper's geometry. The SVGs
+   * are masks, so only their alpha counts; --mat-line colours the lines.
+   */
+  --mat-line: #000000;
+  --mat-tile: 120px;
+  --mat-ruler: 30px;
+  --mat-grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.3' stroke-linecap='square'%3E%3Cpath d='M60.25 0.25V119.75' stroke-dasharray='7.56 7.56'/%3E%3Cpath d='M0.25 60.25H119.75'/%3E%3C/svg%3E");
+  --mat-ruler-start: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M2 0.25H29M2 10.25H16.14M2 20.25H16.14M2 30.25H21.73M2 40.25H16.14M2 50.25H16.14M2 70.25H16.14M2 80.25H16.14M2 90.25H21.73M2 100.25H16.14M2 110.25H16.14'/%3E%3C/svg%3E");
+  --mat-ruler-end: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M28 0.25H1M28 10.25H13.86M28 20.25H13.86M28 30.25H8.27M28 40.25H13.86M28 50.25H13.86M28 70.25H13.86M28 80.25H13.86M28 90.25H8.27M28 100.25H13.86M28 110.25H13.86'/%3E%3C/svg%3E");
+  --mat-ruler-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30' fill='none' stroke='black' stroke-width='0.5' stroke-opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M0.25 28V1M10.25 28V13.86M20.25 28V13.86M30.25 28V8.27M40.25 28V13.86M50.25 28V13.86M70.25 28V13.86M80.25 28V13.86M90.25 28V8.27M100.25 28V13.86M110.25 28V13.86'/%3E%3C/svg%3E");
 }
 
 /* Base type for every Stateview surface. In the base layer so utilities on the same element win. */
@@ -201,6 +219,8 @@
 .stateview-theme.dark {
   --focus-ring-outline: 2px solid color-mix(in srgb, #ffffff 50%, transparent);
   --toolbar-background: var(--neutral-2);
+  /* Paper's dark mat draws the same lines in white at about half the strength (15% grid, 20% rulers). */
+  --mat-line: color-mix(in srgb, #ffffff 50%, transparent);
 
   --option-badge-background: #2b2b2b;
   --option-badge-foreground: #ffffff;
@@ -303,6 +323,7 @@
 
   --shadow-gui-s: var(--shadow-s);
   --shadow-gui-m: var(--shadow-m);
+  --shadow-gui-card-hover: var(--shadow-card-hover);
 
   --ease-gui: var(--motion-easing);
   --ease-gui-large: var(--motion-large-easing);
@@ -313,7 +334,7 @@
   outline: var(--focus-ring-outline);
 }
 
-/* Small motion for controls; large for surfaces like the review bar and the state panel. */
+/* Small motion for controls and popups (menus, the state panel); large for surfaces that move across the window, like the filmstrip. */
 @utility duration-gui {
   --tw-duration: var(--motion-duration);
   transition-duration: var(--motion-duration);
@@ -331,6 +352,11 @@
 /* Pressing a surface (a hub screen) shrinks it about its centre rather than nudging it down. */
 @utility gui-press-scale {
   scale: var(--motion-press-scale);
+}
+
+/* Hovering one lifts it a touch; the press scale then takes it below rest. */
+@utility gui-hover-scale {
+  scale: var(--motion-hover-scale);
 }
 
 /* Controls size from content plus padding: one line of M text with XS padding above and below. */
@@ -371,6 +397,40 @@
   @media (width >= 48rem) {
     --thumb-strip-width: var(--thumb-strip-chosen, 144);
   }
+}
+
+/*
+ * A phone state on a wide screen: the app sits in a phone-sized frame on a
+ * Neutral 3 cutting mat. The grid and rulers are centred on the mat, so the
+ * centred frame always sits square on them.
+ */
+@utility gui-cutting-mat {
+  position: relative;
+  background-color: var(--neutral-3);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--mat-line);
+    mask-image: var(--mat-ruler-start), var(--mat-ruler-end), var(--mat-ruler-bottom), var(--mat-grid);
+    mask-position: left center, right center, center bottom, center;
+    mask-size:
+      var(--mat-ruler) var(--mat-tile),
+      var(--mat-ruler) var(--mat-tile),
+      var(--mat-tile) var(--mat-ruler),
+      var(--mat-tile) var(--mat-tile);
+    mask-repeat: repeat-y, repeat-y, repeat-x, repeat;
+  }
+}
+
+/* The phone frame's size, set inline as unitless px (--device-width, --device-height); the mat's room caps it. */
+@utility gui-device-size {
+  width: calc(var(--device-width) * 1px);
+  height: calc(var(--device-height) * 1px);
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */

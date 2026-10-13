@@ -25,7 +25,7 @@ export function CornerChips({ comments, viewed }: { comments: number; viewed: bo
       ) : null}
       {/* Dark on the app's light screen in both schemes, like the dark chips; the ring keeps it apart from the screen. */}
       {viewed ? null : (
-        <span className="m-gui-xxs size-2 rounded-full bg-gui-neutral-10 ring-2 ring-gui-neutral-1 dark:bg-gui-neutral-1 dark:ring-gui-neutral-10" />
+        <span className="size-2 rounded-full bg-gui-neutral-10 ring-2 ring-gui-neutral-1 dark:bg-gui-neutral-1 dark:ring-gui-neutral-10" />
       )}
     </span>
   );

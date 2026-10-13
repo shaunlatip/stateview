@@ -7,6 +7,7 @@ import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { stateContext } from "./agent-export";
+import { DeviceFrame } from "./device-frame";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
@@ -166,6 +167,11 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         if (panel === "closed") setPanel("keyboard");
         else closePanel();
         break;
+      case "f":
+      case "F":
+        event.preventDefault();
+        setStripChoice(!stripOpen);
+        break;
       case "Escape":
         // Escape first ends comment mode; only a second Escape leaves the state.
         if (commenting) setCommenting(false);
@@ -308,20 +314,30 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
           stripResizing && "transition-none",
         )}
       >
-        {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
-        <iframe
-          ref={appFrame}
-          id={APP_FRAME_ID}
-          data-stateview-frame=""
-          data-ready={frameReady ? "" : undefined}
-          title={manifest.screen}
-          src={frameSrc}
-          className={cn("h-full w-full", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}
-        />
+        {/* Phone states sit in a resizable phone-sized frame on wide screens. */}
+        <DeviceFrame mobile={viewportOf(manifest, inputs) === "mobile"} controls={APP_FRAME_ID}>
+          {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
+          <iframe
+            ref={appFrame}
+            id={APP_FRAME_ID}
+            data-stateview-frame=""
+            data-ready={frameReady ? "" : undefined}
+            title={manifest.screen}
+            src={frameSrc}
+            className="size-full"
+          />
+        </DeviceFrame>
       </ThemeScope>
-      {panel !== "closed" ? (
-        <StatePanel id={panelId} ref={panelRef} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
-      ) : null}
+      <StatePanel
+        id={panelId}
+        ref={panelRef}
+        open={panel !== "closed"}
+        manifest={manifest}
+        inputs={inputs}
+        onChange={setInput}
+        onClose={closePanel}
+        focusOnOpen={panel === "keyboard"}
+      />
     </>
   );
 }

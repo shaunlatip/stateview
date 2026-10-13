@@ -169,15 +169,21 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
               {/* One control tall, like Copy comments and the brand beside it, so all three share a centre line. */}
               <h1 className="flex min-w-0 gui-control items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
                 {/* The app's own favicon, decorative beside its repo name. */}
-                <Image src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
+                {manifest.scope.icon ? (
+                  <Image src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
+                ) : null}
                 {manifest.scope.repo}
               </h1>
               <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7">
                 <GitBranchIcon aria-hidden className="text-gui-m text-gui-neutral-10" />
                 <span className="sr-only">Reviewing</span>
                 <BranchName>{manifest.scope.branch}</BranchName>
-                vs
-                <BranchName>{manifest.scope.base}</BranchName>
+                {manifest.scope.base && manifest.scope.base !== manifest.scope.branch ? (
+                  <>
+                    vs
+                    <BranchName>{manifest.scope.base}</BranchName>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>
@@ -321,13 +327,14 @@ function StateCard<T extends Inputs>({
         tabIndex={-1}
         aria-hidden
         onClick={rememberScroll}
-        className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui active:gui-press-scale motion-reduce:transition-none"
+        className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui motion-safe:hover:gui-hover-scale motion-safe:active:gui-press-scale"
       >
+        {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
         {item.kind === "sequence" ? <FlowStack /> : null}
         <Thumbnail
           viewport={viewport}
           size="fluid"
-          className="transition-shadow duration-gui ease-gui group-hover:shadow-gui-m group-hover:ring-gui-neutral-6 motion-reduce:transition-none"
+          className="transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
         >
           {thumbnail}
         </Thumbnail>
@@ -355,17 +362,21 @@ function StateCard<T extends Inputs>({
   );
 }
 
-/** Two blank cards fanned out behind a flow's first screen, so a flow reads as several screens. */
+/**
+ * Two blank cards fanned out behind a flow's first screen, so a flow reads as
+ * several screens. They hold their offsets on hover and take the same shadow
+ * as the screen, so the stack lifts as one.
+ */
 function FlowStack() {
   return (
     <>
       <span
         aria-hidden
-        className="absolute inset-0 translate-x-gui-m -translate-y-gui-xs rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border transition-transform duration-gui ease-gui group-hover:translate-x-gui-l motion-reduce:transition-none"
+        className="absolute inset-0 translate-x-gui-m -translate-y-gui-xs rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
       />
       <span
         aria-hidden
-        className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-transform duration-gui ease-gui group-hover:translate-x-gui-s motion-reduce:transition-none"
+        className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
       />
     </>
   );
