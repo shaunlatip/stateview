@@ -1,6 +1,6 @@
 # Stateview write-up
 
-[Live app](https://stateview-wine.vercel.app) · Time spent: about 6 hours 15 minutes, 15 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
+[Live app](https://stateview-wine.vercel.app) · Time spent: about 6 hours 25 minutes, 25 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
 
 ### What problem I solved
 

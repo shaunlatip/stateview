@@ -90,13 +90,13 @@ The sample screen's layout follows the Team Settings page of Vercel's [Next.js S
 
 ## Time log
 
-About 6 hours 15 minutes of build, about 15 minutes over the 6-hour cap, spent landing the skill engine, deploying and finishing the write-up. Problem research and UI references were done beforehand.
+About 6 hours 25 minutes of build, about 25 minutes over the 6-hour cap, spent landing the skill engine, deploying and finishing the write-up. Problem research and UI references were done beforehand.
 
 | Session | Time (PT) | Hours | Work |
 |---|---|---|---|
 | 1 | Sun Oct 11, 23:48 – Mon 02:23 | 2:35 | Scaffold, deploy, sample screen, manifest, hub, focus view, comments, state panel |
 | 2 | Mon Oct 12, 14:40 – 15:56 | 1:16 | Skill engine, the app in an iframe, hub and viewer explorations |
-| 3 | Mon Oct 12, 20:16 – 22:56, less 15 min of breaks | 2:25 | Viewer and hub redesign, phone frame, motion, cross-browser tests, the skill engine on main, deploy, write-up |
+| 3 | Mon Oct 12, 20:16 – 22:50 | 2:34 | Viewer and hub redesign, phone frame, motion, cross-browser tests, the skill engine on main, deploy, write-up |
 
 ## UI details
 
