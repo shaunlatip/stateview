@@ -51,6 +51,8 @@ After that, I'd make the sync two-way so reviewers don't have to go back to thei
 
 I'd also make the mapping from code to states more deterministic. The skill uses a fairly broad prompt today, and I'd replace more of it with structured checks that map common app code patterns to states, so results are faster and more reliable.
 
+I'd also fill in a few states in the viewer itself: a loading state while the app's frame loads, an error with a retry button when it fails to load, and focus going back to the card you opened when you return to the hub.
+
 Lastly, I'd package it the way Agentation is, with a landing page and an npm install, so anyone can add it to their app.
 
 ### Fun UI details :)
