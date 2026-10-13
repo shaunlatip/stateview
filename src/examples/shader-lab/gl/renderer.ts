@@ -165,7 +165,7 @@ export class StageRenderer {
     }
   };
 
-  /** The code-only states: lose the context once the first GL frame is up, or break a shader. */
+  /** The renderer's failure states: lose the context once the first GL frame is up, or break a shader. */
   private afterFirstGlFrame() {
     if (this.simulate !== "context-lost" || this.simulatedLoss || !this.loseExt) return;
     this.simulatedLoss = true;

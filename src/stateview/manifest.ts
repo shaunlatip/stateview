@@ -23,9 +23,6 @@ export type Input<T extends Inputs = Inputs> = {
   };
 }[keyof T & string];
 
-/** "design": a state a designer would draw. "code-only": exists only in code (flags, entitlements, sub-component async). */
-export type Origin = "design" | "code-only";
-
 export type StateItem<T extends Inputs = Inputs> = {
   kind: "state";
   id: string;
@@ -34,7 +31,6 @@ export type StateItem<T extends Inputs = Inputs> = {
   why: string;
   set: Partial<T>;
   checks?: string[];
-  origin: Origin;
 };
 
 export type SequenceItem<T extends Inputs = Inputs> = {
@@ -43,7 +39,6 @@ export type SequenceItem<T extends Inputs = Inputs> = {
   title: string;
   why: string;
   steps: { title: string; set: Partial<T> }[];
-  origin: Origin;
 };
 
 export type Item<T extends Inputs = Inputs> = StateItem<T> | SequenceItem<T>;

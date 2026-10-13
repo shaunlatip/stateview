@@ -5,9 +5,9 @@ import { shaderLabInputValues as v, type ShaderLabState } from "./state";
  * The review for shader-lab PR #7, "Onboarding examples, Copy spec, and
  * Hibana type refresh": the examples rail and empty state, the four-stop
  * tour, Copy spec in the save menu, and the type change, plus the editor
- * states around them that the PR could break. The renderer states only exist
- * in code (a browser without WebGL2, a lost context, a shader that won't
- * compile), so they're marked code-only.
+ * states around them that the PR could break, including the renderer's
+ * failure paths (a browser without WebGL2, a lost context, a shader that
+ * won't compile).
  */
 export const shaderLabManifest: Manifest<ShaderLabState> = {
   id: "shader-lab-onboarding",
@@ -106,14 +106,12 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer opening Shader Lab for the first time, with the Koi clip already printed in CMYK.",
           set: {},
           checks: ["The Koi card is marked active in the rail", "Header offers Save, since nothing is saved yet"],
-          origin: "design",
         },
         {
           kind: "sequence",
           id: "first-visit",
           title: "From an empty canvas to a spec",
           why: "A newcomer picking an example and handing the look to an agent.",
-          origin: "design",
           steps: [
             { title: "No source yet", set: { source: "none", preset: "none" } },
             { title: "Picks the Koi example", set: { sourceRequest: "loading" } },
@@ -128,7 +126,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A returning visitor who closed the examples last time and hasn't picked a source.",
           set: { source: "none", preset: "none", examples: "closed" },
           checks: ["Empty state offers Show examples", "Copy drops the 'pick an example below' clause"],
-          origin: "design",
         },
       ],
     },
@@ -137,10 +134,10 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
       title: "Tour",
       why: "Four stops, each anchored to a different part of the editor.",
       items: [
-        { kind: "state", id: "tour-examples", title: "Tour: start from an example", why: "A first-time visitor reading the first stop.", set: { tour: "1" }, origin: "design" },
-        { kind: "state", id: "tour-effects", title: "Tour: tweak the effects", why: "A visitor learning that a preset is a stack of effects.", set: { tour: "2" }, origin: "design" },
-        { kind: "state", id: "tour-source", title: "Tour: use your own media", why: "A visitor finding where uploads go.", set: { tour: "3" }, origin: "design" },
-        { kind: "state", id: "tour-export", title: "Tour: export", why: "A visitor at the last stop, about to finish.", set: { tour: "4" }, checks: ["Next reads Done"], origin: "design" },
+        { kind: "state", id: "tour-examples", title: "Tour: start from an example", why: "A first-time visitor reading the first stop.", set: { tour: "1" } },
+        { kind: "state", id: "tour-effects", title: "Tour: tweak the effects", why: "A visitor learning that a preset is a stack of effects.", set: { tour: "2" } },
+        { kind: "state", id: "tour-source", title: "Tour: use your own media", why: "A visitor finding where uploads go.", set: { tour: "3" } },
+        { kind: "state", id: "tour-export", title: "Tour: export", why: "A visitor at the last stop, about to finish.", set: { tour: "4" }, checks: ["Next reads Done"] },
       ],
     },
     {
@@ -155,7 +152,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer looking for a way to hand the look to an agent.",
           set: { copySpec: "menu-open" },
           checks: ["The item explains what the spec contains"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -163,7 +159,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Spec copied",
           why: "A designer who just copied the spec of a tweaked look.",
           set: { copySpec: "copied", draft: "changed" },
-          origin: "design",
         },
         {
           kind: "state",
@@ -171,7 +166,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Clipboard refused",
           why: "A designer copying the spec in a browser that blocks clipboard access.",
           set: { copySpec: "failed" },
-          origin: "code-only",
         },
       ],
     },
@@ -187,7 +181,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer picking the Palms example, whose riso halftone runs film grain on top.",
           set: { source: "palms", preset: "riso-halftone" },
           checks: ["Grain moves unless reduced motion is on"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -196,7 +189,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer on the Clouds example, whose ink gradient map ships disabled.",
           set: { source: "clouds", preset: "bayer-dither" },
           checks: ["The disabled card is dimmed", "The canvas skips it"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -205,7 +197,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer who built a long stack, two effects switched off.",
           set: { preset: "long" },
           checks: ["The panel scrolls; the add field stays put"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -213,7 +204,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Every effect removed",
           why: "A designer who cleared the stack to see the clip as it is.",
           set: { preset: "none" },
-          origin: "design",
         },
         {
           kind: "state",
@@ -222,7 +212,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer who uploaded their own photo and applied Duotone.",
           set: { source: "upload", preset: "duotone" },
           checks: ["Image tab is active, with starters"],
-          origin: "design",
         },
       ],
     },
@@ -238,7 +227,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer who saved the look and hasn't touched it since.",
           set: { draft: "saved" },
           checks: ["Saved is quiet and disabled", "The chevron still opens the menu"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -247,7 +235,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer who opened the halftone and pushed the cell size from 9 to 13.",
           set: { draft: "changed" },
           checks: ["Save reads Update", "Reset reverts to the saved look"],
-          origin: "design",
         },
       ],
     },
@@ -263,7 +250,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer on a slow connection switching from Koi to Palms.",
           set: { source: "palms", preset: "riso-halftone", sourceRequest: "loading" },
           checks: ["The canvas holds the Koi look until Palms arrives", "No flash of the new effects on the old clip"],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -272,7 +258,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer whose network dropped while the Palms clip loaded.",
           set: { source: "palms", preset: "riso-halftone", sourceRequest: "failed" },
           checks: ["The empty state names the failure"],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -281,7 +266,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer encoding the Koi clip to MP4.",
           set: { exportRequest: "exporting" },
           checks: ["Progress fills the button", "The button is disabled until done"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -289,7 +273,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Export finished",
           why: "A designer whose MP4 just downloaded.",
           set: { exportRequest: "done" },
-          origin: "design",
         },
         {
           kind: "state",
@@ -297,7 +280,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "File dragged over the canvas",
           why: "A designer dragging a photo from the desktop onto the stage.",
           set: { dragOver: "on" },
-          origin: "design",
         },
       ],
     },
@@ -313,7 +295,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer on a locked-down machine whose browser has WebGL2 turned off.",
           set: { renderer: "unavailable" },
           checks: ["Same picture as the baseline", "Grain stays still"],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -322,7 +303,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer whose laptop switched graphics cards mid-session.",
           set: { renderer: "context-lost", source: "palms", preset: "riso-halftone" },
           checks: ["The canvas never goes blank", "It returns to WebGL after about 1.5 s"],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -331,7 +311,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer whose GPU driver rejects one of the effect shaders.",
           set: { renderer: "shader-error" },
           checks: ["The CPU path draws the same look", "One console warning, no error"],
-          origin: "code-only",
         },
       ],
     },
@@ -346,7 +325,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Dark theme",
           why: "A designer working late with the editor in dark mode.",
           set: { theme: "dark" },
-          origin: "design",
         },
         {
           kind: "state",
@@ -354,7 +332,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "Dark theme, tour open",
           why: "A first-time visitor at night reading the effects stop.",
           set: { theme: "dark", tour: "2" },
-          origin: "design",
         },
       ],
     },
@@ -370,7 +347,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer opening a shared link on their phone, at 375 px.",
           set: { breakpoint: "mobile" },
           checks: ["Header actions are icon-only with tooltips", "The rail scrolls sideways"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -379,7 +355,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           why: "A designer on their phone opening the effects to try another preset.",
           set: { breakpoint: "mobile", drawer: "effects" },
           checks: ["A strip of scrim stays tappable to close"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -387,7 +362,6 @@ export const shaderLabManifest: Manifest<ShaderLabState> = {
           title: "First visit on a phone",
           why: "A newcomer on their phone before picking anything.",
           set: { breakpoint: "mobile", source: "none", preset: "none" },
-          origin: "design",
         },
       ],
     },

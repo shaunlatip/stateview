@@ -90,7 +90,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "The grid sits behind the hero only, clears around the copy and fades out above selected work",
             "Below the hero the page is plain",
           ],
-          origin: "design",
         },
         {
           kind: "state",
@@ -102,7 +101,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "The hero is plain, with no grid",
             "The 12 column lanes start below the hero and stay clear behind the selected-work heading",
           ],
-          origin: "design",
         },
       ],
     },
@@ -116,7 +114,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           id: "step-through-work",
           title: "Step through selected work",
           why: "A visitor clicking the forward arrow to see the projects past the right edge.",
-          origin: "design",
           steps: [
             { title: "Pointer on the forward arrow", set: { pointer: "hover" } },
             { title: "One card along", set: { railPosition: "middle", pointer: "hover" } },
@@ -137,7 +134,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "A visitor moving the mouse down toward the cards, within 40px of the section.",
           set: { pointer: "near" },
           checks: ["Forward arrow gets the light fill and full ink", "Back arrow stays bare with its icon at 35%"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -146,7 +142,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "A visitor about to click forward to see more work.",
           set: { pointer: "hover" },
           checks: ["Forward arrow inverts to solid ink", "Back arrow doesn't react"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -155,7 +150,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "An evening visitor moving the mouse toward the cards.",
           set: { theme: "dark", pointer: "near" },
           checks: ["The near fill is visible against the dark canvas"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -164,7 +158,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "An evening visitor about to click forward.",
           set: { theme: "dark", pointer: "hover" },
           checks: ["Forward arrow inverts to the light fill with dark ink"],
-          origin: "design",
         },
         {
           kind: "state",
@@ -176,7 +169,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "The back arrow takes focus with a full-strength ring",
             "Its icon stays dimmed and pressing it does nothing",
           ],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -185,7 +177,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "A keyboard user who has stepped to the last project and is still on the forward arrow.",
           set: { theme: "dark", railPosition: "end", arrowFocus: "disabled" },
           checks: ["Focus stays on the forward arrow instead of dropping to the page", "The ring reads on the dark canvas"],
-          origin: "code-only",
         },
       ],
     },
@@ -205,7 +196,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "Selected work follows straight after the intro",
             "Nothing overflows sideways",
           ],
-          origin: "design",
         },
         {
           kind: "state",
@@ -214,7 +204,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "The same link opened on a phone in the evening.",
           set: { theme: "dark", breakpoint: "mobile" },
           checks: ["No column lanes on a phone"],
-          origin: "design",
         },
       ],
     },
@@ -233,7 +222,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "Copy steps down to its 17px floor and the figure shrinks with it",
             "The selected-work heading still shows at the bottom",
           ],
-          origin: "design",
         },
       ],
     },
@@ -252,7 +240,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
             "The sheet shows a fixed 176px on load",
             "Scrolling slides the sheet over the pinned hero with rounded top corners",
           ],
-          origin: "code-only",
         },
         {
           kind: "state",
@@ -261,7 +248,6 @@ export const portfolioManifest: Manifest<PortfolioState> = {
           why: "Shaun comparing heroes by opening the home with ?hero=cover.",
           set: { heroMode: "cover" },
           checks: ["The hero fills the window", "The intro fades and lifts as the sheet arrives"],
-          origin: "code-only",
         },
       ],
     },
