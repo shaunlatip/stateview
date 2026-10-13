@@ -9,8 +9,9 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
 import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
-import { CaretUpDownIcon, CheckIcon, IconContext, type IconProps } from "@phosphor-icons/react";
+import { CaretUpDownIcon, CheckCircleIcon, CheckIcon, IconContext, InfoIcon, SpinnerGapIcon, WarningCircleIcon, WarningIcon, type IconProps } from "@phosphor-icons/react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Toaster as Sonner } from "sonner";
 import { cn } from "@/lib/utils";
 
 /**
@@ -256,6 +257,43 @@ export function Tooltip({
         </TooltipPrimitive.Positioner>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
+  );
+}
+
+/**
+ * Stateview's toasts, at the bottom right in the light scheme. Unstyled, so
+ * Sonner's own colours don't apply: they follow the OS scheme, which in dark
+ * mode set the description near-white on the white toast. The list carries
+ * the theme scope itself, since it renders outside any themed subtree.
+ */
+export function Toaster() {
+  return (
+    <IconContext.Provider value={iconDefaults}>
+      <Sonner
+        theme="light"
+        position="bottom-right"
+        className="stateview-theme"
+        icons={{
+          success: <CheckCircleIcon aria-hidden />,
+          info: <InfoIcon aria-hidden />,
+          warning: <WarningIcon aria-hidden />,
+          error: <WarningCircleIcon aria-hidden />,
+          loading: <SpinnerGapIcon aria-hidden className="motion-safe:animate-spin" />,
+        }}
+        toastOptions={{
+          unstyled: true,
+          classNames: {
+            toast:
+              "flex w-full items-center gap-gui-s rounded-gui-m bg-gui-neutral-1 p-gui-s font-gui-ui text-gui-m text-gui-neutral-10 shadow-gui-m ring-1 ring-gui-border outline-none focus-visible:gui-focus-ring",
+            icon: "flex shrink-0 self-start py-gui-xxs text-gui-m",
+            content: "flex min-w-0 flex-1 flex-col",
+            title: "font-gui-medium",
+            description: "text-gui-s text-gui-neutral-7",
+            actionButton: buttonVariants({ variant: "outline", size: "bar-text" }),
+          },
+        }}
+      />
+    </IconContext.Provider>
   );
 }
 

@@ -36,7 +36,7 @@ export default [
     route: VIEWER,
     run: async (page) => {
       await viewerReady(page);
-      await bar(page).getByRole("button", { name: "States", exact: true }).click();
+      await bar(page).getByRole("button", { name: "Filmstrip", exact: true }).click();
     },
   },
   {

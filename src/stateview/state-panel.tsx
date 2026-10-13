@@ -36,6 +36,7 @@ function controlFor(values: readonly string[], labels: string[]) {
 type StatePanelProps<T extends Inputs> = {
   id: string;
   ref: Ref<HTMLElement>;
+  open: boolean;
   manifest: Manifest<T>;
   /** The inputs the screen is rendering now: the state's own, plus any the reviewer changed. */
   inputs: T;
@@ -48,13 +49,19 @@ type StatePanelProps<T extends Inputs> = {
 /**
  * Every input the screen reads, grouped by class, each one editable. Hangs
  * from the viewer bar over the top right of the app, light like the bar.
+ *
+ * Always mounted, so it can animate out as well as in: closed, it's
+ * display:none, and the transition runs across the display change
+ * (transition-discrete, with @starting-style for the way in). It opens like a
+ * menu, a short fade and scale from the corner under its button, rather than
+ * a long slide. With reduced motion it only fades.
  */
-export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
+export function StatePanel<T extends Inputs>({ id, ref, open, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
   const localRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (focusOnOpen) localRef.current?.focus();
-  }, [focusOnOpen]);
+    if (open && focusOnOpen) localRef.current?.focus();
+  }, [open, focusOnOpen]);
 
   const setRefs = (node: HTMLElement | null) => {
     localRef.current = node;
@@ -78,11 +85,13 @@ export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChan
       aria-label="State"
       data-state-panel=""
       onKeyDown={onKeyDown}
+      // 336px: the longest label (Members request), M between, and the widest control (three segments) fit side by side.
       className={cn(
-        // 336px: the longest label (Members request), M between, and the widest control (three segments) fit side by side.
-        "fixed top-(--viewer-bar) right-gui-s z-40 mt-gui-xs flex w-84 gui-panel-height flex-col rounded-gui-s bg-gui-toolbar shadow-gui-m ring-1 ring-gui-border outline-none max-sm:left-gui-s max-sm:w-auto",
-        // Opened with a click, it drops from the button. Opened from the keyboard (S, or Enter on the button), it's there at once: a key pressed over and over shouldn't wait on an entrance.
-        !focusOnOpen && "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-gui-large motion-safe:ease-gui-large",
+        "fixed top-(--viewer-bar) right-gui-s z-40 mt-gui-xs flex w-84 gui-panel-height origin-top-right flex-col rounded-gui-s bg-gui-toolbar shadow-gui-m ring-1 ring-gui-border outline-none transition transition-discrete duration-gui ease-gui max-sm:left-gui-s max-sm:w-auto",
+        // Opened from the keyboard (S, or Enter on its button) it's there at once: a key pressed over and over shouldn't wait on an entrance.
+        open
+          ? !focusOnOpen && "starting:opacity-0 motion-safe:starting:scale-(--motion-popup-scale)"
+          : "hidden opacity-0 motion-safe:scale-(--motion-popup-scale)",
       )}
     >
       <div className="@container min-h-0 overflow-y-auto overscroll-contain p-gui-m">

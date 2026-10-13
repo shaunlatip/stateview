@@ -7,6 +7,7 @@ import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { stateContext } from "./agent-export";
+import { DeviceFrame } from "./device-frame";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
@@ -115,6 +116,12 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
   const stripWidth = useStripWidth();
   // The app's edge eases only when the strip opens or closes; any resize (drag or arrow keys) and the first paint snap.
   const [stripSnap, setStripSnap] = useState(true);
+  // The button and F. Dropping the snap in the same render as the new edge still animates: a transition starts from the after-change style.
+  const toggleStrip = () => {
+    setStripSnap(false);
+    if (stripOpen) closeStrip();
+    else setStripChoice(true);
+  };
   // Every surface that reads the strip's width re-declares the theme, so each one gets it.
   const stripWidthStyle = { "--thumb-strip-chosen": stripWidth } as CSSProperties;
 
@@ -171,6 +178,11 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         event.preventDefault();
         if (panel === "closed") setPanel("keyboard");
         else closePanel();
+        break;
+      case "f":
+      case "F":
+        event.preventDefault();
+        toggleStrip();
         break;
       case "Escape":
         // Escape first ends comment mode, then closes what covers the app (the state panel, the strip on a phone); only after that does it leave the state.
@@ -270,15 +282,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         hubHref={HUB_HREF}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
-        strip={{
-          id: stripId,
-          open: stripOpen,
-          // Dropping the snap in the same render as the new edge still animates: a transition starts from the after-change style.
-          onToggle: () => {
-            setStripSnap(false);
-            setStripChoice(!stripOpen);
-          },
-        }}
+        strip={{ id: stripId, open: stripOpen, onToggle: toggleStrip }}
         stripTriggerRef={stripTriggerRef}
         commenting={commenting}
         onToggleCommenting={toggleCommenting}
@@ -329,20 +333,30 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
           stripSnap ? "transition-none" : "gui-transition-left duration-gui-large ease-gui-large motion-reduce:transition-none",
         )}
       >
-        {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
-        <iframe
-          ref={appFrame}
-          id={APP_FRAME_ID}
-          data-stateview-frame=""
-          data-ready={frameReady ? "" : undefined}
-          title={manifest.screen}
-          src={frameSrc}
-          className={cn("h-full w-full", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}
-        />
+        {/* Phone states sit in a resizable phone-sized frame on wide screens. */}
+        <DeviceFrame mobile={viewportOf(manifest, inputs) === "mobile"} controls={APP_FRAME_ID}>
+          {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
+          <iframe
+            ref={appFrame}
+            id={APP_FRAME_ID}
+            data-stateview-frame=""
+            data-ready={frameReady ? "" : undefined}
+            title={manifest.screen}
+            src={frameSrc}
+            className="size-full"
+          />
+        </DeviceFrame>
       </ThemeScope>
-      {panel !== "closed" ? (
-        <StatePanel id={panelId} ref={panelRef} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
-      ) : null}
+      <StatePanel
+        id={panelId}
+        ref={panelRef}
+        open={panel !== "closed"}
+        manifest={manifest}
+        inputs={inputs}
+        onChange={setInput}
+        onClose={closePanel}
+        focusOnOpen={panel === "keyboard"}
+      />
     </>
   );
 }

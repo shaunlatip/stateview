@@ -93,8 +93,18 @@ export function FocusBar<T extends Inputs>({
             <Logo className="h-auto w-(--line-m)" />
           </Link>
         </Tooltip>
-        <Tooltip label={strip.open ? "Hide states" : "Show states"} side="bottom">
-          <Button ref={stripTriggerRef} variant="toolbar" size="bar" aria-label="States" aria-expanded={strip.open} aria-controls={strip.id} onClick={strip.onToggle}>
+        {/* Named for its letter: S is the state panel's, so the strip is the filmstrip, on F. */}
+        <Tooltip label={strip.open ? "Hide filmstrip" : "Show filmstrip"} shortcut="F" side="bottom">
+          <Button
+            ref={stripTriggerRef}
+            variant="toolbar"
+            size="bar"
+            aria-label="Filmstrip"
+            aria-keyshortcuts="F"
+            aria-expanded={strip.open}
+            aria-controls={strip.id}
+            onClick={strip.onToggle}
+          >
             {/* Turned upright: the strip runs down the left edge, its frames stacked. */}
             <FilmStripIcon aria-hidden className="rotate-90" />
           </Button>
@@ -176,7 +186,7 @@ export function FocusBar<T extends Inputs>({
             aria-label="State"
             aria-keyshortcuts="S"
             aria-expanded={panel.open}
-            aria-controls={panel.open ? panel.id : undefined}
+            aria-controls={panel.id}
             // Enter and Space click with no pointer (detail 0): opened that way, the panel takes focus, as it does from S.
             onClick={(event) => panel.onToggle(event.detail === 0)}
           >

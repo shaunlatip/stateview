@@ -62,8 +62,15 @@ export type Manifest<T extends Inputs = Inputs> = {
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
   screen: string;
-  /** The repo and branch under review; `icon` is the app's own favicon. */
-  scope: { repo: string; icon: string; branch: string; base: string };
+  /**
+   * The repo and change under review, which the agent drafting the manifest
+   * reads from git: `repo` from the remote (or the folder's name without one),
+   * `branch` from HEAD (a short SHA when detached), `base` from the branch the
+   * change will merge into. `base` is left out when there's nothing to compare
+   * against, such as uncommitted work on the default branch. `icon` is the
+   * app's own favicon, if it has one.
+   */
+  scope: { repo: string; branch: string; base?: string; icon?: string };
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];
