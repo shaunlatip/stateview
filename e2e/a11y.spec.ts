@@ -91,6 +91,26 @@ test.describe("a11y commenting", () => {
     // Focus goes back to where the reviewer was, inside the app.
     await expect(remove).toBeFocused();
   });
+
+  test("a disabled control can be commented on, not just its container", async ({ page }) => {
+    // At the seat limit Send invite is disabled, and disabled buttons let the pointer through to what's behind them.
+    await open(page, "/app/members?sv=free-at-limit");
+    await page.keyboard.press("c");
+    await expect(commentToggle(page)).toHaveAttribute("aria-pressed", "true");
+    const frame = app(page);
+    const send = frame.getByRole("button", { name: "Send invite" });
+    await expect(send).toBeDisabled();
+    await send.scrollIntoViewIfNeeded();
+    const box = await send.boundingBox();
+    if (!box) throw new Error("Send invite has no box");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    const composer = frame.getByRole("dialog");
+    await expect(composer).toBeVisible();
+    await page.keyboard.type("Shouldn't this be disabled?");
+    await page.keyboard.press("Enter");
+    await expect(frame.getByRole("button", { name: /^Comment 1 on Send invite button/ })).toBeVisible();
+  });
 });
 
 // The state panel only exists once opened, so the route scans above never see it. It stays on the viewer page, outside the frame.
