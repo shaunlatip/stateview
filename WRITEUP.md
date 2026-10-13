@@ -1,6 +1,6 @@
 # Stateview write-up
 
-[Live app](https://stateview-wine.vercel.app) · Time spent: about 6 hours 25 minutes, 25 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
+[Live app](https://stateview-wine.vercel.app) Time spent: about 6 hours 25 minutes, 25 minutes over the cap to land the skill engine, deploy and finish this write-up ([time log](README.md#time-log))
 
 ### What problem I solved
 
@@ -41,7 +41,6 @@ The iframe only works for apps served from the same origin, and it can't emulate
 ### What I'd do with more time
 
 - Build a status file where the agent records what it fixed next to the review, so the open review updates on a local dev server or a preview deploy without a server. After that, an MCP like [Agentation](https://www.agentation.com/)'s, so the agent can read comments without the reviewer pasting them.
-- Show each state's checks in the viewer, since the manifest already lists what to verify in each state.
 - Make the sync two-way, so a comment in Stateview queues an agent to work on it and the screens it's changing show as blocked while the reviewer keeps going.
 - Replace more of the skill's broad prompt with structured checks that map common app code patterns to states, so results are faster and more reliable.
 - Fill in a few states in the viewer itself: a loading state while the app's frame loads, an error with a retry button when it fails to load, and focus going back to the card you opened when you return to the hub.
