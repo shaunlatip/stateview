@@ -43,7 +43,8 @@ export function importPath(fromFile, toPath) {
 /** Writes a file unless it exists (the app owns it after the first write). Returns what happened. */
 export function writeOnce(path, content, { force = false, dryRun = false } = {}) {
   const existed = existsSync(path);
-  if (existed && !force) return "kept";
+  // "stale": the app's copy differs from what this version would write (an older template, or the app's own edits).
+  if (existed && !force) return readFileSync(path, "utf8") === content ? "kept" : "stale";
   if (!dryRun) {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);

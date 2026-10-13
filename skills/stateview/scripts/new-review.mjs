@@ -55,7 +55,7 @@ import status from "./status.json";
 export default defineReview(manifest, () => null, { status, statusPath: ${JSON.stringify(statusPath)} });
 `,
   ],
-].map(([path, content]) => `${writeOnce(path, content).padEnd(8)} ${relative(appRoot, path)}`);
+].map(([path, content]) => `${writeOnce(path, content).replace("stale", "kept").padEnd(8)} ${relative(appRoot, path)}`);
 written.push(`${register() ? "edited " : "kept   "}  ${relative(appRoot, registry)}`);
 
 console.log(`Review "${id}" for ${options.screen}\n`);

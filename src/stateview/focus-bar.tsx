@@ -153,7 +153,7 @@ export function FocusBar<T extends Inputs>({
               </MenuItem>
               <MenuItem disabled={!onCopyComments} onClick={onCopyComments ?? undefined}>
                 <CopyIcon aria-hidden />
-                Copy comments for your agent
+                Copy this state’s comments for your agent
               </MenuItem>
               <MenuItem onClick={onCopyLink}>
                 <LinkSimpleIcon aria-hidden />

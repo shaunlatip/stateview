@@ -37,7 +37,7 @@ It copies the engine into `src/stateview/` (vendored; don't edit the copy), impo
 node <skill>/scripts/new-review.mjs <review-id> --screen "<Area › Screen>"
 ```
 
-Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git, and the app's favicon as `scope.icon` when it finds one), a render stub in `stateview-reviews/<id>/index.tsx`, an empty `status.json` beside them for agent reports (see Fixing review comments), and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, say).
+Use a short kebab-case id named after the screen (`team-members`, `compare-places`). It writes `stateview-reviews/<id>/review.json` (with the repo, branch and base filled in from git, and the app's favicon as `scope.icon` when it finds one), a render stub in `stateview-reviews/<id>/index.tsx`, an empty `status.json` beside them for agent reports (see Fixing review comments), and registers the review. It prints the changed files: that list is the scope. It counts uncommitted and untracked files too, so skip files unrelated to the change (a lockfile touched by a package manager, or the stylesheet and package files `install.mjs` just edited). To review part of a branch, pass `--base <commit>` (a SHA or tag) instead of a branch. The hub reads the repo, branch and diff from git again each time it loads, so they stay current as the branch moves.
 
 Paths below assume a `src/` folder; in apps without one, the folders sit at the project root (`stateview/`, `stateview-reviews/`, `app/stateview/`). The scripts print the real paths.
 
@@ -119,7 +119,7 @@ The reviewer copies their comments (Copy comments, in the viewer or the hub) and
 
 ## Updating a review
 
-When the branch changes, re-read the diff, update inputs, fixtures and states, bump `version`, and run steps 6–7 again. Re-running `install.mjs` updates the engine copy and leaves routes, registry and reviews alone.
+When the branch changes, re-read the diff, update inputs, fixtures and states, bump `version`, and run steps 6–7 again. Re-running `install.mjs` updates the engine copy and leaves routes, registry and reviews alone; it marks a route `stale` when it differs from the current template, and `--force` rewrites the routes (check them for your own edits first).
 
 ## Removing Stateview from an app
 

@@ -79,7 +79,8 @@ function missingPackages() {
     const text = readFileSync(join(source, "src/stateview", file), "utf8");
     for (const [, specifier] of text.matchAll(/(?:from|import\()\s*"([^"./@][^"]*|@[^"/]+\/[^"]+)"/g)) {
       const name = specifier.startsWith("@") ? specifier.split("/").slice(0, 2).join("/") : specifier.split("/")[0];
-      if (!HOST_PACKAGES.has(name) && name !== "@") needed.add(name);
+      // node: built-ins (scope.ts runs git) ship with Node.
+      if (!HOST_PACKAGES.has(name) && name !== "@" && !name.startsWith("node:")) needed.add(name);
     }
   }
   return [...needed]
@@ -162,7 +163,10 @@ function writeRoutes() {
   const files = { ...(router === "app" ? appRoutes(routeDir) : pagesRoutes(routeDir)), ...registry() };
   for (const [path, content] of Object.entries(files)) {
     const result = writeOnce(path, content(path), { force: Boolean(options.force), dryRun });
-    report.push(`${result.padEnd(8)} ${relative(appRoot, path)}`);
+    // The registry always differs once reviews are added; a route that differs is an older template, or edited by hand.
+    const registryFile = path === join(reviewsDir, "index.ts");
+    const note = result === "stale" && !registryFile ? " (differs from this version's route; --force replaces it, so check for edits first)" : "";
+    report.push(`${(result === "stale" && registryFile ? "kept" : result).padEnd(8)} ${relative(appRoot, path)}${note}`);
   }
 }
 
@@ -190,9 +194,9 @@ export default function StateviewIndexPage() {
 }
 `,
     [join(routeDir, "[review]", "page.tsx")]: (file) => `import { notFound } from "next/navigation";
-import { ReviewHub, reviewLinks } from "${importPath(file, join(engineDir, "review"))}";
 import { readScope } from "${importPath(file, join(engineDir, "scope"))}";
 import { reviewParams, reviews } from "${importPath(file, reviewsDir)}";
+import { HubRoute } from "./hub-route";
 
 export const generateStaticParams = reviewParams;
 
@@ -201,7 +205,23 @@ export default async function ReviewHubPage({ params }: { params: Promise<{ revi
   const review = reviews[id];
   if (!review) notFound();
   // The repo, branch and diff as git has them now, not as they were when the review was written.
-  return <ReviewHub review={review} scope={readScope(review.manifest.scope)} reviews={reviewLinks(reviews, "/stateview")} />;
+  return <HubRoute id={id} scope={readScope(review.manifest.scope)} />;
+}
+`,
+    [join(routeDir, "[review]", "hub-route.tsx")]: (file) => `"use client";
+
+import { notFound } from "next/navigation";
+import type { Manifest } from "${importPath(file, join(engineDir, "manifest"))}";
+import { ReviewHub, reviewLinks } from "${importPath(file, join(engineDir, "review"))}";
+import { reviews } from "${importPath(file, reviewsDir)}";
+
+// A client component, like the focus route: the hub's thumbnails call the
+// review's render function, and a screen's function props (canned fetchers,
+// actions, a chat transport) can't cross from the server.
+export function HubRoute({ id, scope }: { id: string; scope?: Manifest["scope"] }) {
+  const review = reviews[id];
+  if (!review) notFound();
+  return <ReviewHub review={review} scope={scope} reviews={reviewLinks(reviews, "/stateview")} />;
 }
 `,
     [join(routeDir, "[review]", "state", "page.tsx")]: (file) => `import { Suspense } from "react";
