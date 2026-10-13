@@ -1,3 +1,4 @@
+import type { AgentStatus } from "./agent-status";
 import { formatAnnotations, orderAnnotations, type Annotation } from "./annotations";
 import { changedInputs, frameHref, listFrames, type Frame, type Inputs, type Manifest } from "./manifest";
 import { inputsKey } from "./overrides";
@@ -6,8 +7,21 @@ import { inputsKey } from "./overrides";
  * What goes before copied comments: what they are, where to make the change
  * (the screen's components, not the fixtures that start each state), how to
  * check it, and what to report back so the reviewer can resolve the pins.
+ * With the review's `statusPath`, the report goes in that file, which the
+ * reviewer's open Stateview picks up live.
  */
-export function agentBrief<T extends Inputs>(manifest: Manifest<T>) {
+export function agentBrief<T extends Inputs>(manifest: Manifest<T>, statusPath?: string) {
+  const report = statusPath
+    ? [
+        `Then record what you did in \`${statusPath}\`. Read it first and merge: keep the entries already there and add or replace one per comment id (the \`Id\` under each heading), then set \`updatedAt\` to the current time:`,
+        "",
+        "```json",
+        '{ "version": 1, "updatedAt": "<ISO 8601>", "comments": { "<comment id>": { "status": "fixed", "note": "One sentence on what changed.", "files": ["src/…"] } } }',
+        "```",
+        "",
+        "`status` is `fixed` (changed as asked), `wontfix` (left as is, and the note says why) or `question` (the note asks the reviewer something). The reviewer has this review open in Stateview, which updates live when you save the file, so don't repeat the list in your reply; a one-line summary is enough.",
+      ]
+    : ["Then reply with one line per comment, as `<state> #<number>: <what you changed, in which file>`, or say why you left it. The reviewer uses that list to resolve the pins."];
   return [
     `# Review comments: ${manifest.screen}`,
     "",
@@ -18,7 +32,7 @@ export function agentBrief<T extends Inputs>(manifest: Manifest<T>) {
     "2. Make the change the comment asks for. If the comment is a question, answer it, and change the code only if the answer is yes.",
     "3. Check it. If you can open a browser, open the state's URL and confirm the change shows there. A change to a shared component shows in other states too, so look at those as well.",
     "",
-    "Then reply with one line per comment, as `<state> #<number>: <what you changed, in which file>`, or say why you left it. The reviewer uses that list to resolve the pins.",
+    ...report,
     "",
     "",
   ].join("\n");
@@ -51,7 +65,7 @@ export function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Fra
  * with, so each block's URL and inputs are what the reviewer saw when they
  * wrote it. Numbers count all of the state's comments, so they match its pins.
  */
-export function formatState<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>, annotations: Annotation[]) {
+export function formatState<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>, annotations: Annotation[], agentStatus?: AgentStatus) {
   const inputsOf = (annotation: Annotation) => ({ ...frame.inputs, ...annotation.inputs }) as T;
   const groups = new Map<string, T>();
   for (const annotation of orderAnnotations(annotations)) {
@@ -62,16 +76,17 @@ export function formatState<T extends Inputs>(manifest: Manifest<T>, frame: Fram
   return [...groups]
     .map(
       ([key, inputs]) =>
-        stateContext(manifest, frame, inputs) + formatAnnotations(annotations, (annotation) => inputsKey(manifest, inputsOf(annotation)) === key),
+        stateContext(manifest, frame, inputs) +
+        formatAnnotations(annotations, (annotation) => inputsKey(manifest, inputsOf(annotation)) === key, agentStatus),
     )
     .join("\n\n");
 }
 
 /** Every state's open comments, in review order, after the brief. */
-export function formatReview<T extends Inputs>(manifest: Manifest<T>, annotations: Annotation[]) {
+export function formatReview<T extends Inputs>(manifest: Manifest<T>, annotations: Annotation[], statusPath?: string, agentStatus?: AgentStatus) {
   const states = listFrames(manifest)
-    .map((frame) => formatState(manifest, frame, annotations.filter((a) => a.stateId === frame.key)))
+    .map((frame) => formatState(manifest, frame, annotations.filter((a) => a.stateId === frame.key), agentStatus))
     .filter(Boolean)
     .join("\n\n");
-  return agentBrief(manifest) + states;
+  return agentBrief(manifest, statusPath) + states;
 }

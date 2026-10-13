@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { parseAgentStatus, type AgentStatus } from "./agent-status";
 import { Hub, type ReviewLink } from "./hub";
 import { listFrames, listItems, type Inputs, type Manifest } from "./manifest";
 import { ThemeScope } from "./ui";
@@ -14,20 +15,31 @@ export type Review = {
   render: (inputs: Inputs) => ReactNode;
   /** "off" for screens that can't render many live copies at once (WebGL maps, video). */
   thumbnails: "live" | "off";
+  /** What the coding agent reported per comment, from the review's status.json. */
+  agentStatus: AgentStatus;
+  /** Where that file is, from the app's root, for the copied prompt to name. */
+  statusPath?: string;
 };
 
 /**
  * Pairs a manifest with its render function. `T` types the render function
  * against the screen's own state; the result is untyped so every review fits
  * one registry. The manifest is typed loosely because it comes from JSON; the
- * checker is what guarantees its shape.
+ * checker is what guarantees its shape. `status` is the imported status.json,
+ * so the agent writing it hot-reloads into the open review.
  */
 export function defineReview<T extends Inputs>(
   manifest: object,
   render: (inputs: T) => ReactNode,
-  options: { thumbnails?: "live" | "off" } = {},
+  options: { thumbnails?: "live" | "off"; status?: object; statusPath?: string } = {},
 ): Review {
-  return { manifest: manifest as Manifest, render: render as Review["render"], thumbnails: options.thumbnails ?? "live" };
+  return {
+    manifest: manifest as Manifest,
+    render: render as Review["render"],
+    thumbnails: options.thumbnails ?? "live",
+    agentStatus: parseAgentStatus(options.status),
+    statusPath: options.statusPath,
+  };
 }
 
 /**
@@ -44,7 +56,7 @@ export function ReviewHub({ review, scope, reviews }: { review: Review; scope?: 
     }
   }
   const manifest = scope ? { ...review.manifest, scope } : review.manifest;
-  return <Hub manifest={manifest} thumbnails={thumbnails} reviews={reviews} />;
+  return <Hub manifest={manifest} thumbnails={thumbnails} reviews={reviews} agentStatus={review.agentStatus} statusPath={review.statusPath} />;
 }
 
 /** The switcher's entries for every review in a registry, each labelled with its screen. */

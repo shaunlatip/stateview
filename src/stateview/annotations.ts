@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { AgentStatus } from "./agent-status";
 import type { Inputs } from "./manifest";
 
 /**
@@ -35,6 +36,8 @@ export type Annotation = {
   note: string;
   status: AnnotationStatus;
   createdAt: number;
+  /** The agent's note the reviewer reopened the comment after, so that note stops showing as the answer. */
+  reopenedAfter?: string;
 };
 
 export type AnnotationEvents = {
@@ -55,6 +58,8 @@ export type AnnotationLayerProps = AnnotationEvents & {
   onActiveChange: (active: boolean) => void;
   /** Whether pins for saved comments are shown. */
   pinsVisible: boolean;
+  /** What the coding agent reported per comment id, from the review's status.json. */
+  agentStatus?: AgentStatus;
 };
 
 /** A component that lets the reviewer place comments on the live page. */
@@ -65,15 +70,28 @@ export function orderAnnotations(annotations: Annotation[]) {
   return annotations.toSorted((a, b) => a.createdAt - b.createdAt);
 }
 
-/** Open comments as Markdown for a coding agent, numbered the way the pins are. `include` picks which of them to write out. */
-export function formatAnnotations(annotations: Annotation[], include: (annotation: Annotation) => boolean = () => true) {
+/**
+ * Open comments as Markdown for a coding agent, numbered the way the pins are,
+ * each with the id the agent reports back under. `include` picks which of them
+ * to write out; `agentStatus` adds what the agent last said about each.
+ */
+export function formatAnnotations(annotations: Annotation[], include: (annotation: Annotation) => boolean = () => true, agentStatus: AgentStatus = {}) {
   return orderAnnotations(annotations)
     .flatMap((annotation, index) => {
       if (annotation.status !== "open" || !include(annotation)) return [];
       const { element } = annotation;
-      const lines = [`### ${index + 1}. ${element.title ?? element.label}`, `Element: \`${element.label}\``, `Selector: \`${element.selector}\``];
+      const lines = [
+        `### ${index + 1}. ${element.title ?? element.label}`,
+        `Id: \`${annotation.id}\``,
+        `Element: \`${element.label}\``,
+        `Selector: \`${element.selector}\``,
+      ];
       if (element.components.length > 0) lines.push(`Components: ${element.components.join(" › ")}`);
       lines.push("```html", element.html, "```", `Comment: ${annotation.note}`);
+      const previous = agentStatus[annotation.id];
+      if (previous && annotation.reopenedAfter === previous.note) {
+        lines.push(`Reopened by the reviewer after you reported ${previous.status}: ${previous.note}`);
+      } else if (previous) lines.push(`You last reported ${previous.status}: ${previous.note}`);
       return [lines.join("\n")];
     })
     .join("\n\n");

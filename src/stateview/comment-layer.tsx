@@ -5,7 +5,8 @@ import { Collapsible } from "@base-ui/react/collapsible";
 import { createPortal } from "react-dom";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { CaretRightIcon } from "@phosphor-icons/react";
+import { CaretRightIcon, CheckIcon, ProhibitIcon, QuestionIcon, type Icon } from "@phosphor-icons/react";
+import { AGENT_STATUS_LABEL, agentStatusOf, type AgentStatusEntry, type AgentStatusKind } from "./agent-status";
 import { cn } from "./cn";
 import { orderAnnotations, type AnnotatedElement, type Annotation, type AnnotationLayerProps } from "./annotations";
 import { CodeView } from "./code-view";
@@ -33,7 +34,19 @@ const BLOCKED_EVENTS = ["pointerdown", "mousedown", "pointerup", "mouseup", "dbl
 
 const TEXT_ENTRY = "input, textarea, select, [contenteditable='true']";
 
-export function CommentLayer({ stateId, inputs, annotations, root, active, onActiveChange, pinsVisible, onAdd, onUpdate, onDelete }: AnnotationLayerProps) {
+export function CommentLayer({
+  stateId,
+  inputs,
+  annotations,
+  root,
+  active,
+  onActiveChange,
+  pinsVisible,
+  agentStatus,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: AnnotationLayerProps) {
   const [highlight, setHighlight] = useState<{ element: Element; fromKeyboard: boolean } | null>(null);
   const [box, setBox] = useState<Box | null>(null);
   const [composer, setComposer] = useState<Composer | null>(null);
@@ -263,6 +276,21 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
     close();
   };
 
+  // The reviewer's answer to the agent: accept resolves the comment; reopen sends it back with the next copy.
+  const accept = (annotation: Annotation) => {
+    onUpdate({ ...annotation, status: "resolved" });
+    setAnnouncement("Comment resolved.");
+    close();
+  };
+
+  const reopen = (annotation: Annotation) => {
+    onUpdate({ ...annotation, status: "open", reopenedAfter: agentStatus?.[annotation.id]?.note ?? annotation.reopenedAfter });
+    setAnnouncement("Comment reopened.");
+    close();
+  };
+
+  const editingAgent = editing ? agentStatusOf(agentStatus, editing) : undefined;
+
   const subject = composer?.kind === "new" ? composer.described : editing?.element;
   const number = composer?.kind === "new" ? ordered.length + 1 : editing ? ordered.indexOf(editing) + 1 : 0;
   const draftPosition = composer?.kind === "new" ? positions[composer.id] : undefined;
@@ -277,6 +305,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
               <Pin
                 key={annotation.id}
                 annotation={annotation}
+                agent={agentStatusOf(agentStatus, annotation)}
                 number={index + 1}
                 position={position}
                 expanded={composer?.id === annotation.id}
@@ -347,6 +376,14 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
                       ) : null}
                     </div>
                     <CodeDetails element={subject} />
+                    {editing && editingAgent ? (
+                      <AgentNote
+                        entry={editingAgent}
+                        resolved={editing.status === "resolved"}
+                        onAccept={() => accept(editing)}
+                        onReopen={() => reopen(editing)}
+                      />
+                    ) : null}
                     <form onSubmit={save} className="flex flex-col gap-gui-xs">
                       <label htmlFor={`${composer?.id}-note`} className="sr-only">
                         Comment
@@ -366,6 +403,11 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
                         {editing ? (
                           <Button type="button" variant="quiet" size="toolbar" onClick={() => remove(editing)}>
                             Delete
+                          </Button>
+                        ) : null}
+                        {editing?.status === "resolved" && !editingAgent ? (
+                          <Button type="button" variant="quiet" size="toolbar" onClick={() => reopen(editing)}>
+                            Reopen
                           </Button>
                         ) : null}
                         <Button type="button" variant="ghost" size="toolbar" className="ml-auto" onClick={close}>
@@ -434,6 +476,8 @@ function Highlight({ box }: { box: Box }) {
 
 type PinProps = {
   annotation: Annotation;
+  /** What the coding agent reported, if it has and the reviewer hasn't reopened past it. */
+  agent: AgentStatusEntry | undefined;
   number: number;
   position: PinPosition;
   expanded: boolean;
@@ -441,10 +485,18 @@ type PinProps = {
   onOpen: () => void;
 };
 
-function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProps) {
+const AGENT_ICON: Record<AgentStatusKind, Icon> = { fixed: CheckIcon, wontfix: ProhibitIcon, question: QuestionIcon };
+
+/** "Agent: Fixed — <note>", as the pin's tooltip and label read it. */
+function agentLine(agent: AgentStatusEntry) {
+  return `Agent: ${AGENT_STATUS_LABEL[agent.status]}${agent.note ? ` — ${agent.note}` : ""}`;
+}
+
+function Pin({ annotation, agent, number, position, expanded, pinRef, onOpen }: PinProps) {
   const resolved = annotation.status === "resolved";
   const title = annotation.element.title ?? annotation.element.label;
   const where = position.detached ? `${title}, not found on this screen` : title;
+  const AgentIcon = agent ? AGENT_ICON[agent.status] : null;
   return (
     <Tooltip.Root>
       <Tooltip.Trigger
@@ -454,7 +506,7 @@ function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProp
             type="button"
             aria-haspopup="dialog"
             aria-expanded={expanded}
-            aria-label={`Comment ${number}${resolved ? ", resolved" : ""} on ${where}: ${annotation.note}`}
+            aria-label={`Comment ${number}${resolved ? ", resolved" : ""} on ${where}: ${annotation.note}${agent ? `. ${agentLine(agent)}` : ""}`}
             onClick={onOpen}
             className={cn(
               pinClassName,
@@ -472,6 +524,16 @@ function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProp
         }
       >
         {number}
+        {/* The agent's answer as a badge on the pin's corner: a check for fixed, a question mark, or a no-entry sign for won't fix. */}
+        {AgentIcon ? (
+          <span
+            aria-hidden
+            data-agent-status={agent?.status}
+            className="absolute -top-gui-xxs -right-gui-xxs flex size-4 items-center justify-center rounded-full bg-gui-neutral-10 text-gui-xs text-gui-neutral-1 ring-2 ring-gui-neutral-1"
+          >
+            <AgentIcon weight="bold" />
+          </span>
+        ) : null}
       </Tooltip.Trigger>
       {expanded ? null : (
         <Tooltip.Portal>
@@ -480,12 +542,38 @@ function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProp
               <Tooltip.Popup className="flex max-w-64 origin-(--transform-origin) flex-col rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s text-gui-neutral-1 shadow-gui-s transition duration-gui ease-gui data-ending-style:opacity-0 data-starting-style:opacity-0 motion-safe:data-ending-style:scale-(--motion-popup-scale) motion-safe:data-starting-style:scale-(--motion-popup-scale)">
                 <span className="truncate font-gui-data text-gui-xs text-gui-neutral-6">{where}</span>
                 <span className="line-clamp-3 font-gui-medium">{annotation.note}</span>
+                {agent ? <span className="mt-gui-xxs line-clamp-3 text-gui-neutral-4">{agentLine(agent)}</span> : null}
               </Tooltip.Popup>
             </Tooltip.Positioner>
           </ThemeScope>
         </Tooltip.Portal>
       )}
     </Tooltip.Root>
+  );
+}
+
+/** What the coding agent reported in status.json, with the reviewer's answer: accept (resolve) or reopen. */
+function AgentNote({ entry, resolved, onAccept, onReopen }: { entry: AgentStatusEntry; resolved: boolean; onAccept: () => void; onReopen: () => void }) {
+  const AgentIcon = AGENT_ICON[entry.status];
+  return (
+    <section aria-label="Agent’s answer" className="flex flex-col gap-gui-xxs rounded-gui-s bg-gui-neutral-2 p-gui-xs dark:bg-gui-neutral-3">
+      <p className="flex items-center gap-gui-xxs text-gui-s font-gui-medium">
+        <AgentIcon aria-hidden weight="bold" />
+        Agent: {AGENT_STATUS_LABEL[entry.status]}
+      </p>
+      {entry.note ? <p className="text-gui-s text-gui-neutral-10">{entry.note}</p> : null}
+      {entry.files.length > 0 ? <p className="font-gui-data text-gui-xs wrap-anywhere text-gui-neutral-7">{entry.files.join(", ")}</p> : null}
+      <div className="flex items-center gap-gui-xxs pt-gui-xxs">
+        {resolved ? null : (
+          <Button type="button" variant="outline" size="toolbar" onClick={onAccept}>
+            Accept
+          </Button>
+        )}
+        <Button type="button" variant="ghost" size="toolbar" onClick={onReopen}>
+          Reopen
+        </Button>
+      </div>
+    </section>
   );
 }
 

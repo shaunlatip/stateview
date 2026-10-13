@@ -1,4 +1,4 @@
-import { ChatCircleIcon, CodeIcon } from "@phosphor-icons/react";
+import { ChatCircleIcon, CheckIcon, CodeIcon } from "@phosphor-icons/react";
 import { cn } from "./cn";
 import type { Item } from "./manifest";
 
@@ -12,15 +12,21 @@ import type { Item } from "./manifest";
 const DARK_CHIP = "bg-gui-neutral-10 text-gui-neutral-1 dark:bg-gui-neutral-1 dark:text-gui-neutral-10";
 const LIGHT_CHIP = "bg-gui-neutral-3 text-gui-neutral-10 dark:bg-gui-neutral-10 dark:text-gui-neutral-1";
 
-/** Top right: open comments, then a dot until the state has been opened. */
-export function CornerChips({ comments, viewed }: { comments: number; viewed: boolean }) {
-  if (comments === 0 && viewed) return null;
+/** Top right: open comments, those the agent reports fixed, then a dot until the state has been opened. */
+export function CornerChips({ comments, fixed = 0, viewed }: { comments: number; fixed?: number; viewed: boolean }) {
+  if (comments === 0 && fixed === 0 && viewed) return null;
   return (
     <span aria-hidden className="absolute top-gui-xs right-gui-xs flex items-center gap-gui-xxs">
       {comments > 0 ? (
         <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", DARK_CHIP)}>
           <ChatCircleIcon />
           {comments}
+        </span>
+      ) : null}
+      {fixed > 0 ? (
+        <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", LIGHT_CHIP)}>
+          <CheckIcon weight="bold" />
+          {fixed}
         </span>
       ) : null}
       {/* Dark on the app's light screen in both schemes, like the dark chips; the ring keeps it apart from the screen. */}

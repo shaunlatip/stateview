@@ -14,6 +14,7 @@ const TOASTER_ID = "stateview";
 
 export const notify = {
   success: (message: string, options?: ExternalToast) => toast.success(message, { ...options, toasterId: TOASTER_ID }),
+  info: (message: string, options?: ExternalToast) => toast.info(message, { ...options, toasterId: TOASTER_ID }),
   error: (message: string, options?: ExternalToast) => toast.error(message, { ...options, toasterId: TOASTER_ID }),
 };
 

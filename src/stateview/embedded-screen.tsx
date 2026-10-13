@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import type { AgentStatus } from "./agent-status";
 import type { AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
 import { post, receive, type FrameState } from "./frame-protocol";
@@ -16,6 +17,7 @@ type EmbeddedScreenProps<T extends Inputs> = {
   annotationLayer: AnnotationLayer;
   /** The frame's own URL, which it was loaded at. */
   query: FrameQuery;
+  agentStatus?: AgentStatus;
 };
 
 /**
@@ -24,7 +26,7 @@ type EmbeddedScreenProps<T extends Inputs> = {
  * The comment engine runs here, inside the app's document, and shares
  * comments with the viewer through the review store.
  */
-export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationLayer: Layer, query }: EmbeddedScreenProps<T>) {
+export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationLayer: Layer, query, agentStatus }: EmbeddedScreenProps<T>) {
   const review = useReview(manifest);
   const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   // Null until the viewer sends a state; until then, the state in the URL.
@@ -87,6 +89,7 @@ export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationL
         active={commenting}
         onActiveChange={setCommenting}
         pinsVisible={pinsVisible}
+        agentStatus={agentStatus}
         onAdd={review.addAnnotation}
         onUpdate={review.updateAnnotation}
         onDelete={review.deleteAnnotation}
