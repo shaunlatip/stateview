@@ -283,7 +283,7 @@ function StateCard<T extends Inputs>({
         className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui motion-safe:hover:gui-hover-scale motion-safe:active:gui-press-scale"
       >
         {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
-        {item.kind === "sequence" ? <FlowStack /> : null}
+        {item.kind === "sequence" ? <FlowStack steps={item.steps.length} /> : null}
         <Thumbnail
           viewport={viewport}
           size="fluid"
@@ -316,21 +316,36 @@ function StateCard<T extends Inputs>({
 }
 
 /**
- * Two blank cards fanned out behind a flow's first screen, so a flow reads as
- * several screens. They hold their offsets on hover and take the same shadow
- * as the screen, so the stack lifts as one.
+ * Where each card behind a flow's first screen sits, nearest first. Three at
+ * most: the farthest offset has to stay inside the row's padding, and the
+ * footer chip already gives the exact step count.
  */
-function FlowStack() {
+const FLOW_STACK_CARDS = [
+  "translate-x-gui-xs -translate-y-gui-xxs bg-gui-neutral-1",
+  "translate-x-gui-m -translate-y-gui-xs bg-gui-neutral-2",
+  "translate-x-gui-l -translate-y-gui-s bg-gui-neutral-2",
+];
+
+/**
+ * Blank cards fanned out behind a flow's first screen, one per further step,
+ * so a flow reads as that many screens. They hold their offsets on hover and
+ * take the same shadow as the screen, so the stack lifts as one.
+ */
+function FlowStack({ steps }: { steps: number }) {
+  // Reversed so the farthest card paints first, behind the nearer ones.
+  const cards = FLOW_STACK_CARDS.slice(0, Math.max(0, steps - 1)).toReversed();
   return (
     <>
-      <span
-        aria-hidden
-        className="absolute inset-0 translate-x-gui-m -translate-y-gui-xs rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
-      />
-      <span
-        aria-hidden
-        className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
-      />
+      {cards.map((placement) => (
+        <span
+          key={placement}
+          aria-hidden
+          className={cn(
+            "absolute inset-0 rounded-gui-s ring-1 ring-gui-border transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover",
+            placement,
+          )}
+        />
+      ))}
     </>
   );
 }
