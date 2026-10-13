@@ -102,6 +102,8 @@ export function DeviceFrame({ mobile, controls, children }: { mobile: boolean; c
     },
     onPointerUp: (event: PointerEvent<HTMLDivElement>) => end(event, false),
     onPointerCancel: (event: PointerEvent<HTMLDivElement>) => end(event, true),
+    // Capture can end without a pointerup (the window loses focus, or the button is let go outside it); after a pointerup the drag is already over.
+    onLostPointerCapture: (event: PointerEvent<HTMLDivElement>) => end(event, true),
     onDoubleClick: () => setDeviceSize(DEVICE_SIZE.initial, true),
     className: cn("absolute touch-none outline-none select-none max-md:hidden", handle.cursor, handle.className),
   });
@@ -158,8 +160,11 @@ export function DeviceFrame({ mobile, controls, children }: { mobile: boolean; c
           </>
         ) : null}
       </div>
-      {/* While a handle is dragged the app can't take the pointer, and the cursor holds wherever it goes. */}
-      {dragging ? <div aria-hidden className={cn("absolute inset-0 z-20", dragging.cursor)} /> : null}
+      {/*
+       * While a handle is dragged the app can't take the pointer, and the cursor holds wherever it goes.
+       * A release that lands here, because the handle lost the pointer, still ends the drag.
+       */}
+      {dragging ? <div aria-hidden onPointerUp={(event) => end(event, false)} className={cn("absolute inset-0 z-20", dragging.cursor)} /> : null}
     </div>
   );
 }
