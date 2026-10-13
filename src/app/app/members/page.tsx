@@ -3,6 +3,9 @@ import { membersManifest } from "@/sample-app/manifest";
 import { findFrameIndex, listFrames } from "@/stateview/manifest";
 import { MembersReview } from "./members-review";
 
+// Build fix for the deployed snapshot: the page awaits searchParams outside Suspense.
+export const instant = false;
+
 /*
  * The state comes from `?sv=`, which is only known per request. While the
  * viewer loads, the fallback carries the state's title, so arriving from the
