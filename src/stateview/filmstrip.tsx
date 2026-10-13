@@ -92,7 +92,7 @@ function StripSections<T extends Inputs>({
                 <li key={item.id} className="flex">
                   <Link
                     // Keep the state on screen in view as the reviewer steps through.
-                    ref={current ? scrollIntoView : undefined}
+                    ref={current ? keepInView : undefined}
                     href={frameHref(manifest, first)}
                     aria-current={current ? "page" : undefined}
                     onClick={onPick}
@@ -129,8 +129,25 @@ function StripSections<T extends Inputs>({
   );
 }
 
-function scrollIntoView(node: HTMLElement | null) {
-  node?.scrollIntoView({ block: "nearest" });
+/**
+ * Scrolls the strip so the state on screen is in view. Not `scrollIntoView`:
+ * in a focused window Chrome also moves the Tab starting point to the element,
+ * so the reviewer's first Tab would skip the bar and land in the strip.
+ */
+function keepInView(node: HTMLElement | null) {
+  const scroller = node ? scrollParent(node) : null;
+  if (!node || !scroller) return;
+  const item = node.getBoundingClientRect();
+  const view = scroller.getBoundingClientRect();
+  if (item.top < view.top) scroller.scrollTop += item.top - view.top;
+  else if (item.bottom > view.bottom) scroller.scrollTop += item.bottom - view.bottom;
+}
+
+function scrollParent(node: HTMLElement) {
+  for (let element = node.parentElement; element; element = element.parentElement) {
+    if (/auto|scroll/.test(getComputedStyle(element).overflowY)) return element;
+  }
+  return null;
 }
 
 /**
