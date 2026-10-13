@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { APP_FRAME, app, commentToggle, expectState, focusParent, open, settle } from "./helpers";
+import { APP_FRAME, app, commentToggle, expectState, focusParent, open, settle, tab } from "./helpers";
 
 // The app under review runs in its own frame, so focus and keys are split between two documents:
 // Stateview's shortcuts belong to the viewer page, and anything typed in the app belongs to the app.
@@ -13,12 +13,12 @@ function removePriya(page: Page) {
 
 test("the skip link moves keyboard focus into the app", async ({ page }) => {
   await open(page, TYPICAL);
-  await page.keyboard.press("Tab");
+  await tab(page);
   await expect(page.locator(":focus")).toHaveAccessibleName("Skip to app");
   await page.keyboard.press("Enter");
   // From the viewer page, focus inside a frame shows as the frame element itself.
   await expect.poll(() => page.evaluate((frame) => document.activeElement?.matches(frame) ?? false, APP_FRAME)).toBe(true);
-  await page.keyboard.press("Tab");
+  await tab(page);
   // The next stop is the app's first one (the team switcher), in the frame's document rather than the bar's.
   await expect(app(page).locator(":focus")).toHaveAccessibleName(/^Halcyon/);
 });
