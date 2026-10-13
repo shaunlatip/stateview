@@ -340,6 +340,13 @@
   transition-property: left;
 }
 
+/* iOS Safari zooms the page into a focused text field set under 16px, so on touch screens it's 16px. */
+@utility gui-touch-field-size {
+  @media (pointer: coarse) {
+    font-size: 16px;
+  }
+}
+
 @utility gui-press {
   translate: 0 var(--motion-press-distance);
 }
