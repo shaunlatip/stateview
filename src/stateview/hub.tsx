@@ -10,6 +10,7 @@ import { formatReview } from "./agent-export";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
 import { Logo } from "./logo";
 import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
+import { NightSky } from "./night-sky";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
 import { Button, ThemeScope } from "./ui";
@@ -142,6 +143,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
 
   return (
     <ThemeScope ref={root} className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+      <NightSky />
       <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto bg-gui-neutral-2 px-gui-m gui-divider-end md:flex">
         {/* As tall as the header with the same top padding, so the name sits level with the repo name. */}
         <div className="flex gui-hub-header-height shrink-0 items-start pt-gui-l">

@@ -76,6 +76,22 @@
   --code-attribute: #a3a3a3;
   --code-string: #c6c6c6;
 
+  /*
+   * The hub's night sky, seen when the page is pulled past either end: near
+   * black for empty space, three navy shades dithered in where it's crowded,
+   * three star tints, and two dimmer steps stars pass through as they twinkle
+   * (the fainter one doubles as dust). The same in both schemes.
+   */
+  --night-sky-1: #010103;
+  --night-sky-2: #040619;
+  --night-sky-3: #0a0e2c;
+  --night-sky-4: #141a46;
+  --night-star-1: #ffffff;
+  --night-star-2: #fff1c4;
+  --night-star-3: #cfdcff;
+  --night-star-dim: #7880ad;
+  --night-star-faint: #2e3462;
+
   --space-zero: 0px;
   --space-xxs: 4px;
   --space-xs: 7px;
@@ -436,6 +452,25 @@
 /* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
 @utility gui-panel-height {
   max-height: calc(100dvh - var(--viewer-bar) - 2 * var(--space-xs));
+}
+
+/*
+ * The hub's night sky: fixed behind the page, reaching 60% of a window past
+ * the top and bottom, so it fills the gap whether the browser's rubber band
+ * moves fixed layers with the page or leaves them in place (REACH in
+ * night-sky.tsx). Scaled up from a small canvas without smoothing, so every
+ * sky pixel stays a hard square. Sized outright: a canvas keeps its own
+ * pixel size when only its edges are set.
+ */
+@utility gui-night-sky {
+  position: fixed;
+  left: 0;
+  top: -60dvh;
+  width: 100%;
+  height: 220dvh;
+  z-index: -1;
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 /*
