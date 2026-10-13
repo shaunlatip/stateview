@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { FeedbackToolbar } from "@/components/dev/feedback-toolbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/stateview/ui";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -35,7 +34,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <TooltipProvider>
           <NuqsAdapter>{children}</NuqsAdapter>
         </TooltipProvider>
-        {process.env.NODE_ENV === "development" ? <FeedbackToolbar /> : null}
         <Toaster />
       </body>
     </html>

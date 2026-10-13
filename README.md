@@ -27,7 +27,7 @@ npm run dev        # http://localhost:3000
 npm run lint       # Oxlint: React (incl. React Compiler rules), jsx-a11y, Next.js, @shadcn/lint design-system rules
 npm run typecheck  # tsc --noEmit (strict)
 npm run test:a11y  # Playwright + axe: WCAG A/AA, visible focus on the first tab stop, no sideways scroll at 375px
-npm run test:e2e   # the above, plus focus and keys across the app's frame and media queries inside it
+npm run test:e2e   # the above, plus focus and keys across the app's frame and media queries inside it, in Chromium, WebKit and Firefox (`npx playwright install` first)
 npm run build
 ```
 
@@ -41,12 +41,7 @@ Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind
 
 Stateview's own UI (hub, viewer bar, filmstrip, state panel, toasts) uses the Graphical theme "Stateview" (`GUI.md`, `gui/`). Its light and dark tokens live in `src/stateview/theme.css`, scoped to `.stateview-theme`, and its primitives (button, toolbar control, badge, shortcut hint) in `src/stateview/ui.tsx`. The sample app uses the shadcn kit in `src/components/ui` with its own brand, a fictional product called Halcyon: blue, orange and cool-grey tokens in `src/sample-app/halcyon.css`, scoped to `.halcyon`, so it reads as a separate product, the way a real app under review would. Hub thumbnails and the phone frame reset to the app's own type (`host-frame`).
 
-**Fonts.** Data text uses Geist Mono, which the app already loads. The UI face is **Timeless Grotesk** (Timeless Sans, Grotesk cut), loaded by the `@font-face` rules in `src/stateview/theme.css`. Its license (Timeless Free Font License 1.2) allows embedding in a website but not putting the fonts in a public repository, so the files are gitignored and ship only with the deployed site. To run it locally with the right face:
-
-1. Get the family at [timeless.co/type](https://timeless.co/type) ("Get access"; they email the files).
-2. Copy `TimelessSans-GroteskRegular.woff2`, `TimelessSans-GroteskMedium.woff2` and `TimelessSans-GroteskSemibold.woff2` from `Sans-Grotesk/static/woff2/`, plus `LICENSE.pdf`, into `public/fonts/timeless-grotesk/`.
-
-Without them, Stateview's UI falls back to the system sans-serif and nothing else changes.
+**Fonts.** Stateview's UI uses Geist and its data text Geist Mono, both loaded by `next/font`. The theme export in `gui/` names Timeless Grotesk; its license doesn't allow the files in a public repository, so the build uses Geist instead.
 
 ## Where to look
 
@@ -61,7 +56,6 @@ The Team members screen takes all of its state through one object (`MembersState
 ## Dependencies worth naming
 
 - **Comments** are Stateview's own engine (`src/stateview/comment-layer.tsx`), written from scratch. Everything else depends on the `AnnotationLayer` interface in `src/stateview/annotations.ts`, so the engine could be swapped for another one by changing one file. React component names come from React's development build, so production builds show the selector and HTML without them.
-- **Agentation** (`agentation`, © Benji Taylor, [PolyForm Shield 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)) is a dev dependency only, for commenting on Stateview's own UI while building it (`src/components/dev/feedback-toolbar.tsx`, synced to the local Agentation server). It renders only under `next dev`; production builds contain none of it. None of its source is copied into this repo.
 - **nuqs** keeps the current state (`?sv=`, `?step=`) in the URL, so every state has a link and the back button steps back.
 
 ## Credits

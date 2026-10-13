@@ -6,35 +6,6 @@
  * named `gui-*` utilities registered at the end.
  */
 
-/*
- * Timeless Sans, Grotesk cut (Timeless Free Font License 1.2). The files are
- * kept out of git because the license forbids public repositories; get them
- * from timeless.co/type (see README). Without them, text falls back to sans-serif.
- */
-@font-face {
-  font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskRegular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskMedium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Timeless Grotesk";
-  src: url("/fonts/timeless-grotesk/TimelessSans-GroteskSemibold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
 .stateview-theme {
   --focus-ring-outline: 2px solid color-mix(in srgb, #000000 50%, transparent);
   --icon-stroke-width: 1.5;
@@ -56,7 +27,7 @@
   /*
    * Comment picker selection: the outline on the picked element and the pins.
    * A neutral tool blue, not the brand palette, so it never reads as part of
-   * the app under review. Agentation's hue (OKLCH 249), darkened in sRGB to
+   * the app under review. OKLCH hue 249, darkened in sRGB to
    * pass 4.5:1 for white pin numbers and 3:1 for the outline on white.
    */
   --selection: #0175c5;
@@ -143,10 +114,13 @@
   --border-l: 2px;
   --border-default-color: rgb(0 0 0 / 0.1);
 
-  --font-ui: "Timeless Grotesk", sans-serif;
-  --font-brand: "Timeless Grotesk", sans-serif;
-  --font-editorial: "Timeless Grotesk", sans-serif;
-  /* "Sidebar Geist Mono" maps to the Geist Mono family next/font already loads. */
+  /*
+   * Changed from the export (Timeless Grotesk, whose license keeps it out of
+   * public repositories): Geist and Geist Mono, loaded by next/font in the root layout.
+   */
+  --font-ui: var(--font-geist-sans), sans-serif;
+  --font-brand: var(--font-geist-sans), sans-serif;
+  --font-editorial: var(--font-geist-sans), sans-serif;
   --font-data: var(--font-geist-mono), monospace;
   /*
    * Changed from the export (300/400/600): Light at 12–15px reads thin and grey,

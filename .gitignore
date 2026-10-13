@@ -46,5 +46,5 @@ test-results/
 playwright-report/
 .gstack/
 
-# Timeless Grotesk: free to embed, but its license forbids public repositories (see README).
+# An earlier UI face, still in some local checkouts. Its license forbids public repositories.
 public/fonts/timeless-grotesk/

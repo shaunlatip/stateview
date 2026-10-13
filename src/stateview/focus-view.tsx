@@ -40,7 +40,6 @@ const OWNS_KEYS = [
   "[role='menu']",
   "[role='radiogroup']",
   "[role='dialog']",
-  "[data-feedback-toolbar]",
 ].join(",");
 
 type FocusViewProps<T extends Inputs> = {

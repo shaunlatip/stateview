@@ -33,7 +33,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "agentation": "^3.1.2",
     "babel-plugin-react-compiler": "1.0.0",
     "oxlint": "^1.87.0",
     "tailwindcss": "^4",

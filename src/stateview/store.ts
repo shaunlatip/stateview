@@ -24,7 +24,7 @@ function storageKey(manifest: Pick<Manifest, "id" | "version">) {
   return `stateview:${manifest.id}@${manifest.version}`;
 }
 
-// Comments saved by the old Agentation adapter have no element or anchor, so the comment engine can't place them.
+// A saved comment without an element or anchor (an older or hand-edited record) can't be placed, so it's skipped.
 function isPlaceable(annotation: Partial<Annotation>): annotation is Annotation {
   return isObject(annotation.element) && isObject(annotation.anchor);
 }
