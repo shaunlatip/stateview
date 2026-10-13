@@ -1,6 +1,6 @@
 "use client";
 
-import { gatewayManifest } from "@/examples/ai-gateway/manifest";
+import { GATEWAY_STATUS_PATH, gatewayManifest, gatewayStatus } from "@/examples/ai-gateway/manifest";
 import { AiGatewayScreen } from "@/examples/ai-gateway/screen";
 import { parseGatewayState } from "@/examples/ai-gateway/state";
 import { CommentLayer } from "@/stateview/comment-layer";
@@ -12,6 +12,8 @@ export function AiGatewayReview() {
       manifest={gatewayManifest}
       render={(inputs) => <AiGatewayScreen state={parseGatewayState(inputs)} />}
       annotationLayer={CommentLayer}
+      agentStatus={gatewayStatus}
+      statusPath={GATEWAY_STATUS_PATH}
     />
   );
 }

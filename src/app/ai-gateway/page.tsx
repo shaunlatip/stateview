@@ -1,4 +1,4 @@
-import { gatewayManifest } from "@/examples/ai-gateway/manifest";
+import { GATEWAY_STATUS_PATH, gatewayManifest, gatewayStatus } from "@/examples/ai-gateway/manifest";
 import { AiGatewayScreen } from "@/examples/ai-gateway/screen";
 import { parseGatewayState } from "@/examples/ai-gateway/state";
 import { REVIEWS } from "@/examples/reviews";
@@ -14,7 +14,7 @@ export default function AiGatewayHubPage() {
     <>
       {/* A React <title>, like the viewer's, so the tab changes in the same render as the page (see app/app/ai-gateway/page.tsx). */}
       <title>Stateview</title>
-      <Hub manifest={gatewayManifest} thumbnails={thumbnails} reviews={REVIEWS} />
+      <Hub manifest={gatewayManifest} thumbnails={thumbnails} reviews={REVIEWS} agentStatus={gatewayStatus} statusPath={GATEWAY_STATUS_PATH} />
     </>
   );
 }

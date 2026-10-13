@@ -1,5 +1,5 @@
 import { REVIEWS } from "@/examples/reviews";
-import { shaderLabManifest } from "@/examples/shader-lab/manifest";
+import { SHADER_LAB_STATUS_PATH, shaderLabManifest, shaderLabStatus } from "@/examples/shader-lab/manifest";
 import { ShaderLabScreen } from "@/examples/shader-lab/shader-lab-screen";
 import { parseShaderLabState } from "@/examples/shader-lab/state";
 import { Hub } from "@/stateview/hub";
@@ -14,7 +14,7 @@ export default function ShaderLabHubPage() {
     <>
       {/* A React <title>, like the viewer's, so the tab changes in the same render as the page (see app/app/shader-lab/page.tsx). */}
       <title>Stateview</title>
-      <Hub manifest={shaderLabManifest} thumbnails={thumbnails} reviews={REVIEWS} />
+      <Hub manifest={shaderLabManifest} thumbnails={thumbnails} reviews={REVIEWS} agentStatus={shaderLabStatus} statusPath={SHADER_LAB_STATUS_PATH} />
     </>
   );
 }

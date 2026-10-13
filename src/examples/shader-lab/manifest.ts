@@ -1,5 +1,11 @@
+import { parseAgentStatus } from "@/stateview/agent-status";
 import type { Manifest } from "@/stateview/manifest";
 import { shaderLabInputValues as v, type ShaderLabState } from "./state";
+import status from "./status.json";
+
+/** What a coding agent reported doing with the review's comments; an edit hot-reloads into the open review. */
+export const shaderLabStatus = parseAgentStatus(status);
+export const SHADER_LAB_STATUS_PATH = "src/examples/shader-lab/status.json";
 
 /**
  * The review for shader-lab PR #7, "Onboarding examples, Copy spec, and

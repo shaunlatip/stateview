@@ -1,5 +1,11 @@
+import { parseAgentStatus } from "@/stateview/agent-status";
 import type { Manifest } from "@/stateview/manifest";
 import { portfolioInputValues as v, type PortfolioState } from "./state";
+import status from "./status.json";
+
+/** What a coding agent reported doing with the review's comments; an edit hot-reloads into the open review. */
+export const portfolioStatus = parseAgentStatus(status);
+export const PORTFOLIO_STATUS_PATH = "src/examples/portfolio/status.json";
 
 /**
  * The review for shaunlatip/portfolio#73, "Home: drag-scroll selected work,

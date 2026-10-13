@@ -1,5 +1,11 @@
+import { parseAgentStatus } from "@/stateview/agent-status";
 import type { Manifest } from "@/stateview/manifest";
 import { gatewayInputValues as v, type GatewayState } from "./state";
+import status from "./status.json";
+
+/** What a coding agent reported doing with the review's comments; an edit hot-reloads into the open review. */
+export const gatewayStatus = parseAgentStatus(status);
+export const GATEWAY_STATUS_PATH = "src/examples/ai-gateway/status.json";
 
 /**
  * The review for the proposed AI Gateway setup hub (vercel-redesign
