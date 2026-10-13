@@ -211,8 +211,23 @@ export function Select({
 }
 
 /**
+ * Tooltips that sit side by side, like a toolbar's. The first waits for the
+ * pointer to rest (Base UI's 600ms), so a pass across the group on the way to
+ * somewhere else opens nothing; its neighbours then open at once, with no
+ * transition, until the pointer has been away for 400ms. Nested inside the
+ * app's zero-delay provider, it sets the delay for its own tooltips only.
+ */
+export function TooltipGroup({ children }: { children: ReactNode }) {
+  return <TooltipPrimitive.Provider>{children}</TooltipPrimitive.Provider>;
+}
+
+/**
  * Graphical Tooltip. The popup is portalled to <body>, outside any themed
- * subtree, so it carries the theme scope itself.
+ * subtree, so it carries the theme scope itself. It scales from its trigger
+ * on a transition rather than a keyframe, so one that closes while still
+ * opening reverses from where it is. Whenever Base UI marks it instant (a
+ * neighbour in a group, an open from focus, a close from a click or Escape)
+ * it skips the transition.
  */
 export function Tooltip({
   label,
@@ -232,7 +247,7 @@ export function Tooltip({
       <TooltipPrimitive.Trigger render={children} />
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Positioner side={side} sideOffset={8} className="z-50">
-          <TooltipPrimitive.Popup className="stateview-theme flex items-center gap-gui-xs rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-neutral-1 shadow-gui-s duration-gui ease-gui motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-closed:animate-out motion-safe:data-closed:fade-out-0">
+          <TooltipPrimitive.Popup className="stateview-theme flex origin-(--transform-origin) items-center gap-gui-xs rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs text-gui-s font-gui-medium text-gui-neutral-1 shadow-gui-s transition duration-gui ease-gui data-ending-style:opacity-0 data-starting-style:opacity-0 data-instant:transition-none motion-safe:data-ending-style:scale-(--motion-popup-scale) motion-safe:data-starting-style:scale-(--motion-popup-scale)">
             {label}
             {shortcut ? (
               <kbd className="font-gui-data text-gui-xs text-gui-neutral-6">{shortcut}</kbd>
