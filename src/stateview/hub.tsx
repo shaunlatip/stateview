@@ -176,7 +176,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails, reviews }: HubProp
             {/* Below md the index is hidden, so the brand and the switcher move here. */}
             <div className="flex flex-wrap items-center justify-between gap-gui-s md:hidden">
               <Brand />
-              <ReviewSwitcher reviews={reviews} current={manifest.id} />
+              <ReviewSwitcher reviews={reviews} current={manifest.id} labelHidden className="-mr-gui-xs" />
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-x-gui-l gap-y-gui-xs">
               {/* One control tall, like Copy comments and the brand beside it, so all three share a centre line. */}
@@ -234,7 +234,18 @@ function Brand({ className }: { className?: string }) {
  * Picks which review the hub shows, as a small select like the state panel's.
  * Each review has its own hub route, so switching is a navigation.
  */
-function ReviewSwitcher({ reviews, current, className }: { reviews: ReviewLink[]; current: string; className?: string }) {
+function ReviewSwitcher({
+  reviews,
+  current,
+  labelHidden = false,
+  className,
+}: {
+  reviews: ReviewLink[];
+  current: string;
+  /** In the phone header the select sits on the brand's line, so its label is for screen readers only. */
+  labelHidden?: boolean;
+  className?: string;
+}) {
   const router = useRouter();
   const labelId = useId();
   if (reviews.length < 2) return null;
@@ -244,7 +255,7 @@ function ReviewSwitcher({ reviews, current, className }: { reviews: ReviewLink[]
   };
   return (
     <div className={cn("flex flex-col gap-gui-xxs", className)}>
-      <span id={labelId} className="px-gui-xs text-gui-xs text-gui-neutral-7">
+      <span id={labelId} className={cn("px-gui-xs text-gui-xs text-gui-neutral-7", labelHidden && "sr-only")}>
         Example app
       </span>
       <Select
