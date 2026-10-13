@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
  * browser until it scrolls near the viewport. The screen inside starts from
  * the host app's own typography, not Stateview's.
  *
- * "card" is the hub's 208 × 130 and "strip" the viewer filmstrip's 144 × 90
- * (theme.css). A desktop render fills the width; a phone render is centred.
+ * "fluid" is the hub's, as wide as its column, and "strip" the viewer
+ * filmstrip's 144 × 90 (theme.css). A desktop render fills the width; a phone
+ * render is centred.
  */
 export function Thumbnail({
   children,
@@ -18,16 +19,17 @@ export function Thumbnail({
 }: {
   children: ReactNode;
   viewport: "desktop" | "mobile";
-  size: "card" | "strip";
+  size: "fluid" | "strip";
   className?: string;
 }) {
+  const fluid = size === "fluid";
   return (
     <div
       aria-hidden
       inert
       className={cn(
         "content-auto relative shrink-0 overflow-hidden rounded-gui-s bg-gui-neutral-2 ring-1 ring-gui-border",
-        size === "card" ? "gui-thumb-card" : "gui-thumb-strip",
+        fluid ? "gui-thumb-fluid" : "gui-thumb-strip",
         className,
       )}
     >
@@ -35,7 +37,9 @@ export function Thumbnail({
       <div
         className={cn(
           "host-frame pointer-events-none absolute top-0 h-200 bg-background select-none **:animate-none",
-          viewport === "mobile" ? "gui-thumb-mobile left-1/2 origin-top -translate-x-1/2" : "gui-thumb-desktop left-0 origin-top-left",
+          viewport === "mobile"
+            ? [fluid ? "gui-thumb-fluid-mobile" : "gui-thumb-mobile", "left-1/2 origin-top -translate-x-1/2"]
+            : [fluid ? "gui-thumb-fluid-desktop" : "gui-thumb-desktop", "left-0 origin-top-left"],
         )}
       >
         {children}

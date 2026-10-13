@@ -45,6 +45,7 @@
   --motion-large-easing: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-popup-scale: 0.96;
   --motion-press-distance: 1px;
+  --motion-press-scale: 0.98;
 
   --option-badge-background: #f0f0f0;
   --option-badge-foreground: #000000;
@@ -63,15 +64,16 @@
 
   /*
    * Code readout (selector and HTML in the comment composer): a dark, IDE-like
-   * surface in both schemes, with syntax roles drawn from the palette. Blue is
-   * left out because it means selection. Every role measures ≥ 5:1 on the surface.
+   * surface in both schemes. Syntax roles are steps of grey, since Stateview
+   * has no accent colour; blue would read as selection. Every role measures
+   * ≥ 5:1 on the surface.
    */
   --code-surface: #202020;
   --code-text: #e5e5e5;
   --code-muted: #a3a3a3;
-  --code-tag: #e864ff;
-  --code-attribute: #00c9bb;
-  --code-string: #e0e708;
+  --code-tag: #ffffff;
+  --code-attribute: #a3a3a3;
+  --code-string: #c6c6c6;
 
   --space-zero: 0px;
   --space-xxs: 4px;
@@ -143,15 +145,8 @@
   --weight-data-medium: 500;
   --weight-data-heavy: 600;
 
+  /* Changed from the export: Colors 1–4 (the yellow-green brand palette) are dropped. Stateview is neutral throughout. */
   --color-none: transparent;
-  --color-1: #e0e708;
-  --color-1-transparent: #e0e70833;
-  --color-2: #00c9bb;
-  --color-2-transparent: #00c9bb33;
-  --color-3: #e0e709;
-  --color-3-transparent: #e0e70933;
-  --color-4: #e864ff;
-  --color-4-transparent: #e864ff33;
   --neutral-1: #ffffff;
   --neutral-1-transparent: #ffffff33;
   --neutral-2: #fafafa;
@@ -219,8 +214,6 @@
   /* One step lighter than the dark popover so the code block still reads as an inset. */
   --code-surface: #2b2b2b;
 
-  --color-3: #f4f83b;
-  --color-3-transparent: #f4f83b33;
   --neutral-1: #000000;
   --neutral-1-transparent: #00000033;
   --neutral-2: #202020;
@@ -259,8 +252,6 @@
   --color-gui-neutral-9: var(--neutral-9);
   --color-gui-neutral-10: var(--neutral-10);
   --color-gui-neutral-10-transparent: var(--neutral-10-transparent);
-  --color-gui-1-transparent: var(--color-1-transparent);
-  --color-gui-1: var(--color-1);
   --color-gui-error: var(--error);
   --color-gui-border: var(--border-default-color);
   --color-gui-option-badge: var(--option-badge-background);
@@ -337,6 +328,11 @@
   translate: 0 var(--motion-press-distance);
 }
 
+/* Pressing a surface (a hub screen) shrinks it about its centre rather than nudging it down. */
+@utility gui-press-scale {
+  scale: var(--motion-press-scale);
+}
+
 /* Controls size from content plus padding: one line of M text with XS padding above and below. */
 @utility gui-control {
   min-height: calc(var(--line-m) + 2 * var(--space-xs));
@@ -357,10 +353,11 @@
 }
 
 /*
- * The viewer's frame: a bar along the top, one toolbar control tall inside
- * XXS padding, and a filmstrip down the left, one strip thumbnail wide. The
- * strip's side inset is the bar's XXS padding plus a control's XS padding, so
- * the thumbnails line up under the logo. On wide screens the reviewer can
+ * The viewer's frame: a bar along the top, as tall as a toolbar control
+ * inside XXS padding (its own controls are a step smaller, 32px, centred in
+ * it), and a filmstrip down the left, one strip thumbnail wide. The strip's
+ * side inset (XXS + XS) lines the thumbnails up under the logo, which sits
+ * the bar's XS padding plus 4.5px in. On wide screens the reviewer can
  * resize the strip: the viewer sets --thumb-strip-chosen (unitless px) inline
  * on each surface that reads it. On phones the strip overlays the app and
  * stays at its default width. The app under review fills the rest.
@@ -379,6 +376,23 @@
 /* The state panel hangs XS below the viewer bar and stops XS above the bottom of the window. */
 @utility gui-panel-height {
   max-height: calc(100dvh - var(--viewer-bar) - 2 * var(--space-xs));
+}
+
+/*
+ * The state panel's rows share two columns across every group (each group and
+ * row is a subgrid): labels as wide as the longest label, controls in the
+ * rest. A control can then never reach left past any row's label. Side by
+ * side needs about 298px (longest label, M, three segments), so under 18rem
+ * of content (320px phones) a label sits above its control instead.
+ */
+@utility gui-panel-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--space-m);
+
+  @container (width < 18rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Edges and dividers are drawn with inset shadows, never native borders. */
@@ -411,17 +425,66 @@
 }
 
 /*
- * Thumbnails: a hub card (208 × 130) or a filmstrip frame (144 × 90 by
- * default, any width the reviewer drags it to), both 16:10. Sizes are
- * unitless so the screen inside can scale from them: a desktop render
- * (1088px wide) fills the width; a phone render (375px wide) shows its top
- * 400px.
+ * The hub's header and index. The header's height is measured (it wraps on
+ * narrower screens) and set as --hub-header on the hub, so the index's top
+ * block matches it and Stateview's name sits level with the repo name. The
+ * index's first link is then placed on the first section title's baseline,
+ * also measured, since the title's size and position change with the layout.
  */
-@utility gui-thumb-card {
-  --thumb-width: 208;
-  --thumb-height: 130;
-  width: calc(var(--thumb-width) * 1px);
-  height: calc(var(--thumb-height) * 1px);
+@utility gui-hub-header-height {
+  height: var(--hub-header, calc(var(--line-m) + 2 * var(--space-xs) + 2 * var(--space-l)));
+}
+
+/*
+ * The rule under a hub section. It's drawn over the section's contents rather
+ * than inset on the section, so the grey states row can't cover it.
+ */
+@utility gui-band-rule {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: var(--border-s);
+    background: var(--border-default-color);
+    pointer-events: none;
+  }
+}
+
+/*
+ * A state in a section's row: 352px wide, so three sit side by side beside the
+ * index on a 1440px screen and the rest scroll. On phones each leaves an XXL
+ * peek of the next.
+ */
+@utility gui-state-row-item {
+  flex: none;
+  width: min(352px, calc(100% - var(--space-xxl)));
+}
+
+/*
+ * Thumbnails, both 16:10: a hub screen, as wide as its column, or a filmstrip
+ * frame (144 × 90 by default, any width the reviewer drags it to). A desktop
+ * render (1088px wide) fills the width; a phone render (375px wide) shows its
+ * top 400px. The strip's sizes are unitless so the screen can scale from them.
+ * The hub's is a size container, and tan(atan2(a, b)) turns its width over the
+ * render's into the unitless scale.
+ */
+@utility gui-thumb-fluid {
+  width: 100%;
+  aspect-ratio: 208 / 130;
+  container-type: inline-size;
+}
+
+@utility gui-thumb-fluid-desktop {
+  width: 1088px;
+  scale: tan(atan2(100cqw, 1088px));
+}
+
+@utility gui-thumb-fluid-mobile {
+  width: 375px;
+  scale: tan(atan2(100cqw * 130 / 208, 400px));
 }
 
 @utility gui-thumb-strip {

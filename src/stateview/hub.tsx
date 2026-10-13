@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatReview } from "./agent-export";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
 import { Logo } from "./logo";
-import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section, type Uncovered } from "./manifest";
+import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
 import { Button, ThemeScope } from "./ui";
@@ -19,8 +19,6 @@ type HubProps<T extends Inputs> = {
   /** A rendered screen for each item id (first step for sequences). */
   thumbnails: Record<string, ReactNode>;
 };
-
-const UNCOVERED_ID = "not-covered";
 
 /*
  * Where the reviewer was on the hub, so coming back from a state lands on the
@@ -86,46 +84,90 @@ function useCurrentSection(ids: string[]) {
   return current;
 }
 
+/** Where a line of text's baseline sits, from a zero-size inline box placed on it for the moment of measuring. */
+function baselineOf(text: HTMLElement) {
+  const probe = document.createElement("span");
+  probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+  text.prepend(probe);
+  const y = probe.getBoundingClientRect().top;
+  probe.remove();
+  return y;
+}
+
+/**
+ * Lines the index up with the page. The header's height goes on the hub as
+ * --hub-header, so the index's top block matches it. The index list is then
+ * pushed down until its first link's text shares a baseline with the first
+ * section's title. Both are measured, and remeasured whenever the header or
+ * the content changes size (wrapping, a new layout, fonts arriving).
+ */
+function useIndexAlignment() {
+  const root = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const main = useRef<HTMLElement>(null);
+  const index = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const align = () => {
+      const headerNode = header.current;
+      const list = index.current;
+      const title = main.current?.querySelector<HTMLElement>("section h2");
+      const label = list?.querySelector<HTMLElement>("[data-index-label]");
+      if (!headerNode || !list || !title || !label) return;
+      root.current?.style.setProperty("--hub-header", `${headerNode.offsetHeight}px`);
+      // The index is sticky at the top; compare both as if the page were scrolled to the top.
+      const titleBaseline = baselineOf(title) + window.scrollY;
+      const nav = list.parentElement;
+      const labelBaseline = baselineOf(label) - (nav?.getBoundingClientRect().top ?? 0) + (nav?.scrollTop ?? 0);
+      const padding = parseFloat(getComputedStyle(list).paddingTop) || 0;
+      list.style.paddingTop = `${Math.max(0, padding + titleBaseline - labelBaseline)}px`;
+    };
+    const observer = new ResizeObserver(align);
+    if (header.current) observer.observe(header.current);
+    if (main.current) observer.observe(main.current);
+    void document.fonts?.ready.then(align);
+    return () => observer.disconnect();
+  }, []);
+  return { root, header, main, index };
+}
+
 export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
   useRestoredScroll();
+  const { root, header, main, index } = useIndexAlignment();
   const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
   const firstFrameOf = (item: Item<T>) => frames.find((frame) => frame.item.id === item.id) ?? frames[0];
   const commentsOn = (item: Item<T>) =>
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
-  const sectionIds = [...manifest.sections.map((section) => section.id), ...(manifest.uncovered.length > 0 ? [UNCOVERED_ID] : [])];
-  const current = useCurrentSection(sectionIds);
+  const current = useCurrentSection(manifest.sections.map((section) => section.id));
 
   return (
-    <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
-      <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-gui-l overflow-y-auto bg-gui-neutral-2 px-gui-m py-gui-l gui-divider-end md:flex">
-        <Brand className="px-gui-xs" />
-        <ul className="flex flex-col">
+    <ThemeScope ref={root} className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+      <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto bg-gui-neutral-2 px-gui-m gui-divider-end md:flex">
+        {/* As tall as the header with the same top padding, so the name sits level with the repo name. */}
+        <div className="flex gui-hub-header-height shrink-0 items-start pt-gui-l">
+          <Brand className="gui-control px-gui-xs" />
+        </div>
+        <ul ref={index} className="flex flex-col pb-gui-l">
           {manifest.sections.map((section) => (
             <IndexLink key={section.id} id={section.id} current={current === section.id}>
               {section.title}
             </IndexLink>
           ))}
-          {manifest.uncovered.length > 0 ? (
-            <>
-              <li aria-hidden className="flex h-gui-m items-center px-gui-xs">
-                <span className="h-px flex-1 bg-gui-border" />
-              </li>
-              <IndexLink id={UNCOVERED_ID} current={current === UNCOVERED_ID} muted>
-                Not covered
-              </IndexLink>
-            </>
-          ) : null}
         </ul>
       </nav>
 
-      <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s px-gui-m py-gui-m gui-divider-bottom md:px-gui-xxl">
+      <main ref={main} className="flex min-w-0 flex-1 flex-col">
+        {/* Grey like the index, ruled off like every band below it, and inset to the same XL start edge. */}
+        <header
+          ref={header}
+          className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s bg-gui-neutral-2 px-gui-xl py-gui-l gui-divider-bottom"
+        >
           <div className="flex min-w-0 flex-col gap-gui-s">
             {/* Below md the index is hidden, so the brand moves here. */}
             <Brand className="md:hidden" />
             <div className="flex min-w-0 flex-wrap items-center gap-x-gui-l gap-y-gui-xs">
-              <h1 className="flex min-w-0 items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
+              {/* One control tall, like Copy comments and the brand beside it, so all three share a centre line. */}
+              <h1 className="flex min-w-0 gui-control items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
                 {/* The app's own favicon, decorative beside its repo name. */}
                 <Image src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
                 {manifest.scope.repo}
@@ -133,18 +175,18 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
               <p className="flex min-w-0 flex-wrap items-center gap-gui-xs text-gui-s text-gui-neutral-7">
                 <GitBranchIcon aria-hidden className="text-gui-m text-gui-neutral-10" />
                 <span className="sr-only">Reviewing</span>
-                <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.branch}</code>
+                <BranchName>{manifest.scope.branch}</BranchName>
                 vs
-                <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{manifest.scope.base}</code>
+                <BranchName>{manifest.scope.base}</BranchName>
               </p>
             </div>
           </div>
           <CopyComments manifest={manifest} />
         </header>
 
-        <div className="flex flex-col px-gui-m pb-gui-xxl md:px-gui-xxl">
+        <div className="flex flex-col pb-gui-xxl">
           {manifest.sections.map((section) => (
-            <SectionRow key={section.id} id={section.id} title={section.title} why={section.why}>
+            <SectionBlock key={section.id} id={section.id} title={section.title} why={section.why}>
               {section.items.map((item) => (
                 <StateCard
                   key={item.id}
@@ -156,32 +198,8 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
                   thumbnail={thumbnails[item.id]}
                 />
               ))}
-            </SectionRow>
+            </SectionBlock>
           ))}
-          {manifest.uncovered.length > 0 ? (
-            <SectionRow
-              id={UNCOVERED_ID}
-              title="Not covered"
-              why="Combinations of inputs no state above shows. Add one to the manifest or leave it out on purpose."
-              aside={
-                manifest.excluded.length > 0 ? (
-                  <div className="flex flex-col gap-gui-xxs pt-gui-xs text-gui-s text-gui-neutral-7">
-                    <p className="text-gui-neutral-10">Left out on purpose</p>
-                    <ul className="flex flex-col gap-gui-xxs">
-                      {manifest.excluded.map((combination) => (
-                        <li key={combination}>{combination}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null
-              }
-              last
-            >
-              {manifest.uncovered.map((combination) => (
-                <UncoveredCard key={combination.title} combination={combination} />
-              ))}
-            </SectionRow>
-          ) : null}
         </div>
       </main>
     </ThemeScope>
@@ -198,21 +216,23 @@ function Brand({ className }: { className?: string }) {
   );
 }
 
-function IndexLink({ id, current, muted, children }: { id: string; current: boolean; muted?: boolean; children: ReactNode }) {
+function IndexLink({ id, current, children }: { id: string; current: boolean; children: ReactNode }) {
   return (
     <li className="flex">
       <a
         href={`#${id}`}
         aria-current={current ? "location" : undefined}
-        className={cn(
-          "flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none",
-          muted ? "text-gui-neutral-7" : "text-gui-neutral-10",
-        )}
+        className="flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none"
       >
-        {children}
+        {/* Its own inline box, so the index can measure the label's baseline (useIndexAlignment). */}
+        <span data-index-label="">{children}</span>
       </a>
     </li>
   );
+}
+
+function BranchName({ children }: { children: ReactNode }) {
+  return <code className="rounded-gui-xs bg-gui-neutral-3 px-gui-xxs font-gui-data text-gui-neutral-10 wrap-anywhere">{children}</code>;
 }
 
 /** Copies every open comment in the review, state by state, as Markdown for a coding agent. */
@@ -244,31 +264,30 @@ function CopyComments<T extends Inputs>({ manifest }: { manifest: Manifest<T> })
   );
 }
 
-/** One section: its title and question on the left, its states to the right. Stacks on phones. */
-function SectionRow({
-  id,
-  title,
-  why,
-  aside,
-  last,
-  children,
-}: Pick<Section, "id" | "title" | "why"> & { aside?: ReactNode; last?: boolean; children: ReactNode }) {
+/**
+ * One section: a full-width band ruled off below. Its title and question sit
+ * on white, ruled off from its states, which run in one grey row that scrolls
+ * sideways rather than wrapping, so a section always reads as one line.
+ */
+function SectionBlock({ id, title, why, children }: Pick<Section, "id" | "title" | "why"> & { children: ReactNode }) {
   const headingId = `${id}-title`;
   return (
-    <section
-      id={id}
-      aria-labelledby={headingId}
-      className={cn("flex scroll-mt-gui-m flex-col gap-gui-m py-gui-m lg:flex-row lg:gap-gui-xl", !last && "gui-divider-bottom")}
-    >
-      <div className="flex shrink-0 flex-col gap-gui-xxs lg:w-46">
-        <h2 id={headingId} className="text-gui-s font-gui-heavy">
+    <section id={id} aria-labelledby={headingId} className="flex min-w-0 scroll-mt-gui-m flex-col gui-band-rule">
+      <div className="flex flex-col gap-gui-xxs p-gui-xl gui-divider-bottom">
+        <h2 id={headingId} className="text-gui-l font-gui-medium text-balance">
           {title}
         </h2>
-        <p className="text-gui-s text-gui-neutral-7">{why}</p>
-        {aside}
+        <p className="max-w-prose text-gui-m text-gui-neutral-7">{why}</p>
       </div>
-      {/* Top padding leaves room for a flow's fanned-out cards. */}
-      <ul className="flex flex-wrap gap-gui-l pt-gui-xxs">{children}</ul>
+      {/*
+       * The row bleeds to the band's edges and snaps to the title's inset; its
+       * padding leaves room for a flow's fanned-out cards. Relative, so the
+       * cards' absolutely placed sr-only text scrolls and clips with the row
+       * instead of widening the page.
+       */}
+      <ul className="relative flex snap-x snap-mandatory gap-gui-l overflow-x-auto overscroll-x-contain bg-gui-neutral-2 p-gui-xl scroll-px-gui-xl">
+        {children}
+      </ul>
     </section>
   );
 }
@@ -295,13 +314,19 @@ function StateCard<T extends Inputs>({
 }) {
   const details = chipText(item, viewed);
   return (
-    <li className="flex w-min flex-col gap-gui-xs">
+    <li className="flex min-w-0 gui-state-row-item snap-start flex-col gap-gui-xs">
       {/* Out of the tab order and the accessibility tree: the title link below is the same link. */}
-      <Link href={href} tabIndex={-1} aria-hidden onClick={rememberScroll} className="group relative block rounded-gui-s outline-none active:gui-press">
+      <Link
+        href={href}
+        tabIndex={-1}
+        aria-hidden
+        onClick={rememberScroll}
+        className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui active:gui-press-scale motion-reduce:transition-none"
+      >
         {item.kind === "sequence" ? <FlowStack /> : null}
         <Thumbnail
           viewport={viewport}
-          size="card"
+          size="fluid"
           className="transition-shadow duration-gui ease-gui group-hover:shadow-gui-m group-hover:ring-gui-neutral-6 motion-reduce:transition-none"
         >
           {thumbnail}
@@ -310,7 +335,7 @@ function StateCard<T extends Inputs>({
         <FooterChips item={item} />
       </Link>
       <div className="flex flex-col">
-        <h3 className="line-clamp-1 text-gui-s">
+        <h3 className="line-clamp-1 text-gui-m">
           <Link
             href={href}
             aria-describedby={`card-${item.id}-details`}
@@ -320,7 +345,7 @@ function StateCard<T extends Inputs>({
             {item.title}
           </Link>
         </h3>
-        <p id={`card-${item.id}-details`} className="text-gui-xs text-gui-neutral-7">
+        <p id={`card-${item.id}-details`} className="text-gui-s text-gui-neutral-7">
           {item.why}
           {comments > 0 ? <span className="sr-only">{` ${comments} open ${comments === 1 ? "comment" : "comments"}.`}</span> : null}
           {details ? <span className="sr-only">{` ${details}.`}</span> : null}
@@ -343,22 +368,5 @@ function FlowStack() {
         className="absolute inset-0 translate-x-gui-xs -translate-y-gui-xxs rounded-gui-s bg-gui-neutral-1 ring-1 ring-gui-border transition-transform duration-gui ease-gui group-hover:translate-x-gui-s motion-reduce:transition-none"
       />
     </>
-  );
-}
-
-/** A combination no state shows: its inputs in a dashed outline where the screen would be. */
-function UncoveredCard<T extends Inputs>({ combination }: { combination: Uncovered<T> }) {
-  return (
-    <li className="flex w-min flex-col gap-gui-xs">
-      <div className="flex gui-thumb-card flex-col justify-center gap-gui-xxs rounded-gui-s px-gui-m font-gui-data text-gui-xs outline-1 -outline-offset-1 outline-gui-neutral-5 outline-dashed">
-        {Object.entries(combination.set).map(([id, value]) => (
-          <span key={id}>{`${id}: ${String(value)}`}</span>
-        ))}
-      </div>
-      <div className="flex flex-col">
-        <h3 className="text-gui-s">{combination.title}</h3>
-        <p className="text-gui-xs text-gui-neutral-7">No state yet</p>
-      </div>
-    </li>
   );
 }

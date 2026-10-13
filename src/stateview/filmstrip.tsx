@@ -48,12 +48,14 @@ export function Filmstrip<T extends Inputs>({ id, manifest, currentId, open, aut
       inert={!open}
       style={{ "--thumb-strip-chosen": width } as CSSProperties}
       className={cn(
-        "dark fixed top-(--viewer-bar) bottom-0 left-0 z-30 flex w-(--viewer-strip) -translate-x-full flex-col bg-gui-toolbar shadow-gui-m transition-transform duration-gui-large ease-gui-large motion-reduce:transition-none",
+        // Shaded like the hub's index, edged where it sits beside the app and lifted where it overlays it (phones).
+        "fixed top-(--viewer-bar) bottom-0 left-0 z-30 flex w-(--viewer-strip) -translate-x-full flex-col bg-gui-neutral-2 max-md:shadow-gui-m md:gui-divider-end transition-transform duration-gui-large ease-gui-large motion-reduce:transition-none",
         auto ? "md:translate-x-0" : open && "translate-x-0",
       )}
     >
       <ScrollArea className="flex-1">
-        <div className="flex flex-col gap-gui-m px-(--viewer-strip-inset) pt-gui-s pb-gui-l">
+        {/* XL between sections against S between a section's states, so each section reads as its own group. */}
+        <div className="flex flex-col gap-gui-xl px-(--viewer-strip-inset) pt-gui-m pb-gui-l">
           <StripSections manifest={manifest} frames={frames} currentId={currentId} viewed={viewed} commentsOn={commentsOn} render={render} onPick={onPick} />
         </div>
       </ScrollArea>
@@ -74,8 +76,9 @@ function StripSections<T extends Inputs>({
   return (
     <>
       {manifest.sections.map((section) => (
-        <section key={section.id} aria-labelledby={`strip-${section.id}`} className="flex flex-col gap-gui-xs">
-          <h2 id={`strip-${section.id}`} className="text-gui-xs text-gui-neutral-7">
+        <section key={section.id} aria-labelledby={`strip-${section.id}`} className="flex flex-col gap-gui-s">
+          {/* A size up and heavier than the states' titles (XS), like the hub's section titles. */}
+          <h2 id={`strip-${section.id}`} className="text-gui-s font-gui-heavy text-gui-neutral-10">
             {section.title}
           </h2>
           <ul className="flex flex-col gap-gui-s">
@@ -109,7 +112,8 @@ function StripSections<T extends Inputs>({
                       <CornerChips comments={comments} viewed={isViewed} />
                       <FooterChips item={item} />
                     </div>
-                    <span className={cn("line-clamp-1 text-gui-xs", current ? "font-gui-medium text-gui-neutral-10" : "text-gui-neutral-8")}>
+                    {/* The same for every state: the outline on the screen alone marks the one on screen. */}
+                    <span className="line-clamp-1 text-gui-xs text-gui-neutral-8">
                       {item.title}
                       {comments > 0 ? <span className="sr-only">{`, ${comments} open ${comments === 1 ? "comment" : "comments"}`}</span> : null}
                       {details ? <span className="sr-only">{`, ${details}`}</span> : null}
@@ -132,7 +136,7 @@ function scrollIntoView(node: HTMLElement | null) {
 /**
  * The strip's right edge, dragged (or arrowed) to resize the thumbnails
  * between STRIP_WIDTH.min and max. Straddles the edge so it's easy to grab;
- * a line shows on hover, and in the focus colour while dragging or focused.
+ * a grey line shows on hover, and a black one while dragging or focused.
  * Wide screens only: on phones the strip overlays the app at its default size.
  */
 function ResizeHandle({ controls, width, onResize }: { controls: string; width: number; onResize: (width: number, settled: boolean) => void }) {
@@ -188,7 +192,7 @@ function ResizeHandle({ controls, width, onResize }: { controls: string; width: 
       onKeyDown={onKeyDown}
       className={cn(
         "absolute inset-y-0 -right-gui-xxs z-10 w-gui-xs touch-none outline-none select-none max-md:hidden focus-visible:gui-focus-ring",
-        "after:absolute after:inset-y-0 after:right-gui-xxs after:w-0.5 after:transition-colors after:duration-gui after:ease-gui hover:after:bg-gui-neutral-6 focus-visible:after:bg-gui-1 data-dragging:after:bg-gui-1 motion-reduce:after:transition-none",
+        "after:absolute after:inset-y-0 after:right-gui-xxs after:w-0.5 after:transition-colors after:duration-gui after:ease-gui hover:after:bg-gui-neutral-6 focus-visible:after:bg-gui-neutral-10 data-dragging:after:bg-gui-neutral-10 motion-reduce:after:transition-none",
         // The cursor points the way the strip can still go.
         width <= STRIP_WIDTH.min ? "cursor-e-resize" : width >= STRIP_WIDTH.max ? "cursor-w-resize" : "cursor-col-resize",
       )}
