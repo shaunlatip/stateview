@@ -106,6 +106,12 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
   const [stripChoice, setStripChoice] = useState<boolean | null>(null);
   const stripOpen = stripChoice ?? wide;
   const stripId = useId();
+  const stripTriggerRef = useRef<HTMLButtonElement>(null);
+  // A closed strip is inert, so focus inside it would drop to the page: hand it back to the button that opens it.
+  const closeStrip = () => {
+    if (document.getElementById(stripId)?.contains(document.activeElement)) stripTriggerRef.current?.focus();
+    setStripChoice(false);
+  };
   const stripWidth = useStripWidth();
   // While the strip is dragged the app's edge follows the pointer instead of easing after it.
   const [stripResizing, setStripResizing] = useState(false);
@@ -167,8 +173,10 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         else closePanel();
         break;
       case "Escape":
-        // Escape first ends comment mode; only a second Escape leaves the state.
+        // Escape first ends comment mode, then closes what covers the app (the state panel, the strip on a phone); only after that does it leave the state.
         if (commenting) setCommenting(false);
+        else if (panel !== "closed") closePanel();
+        else if (!wide && stripOpen) closeStrip();
         else router.push(HUB_HREF, { scroll: false });
         break;
     }
@@ -263,6 +271,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
         strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
+        stripTriggerRef={stripTriggerRef}
         commenting={commenting}
         onToggleCommenting={toggleCommenting}
         commentCount={openCount}
@@ -271,7 +280,11 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         onCopyComments={openCount > 0 ? copyComments : null}
         onCopyLink={copyLink}
         onDeleteComments={annotations.length > 0 ? deleteComments : null}
-        panel={{ id: panelId, open: panel !== "closed", onToggle: () => (panel === "closed" ? setPanel("pointer") : closePanel()) }}
+        panel={{
+          id: panelId,
+          open: panel !== "closed",
+          onToggle: (fromKeyboard) => (panel === "closed" ? setPanel(fromKeyboard ? "keyboard" : "pointer") : closePanel()),
+        }}
         panelTriggerRef={panelTriggerRef}
       />
       <Filmstrip
@@ -290,7 +303,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         render={render}
         // On a phone the strip covers the app, so picking a state puts it away.
         onPick={() => {
-          if (!wide) setStripChoice(false);
+          if (!wide) closeStrip();
         }}
       />
       {/*

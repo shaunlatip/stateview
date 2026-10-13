@@ -29,6 +29,8 @@ type FocusBarProps<T extends Inputs> = {
   onNext: (() => void) | null;
   /** The filmstrip this bar shows and hides. */
   strip: { id: string; open: boolean; onToggle: () => void };
+  /** Focus returns here when the strip closes from inside. */
+  stripTriggerRef: Ref<HTMLButtonElement>;
   /** Comment mode: picking an element comments on it. */
   commenting: boolean;
   onToggleCommenting: () => void;
@@ -42,7 +44,7 @@ type FocusBarProps<T extends Inputs> = {
   /** Null when there's nothing to delete. */
   onDeleteComments: (() => void) | null;
   /** The state panel this bar opens and closes. */
-  panel: { id: string; open: boolean; onToggle: () => void };
+  panel: { id: string; open: boolean; onToggle: (fromKeyboard: boolean) => void };
   /** Focus returns here when the panel closes from inside. */
   panelTriggerRef: Ref<HTMLButtonElement>;
 };
@@ -61,6 +63,7 @@ export function FocusBar<T extends Inputs>({
   onPrevious,
   onNext,
   strip,
+  stripTriggerRef,
   commenting,
   onToggleCommenting,
   commentCount,
@@ -89,7 +92,7 @@ export function FocusBar<T extends Inputs>({
         </Link>
       </Tooltip>
       <Tooltip label={strip.open ? "Hide states" : "Show states"} side="bottom">
-        <Button variant="toolbar" size="bar" aria-label="States" aria-expanded={strip.open} aria-controls={strip.id} onClick={strip.onToggle}>
+        <Button ref={stripTriggerRef} variant="toolbar" size="bar" aria-label="States" aria-expanded={strip.open} aria-controls={strip.id} onClick={strip.onToggle}>
           {/* Turned upright: the strip runs down the left edge, its frames stacked. */}
           <FilmStripIcon aria-hidden className="rotate-90" />
         </Button>
@@ -172,7 +175,8 @@ export function FocusBar<T extends Inputs>({
           aria-keyshortcuts="S"
           aria-expanded={panel.open}
           aria-controls={panel.open ? panel.id : undefined}
-          onClick={panel.onToggle}
+          // Enter and Space click with no pointer (detail 0): opened that way, the panel takes focus, as it does from S.
+          onClick={(event) => panel.onToggle(event.detail === 0)}
         >
           <SlidersIcon aria-hidden />
         </Button>
