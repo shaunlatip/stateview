@@ -3,6 +3,28 @@ import { changedInputs, frameHref, listFrames, type Frame, type Inputs, type Man
 import { inputsKey } from "./overrides";
 
 /**
+ * What goes before copied comments: what they are, where to make the change
+ * (the screen's components, not the fixtures that start each state), how to
+ * check it, and what to report back so the reviewer can resolve the pins.
+ */
+export function agentBrief<T extends Inputs>(manifest: Manifest<T>) {
+  return [
+    `# Review comments: ${manifest.screen}`,
+    "",
+    "A reviewer stepped through this screen's states in Stateview and left these comments. Each state is the app's real screen, started with the inputs listed under its heading (role, plan, data, request states). Those inputs come from the review's fixtures, so make each change in the screen's own components, not in the fixtures or the review.",
+    "",
+    "For each comment:",
+    "1. Find the code. Start with the component names, then the element's text. Labels are often built from variables (`Remove ${name}`), so search for a fixed part of them. The selector only works inside the rendered screen, so use it in the browser, not to search files.",
+    "2. Make the change the comment asks for. If the comment is a question, answer it, and change the code only if the answer is yes.",
+    "3. Check it. If you can open a browser, open the state's URL and confirm the change shows there. A change to a shared component shows in other states too, so look at those as well.",
+    "",
+    "Then reply with one line per comment, as `<state> #<number>: <what you changed, in which file>`, or say why you left it. The reviewer uses that list to resolve the pins.",
+    "",
+    "",
+  ].join("\n");
+}
+
+/**
  * A header for copied comments, so an agent can open exactly the state the
  * reviewer saw. `inputs` defaults to the state's own; pass the inputs on
  * screen when the reviewer changed some in the state panel.
@@ -45,10 +67,11 @@ export function formatState<T extends Inputs>(manifest: Manifest<T>, frame: Fram
     .join("\n\n");
 }
 
-/** Every state's open comments, in review order. */
+/** Every state's open comments, in review order, after the brief. */
 export function formatReview<T extends Inputs>(manifest: Manifest<T>, annotations: Annotation[]) {
-  return listFrames(manifest)
+  const states = listFrames(manifest)
     .map((frame) => formatState(manifest, frame, annotations.filter((a) => a.stateId === frame.key)))
     .filter(Boolean)
     .join("\n\n");
+  return agentBrief(manifest) + states;
 }

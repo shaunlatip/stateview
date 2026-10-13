@@ -82,7 +82,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
 
   const onPointerMove = useEffectEvent((event: PointerEvent) => {
     if (composer) return;
-    const element = inScreen(event.target) ? event.target : null;
+    const element = inScreen(event.target) ? underPointer(event.target, event.clientX, event.clientY) : null;
     if (element !== highlight?.element) show(element);
   });
 
@@ -100,8 +100,9 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
       shake();
       return;
     }
-    const rect = event.target.getBoundingClientRect();
-    pick(event.target, {
+    const element = underPointer(event.target, event.clientX, event.clientY);
+    const rect = element.getBoundingClientRect();
+    pick(element, {
       x: rect.width ? clamp((event.clientX - rect.left) / rect.width) : 0,
       y: rect.height ? clamp((event.clientY - rect.top) / rect.height) : 0,
     });
@@ -546,6 +547,19 @@ function pointOn(element: Element, anchor: Anchor) {
       return DOMRect.fromRect({ x: rect.left + anchor.x * rect.width, y: rect.top + anchor.y * rect.height, width: 0, height: 0 });
     },
   };
+}
+
+/**
+ * The element the pointer is on. Disabled controls usually have `pointer-events: none`, so events
+ * land on their container instead; a disabled control under the pointer is the one meant.
+ */
+function underPointer(target: Element, x: number, y: number) {
+  let element = target;
+  for (const control of target.querySelectorAll(":disabled, [aria-disabled='true']")) {
+    const rect = control.getBoundingClientRect();
+    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) element = control;
+  }
+  return element;
 }
 
 function measureBox(element: Element): Box {

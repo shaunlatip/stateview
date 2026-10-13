@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import { formatState } from "./agent-export";
+import { agentBrief, formatState } from "./agent-export";
 import { DeviceFrame } from "./device-frame";
 import type { AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
@@ -270,7 +270,7 @@ function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails 
 
   const copyComments = () => {
     void navigator.clipboard
-      .writeText(formatState(manifest, frame, annotations))
+      .writeText(agentBrief(manifest) + formatState(manifest, frame, annotations))
       .then(() => notify.success("Comments copied with this state’s URL and inputs"))
       .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
