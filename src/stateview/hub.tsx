@@ -179,13 +179,14 @@ function Brand({ className }: { className?: string }) {
 function IndexLink({ id, current, children }: { id: string; current: boolean; children: ReactNode }) {
   return (
     <li className="flex">
-      <a
+      {/* A router link, not a plain anchor: Back from a state to a #section entry the router didn't make would leave the state on screen. */}
+      <Link
         href={`#${id}`}
         aria-current={current ? "location" : undefined}
         className="flex h-8 flex-1 items-center rounded-gui-s px-gui-xs text-gui-s text-gui-neutral-10 outline-none transition-colors duration-gui ease-gui hover:bg-gui-neutral-3 focus-visible:gui-focus-ring aria-[current]:bg-gui-neutral-3 aria-[current]:font-gui-medium motion-reduce:transition-none"
       >
         {children}
-      </a>
+      </Link>
     </li>
   );
 }
