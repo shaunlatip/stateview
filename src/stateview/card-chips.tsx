@@ -1,5 +1,5 @@
 import { ChatCircleIcon, CodeIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import type { Item } from "./manifest";
 
 /*

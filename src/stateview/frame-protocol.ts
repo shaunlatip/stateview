@@ -30,7 +30,8 @@ export type FrameEvent =
 type Envelope<T> = T & { source: "stateview" };
 
 export function post<T extends FrameState | FrameEvent>(target: Window | null | undefined, message: T) {
-  target?.postMessage({ ...message, source: "stateview" } satisfies Envelope<T>, window.location.origin);
+  const envelope: Envelope<T> = { ...message, source: "stateview" };
+  target?.postMessage(envelope, window.location.origin);
 }
 
 /** The message's payload if it came from Stateview on this origin, from `from`. */

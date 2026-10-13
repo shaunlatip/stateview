@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
+import { cn } from "./cn";
 import { frameHref, listFrames, viewportOf, type Frame, type Inputs, type Item, type Manifest } from "./manifest";
 import { ScrollArea } from "./scroll-area";
 import { STRIP_WIDTH } from "./strip-width";
-import { Thumbnail } from "./thumbnail";
+import { InputsThumbnail, Thumbnail, inputChanges } from "./thumbnail";
 import { ThemeScope } from "./ui";
 
 type FilmstripProps<T extends Inputs> = {
@@ -25,7 +25,8 @@ type FilmstripProps<T extends Inputs> = {
   viewed: string[];
   /** Open comments on an item, across its steps. */
   commentsOn: (item: Item<T>) => number;
-  render: (inputs: T) => ReactNode;
+  /** Null when the review turns live thumbnails off: each state lists the inputs it changes instead. */
+  render: ((inputs: T) => ReactNode) | null;
   /** Called when a state is picked, before the page changes. */
   onPick: () => void;
 };
@@ -38,14 +39,20 @@ type FilmstripProps<T extends Inputs> = {
  */
 export function Filmstrip<T extends Inputs>({ id, manifest, currentId, open, auto, width, onResize, viewed, commentsOn, render, onPick }: FilmstripProps<T>) {
   const frames = listFrames(manifest);
+  const nav = useRef<HTMLElement>(null);
+
+  // Closed, it slides out and leaves the tab order and the accessibility tree. Set on the
+  // element: React 18 drops a boolean `inert` prop.
+  useEffect(() => {
+    nav.current?.toggleAttribute("inert", !open);
+  }, [open]);
 
   return (
     <ThemeScope
       as="nav"
+      ref={nav}
       id={id}
       aria-label="States"
-      // Closed, it slides out and leaves the tab order and the accessibility tree.
-      inert={!open}
       style={{ "--thumb-strip-chosen": width } as CSSProperties}
       className={cn(
         // Shaded like the hub's index, edged where it sits beside the app and lifted where it overlays it (phones).
@@ -88,6 +95,12 @@ function StripSections<T extends Inputs>({
               const isViewed = current || viewed.includes(item.id);
               const comments = commentsOn(item);
               const details = chipText(item, isViewed);
+              const ring = cn(
+                // Only hover fades the ring in. Stepping with J/K moves the current ring at once, so there's never more than one on screen.
+                // transition-none, not just no transition class: duration-gui sets a duration, and with no property named every property would ease.
+                "transition-none duration-gui ease-gui group-hover:transition-shadow motion-reduce:transition-none",
+                current ? "ring-2 ring-gui-neutral-10" : "group-hover:ring-gui-neutral-6",
+              );
               return (
                 <li key={item.id} className="flex">
                   <Link
@@ -99,18 +112,13 @@ function StripSections<T extends Inputs>({
                     className="group flex w-min flex-col gap-gui-xxs rounded-gui-s outline-offset-2 outline-none focus-visible:gui-focus-ring"
                   >
                     <div className="relative">
-                      <Thumbnail
-                        viewport={viewportOf(manifest, first.inputs)}
-                        size="strip"
-                        className={cn(
-                          // Only hover fades the ring in. Stepping with J/K moves the current ring at once, so there's never more than one on screen.
-                          // transition-none, not just no transition class: duration-gui sets a duration, and with no property named every property would ease.
-                          "transition-none duration-gui ease-gui group-hover:transition-shadow motion-reduce:transition-none",
-                          current ? "ring-2 ring-gui-neutral-10" : "group-hover:ring-gui-neutral-6",
-                        )}
-                      >
-                        {render(first.inputs)}
-                      </Thumbnail>
+                      {render ? (
+                        <Thumbnail viewport={viewportOf(manifest, first.inputs)} size="strip" className={ring}>
+                          {render(first.inputs)}
+                        </Thumbnail>
+                      ) : (
+                        <InputsThumbnail size="strip" className={ring} changes={inputChanges(manifest, first.inputs)} />
+                      )}
                       <CornerChips comments={comments} viewed={isViewed} />
                       <FooterChips item={item} />
                     </div>

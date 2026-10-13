@@ -6,12 +6,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Skip layout and paint for off-screen hub thumbnails until they scroll near. */
-@utility content-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 12.5rem;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

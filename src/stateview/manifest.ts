@@ -68,7 +68,7 @@ export type Manifest<T extends Inputs = Inputs> = {
    * `branch` from HEAD (a short SHA when detached), `base` from the branch the
    * change will merge into. `base` is left out when there's nothing to compare
    * against, such as uncommitted work on the default branch. `icon` is the
-   * app's own favicon, if it has one.
+   * app's own favicon, as a URL path, if it has one.
    */
   scope: { repo: string; branch: string; base?: string; icon?: string };
   baseline: T;
@@ -154,7 +154,7 @@ export function valueLabel(input: { labels?: Partial<Record<string, string>> }, 
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Width to render a frame at, from the manifest's environment input ("mobile" → 375px). */
+/** Whether a frame renders as a phone, from the manifest's environment input ("mobile"). */
 export function viewportOf<T extends Inputs>(manifest: Manifest<T>, inputs: T): "desktop" | "mobile" {
   const environment = manifest.inputs.find((input) => input.class === "environment");
   return environment && inputs[environment.id] === "mobile" ? "mobile" : "desktop";

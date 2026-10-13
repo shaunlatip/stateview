@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import { DEVICE_SIZE, setDeviceSize, useDeviceSize, type DeviceSize } from "./device-size";
 import { Badge } from "./ui";
 

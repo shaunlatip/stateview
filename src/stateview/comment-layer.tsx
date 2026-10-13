@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Collapsible } from "@base-ui/react/collapsible";
 import { createPortal } from "react-dom";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import { orderAnnotations, type AnnotatedElement, type Annotation, type AnnotationLayerProps } from "./annotations";
 import { CodeView } from "./code-view";
 import { describeElement, elementTitle } from "./describe-element";
 import { Button, ThemeScope } from "./ui";
+import { useEffectEvent } from "./use-effect-event";
 
 /**
  * Stateview's comment engine. In comment mode, pointing at or tabbing to an

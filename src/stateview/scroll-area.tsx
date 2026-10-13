@@ -1,7 +1,7 @@
 "use client";
 
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 
 /**
  * Graphical scroll area: shadcn's Base UI scroll area, drawn from Stateview's

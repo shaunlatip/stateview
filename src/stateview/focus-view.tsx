@@ -1,30 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { formatState } from "./agent-export";
 import { DeviceFrame } from "./device-frame";
 import type { AnnotationLayer } from "./annotations";
+import { cn } from "./cn";
 import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
 import { EMBED_PARAM, post, receive, type FrameEvent, type FrameState } from "./frame-protocol";
-import { findFrameIndex, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
-import { inputParsers, withOverrides } from "./overrides";
+import { findFrameIndex, frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
+import { withOverrides } from "./overrides";
 import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
 import { setStripWidth, useStripWidth } from "./strip-width";
+import { StateviewToaster, notify } from "./toast";
 import { ThemeScope, buttonVariants } from "./ui";
-
-// Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
-const HUB_HREF = "/";
+import { useDocumentTitle } from "./use-document-title";
+import { useEffectEvent } from "./use-effect-event";
+import { pushFrame, replaceParams, useFrameQuery, type FrameQuery } from "./use-frame-query";
 
 // The app's frame, and where the skip link sends focus.
 const APP_FRAME_ID = "app";
+
+// How long after its load event the frame has to say it's ready before it's reloaded.
+const FRAME_READY_TIMEOUT = 3000;
 
 /*
  * Keys typed into Stateview's own controls that belong to those controls.
@@ -47,6 +49,10 @@ type FocusViewProps<T extends Inputs> = {
   /** Renders the real screen from a state's inputs. */
   render: (inputs: T) => ReactNode;
   annotationLayer: AnnotationLayer;
+  /** Where Escape and the logo go. Links back pass scroll={false}: the hub restores the reviewer's own position. */
+  hubHref?: string;
+  /** "off" for screens that can't render many live copies at once (WebGL maps, video): the filmstrip lists inputs instead. */
+  thumbnails?: "live" | "off";
 };
 
 // From this width the filmstrip opens by default and takes its own column; below it, it overlays the app.
@@ -57,37 +63,35 @@ function subscribeWide(onChange: () => void) {
   query.addEventListener("change", onChange);
   return () => query.removeEventListener("change", onChange);
 }
-
 /**
  * A review route. In the browser tab it's the viewer; loaded with `?embed`
  * inside the viewer's iframe, it's the screen alone.
  */
 export function FocusView<T extends Inputs>(props: FocusViewProps<T>) {
-  const embedded = useSearchParams().has(EMBED_PARAM);
-  return embedded ? <EmbeddedScreen {...props} /> : <Viewer {...props} />;
+  const query = useFrameQuery();
+  // The URL is only known once the page is in the browser.
+  if (!query) return null;
+  return query.params.has(EMBED_PARAM) ? <EmbeddedScreen {...props} query={query} /> : <Viewer {...props} query={query} />;
 }
 
 /** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
-function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
+function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails = "live", query }: FocusViewProps<T> & { query: FrameQuery }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
-  // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
-  const [overrides, setOverrides] = useQueryStates(inputParsers(manifest), { history: "replace" });
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);
   const [pinsVisible, setPinsVisible] = useState(true);
   const appFrame = useRef<HTMLIFrameElement>(null);
   // The frame loads once, at the state in the URL; after that, states arrive by message, without a reload.
   const [frameSrc] = useState(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(query.params);
     params.set(EMBED_PARAM, "1");
     return `${manifest.route}?${params}`;
   });
   const frames = listFrames(manifest);
-  const index = findFrameIndex(frames, sv, step);
+  const index = findFrameIndex(frames, query.sv, query.step);
   const frame = index === -1 ? null : frames[index];
-  const inputs = frame ? withOverrides(frame.inputs, overrides) : null;
+  // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
+  const inputs = frame ? withOverrides(manifest, frame.inputs, query.params) : null;
   const annotations = frame ? review.annotations.filter((a) => a.stateId === frame.key) : [];
   const openCount = annotations.filter((a) => a.status === "open").length;
 
@@ -134,21 +138,20 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     review.annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
 
   const panelId = useId();
-  const panelRef = useRef<HTMLElement>(null);
+  const [panelElement, setPanelElement] = useState<HTMLElement | null>(null);
   const panelTriggerRef = useRef<HTMLButtonElement>(null);
   // How the panel was opened: from the keyboard it takes focus, from a click it leaves focus on the button.
   const [panel, setPanel] = useState<"closed" | "pointer" | "keyboard">("closed");
 
   const closePanel = () => {
-    if (panelRef.current?.contains(document.activeElement)) panelTriggerRef.current?.focus();
+    if (panelElement?.contains(document.activeElement)) panelTriggerRef.current?.focus();
     setPanel("closed");
   };
 
+  // The frame's own URL carries no input params, so stepping also clears the reviewer's changes.
   const goTo = (target: number) => {
     const next = frames[target];
-    if (!next) return;
-    void setOverrides(null);
-    void setQuery({ sv: next.item.id, step: next.step && next.step > 1 ? next.step : null });
+    if (next) pushFrame(frameHref(manifest, next));
   };
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -188,7 +191,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         if (commenting) setCommenting(false);
         else if (panel !== "closed") closePanel();
         else if (!wide && stripOpen) closeStrip();
-        else router.push(HUB_HREF, { scroll: false });
+        else router.push(hubHref, { scroll: false });
         break;
     }
   });
@@ -199,10 +202,13 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     return () => window.removeEventListener("keydown", listener);
   }, []);
 
+  useDocumentTitle(frame ? `${frame.item.title} · Stateview` : null);
+
   // --- The app's frame: told the state and review tools by message ------------------------
 
+  const frameMessage: FrameState | null = frame && inputs ? { type: "state", stateId: frame.key, inputs, commenting, pinsVisible } : null;
   // Serialized, so the frame is told only when something in it changes (postMessage copies it anyway).
-  const frameState = frame && inputs ? JSON.stringify({ type: "state", stateId: frame.key, inputs, commenting, pinsVisible } satisfies FrameState) : null;
+  const frameState = frameMessage ? JSON.stringify(frameMessage) : null;
 
   useEffect(() => {
     if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
@@ -223,6 +229,28 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     } else if (message?.type === "commenting") setCommenting(message.value);
   });
 
+  /*
+   * Under `next dev`, Turbopack's client sometimes fails to start in a frame
+   * inserted while the viewer's own scripts are still running ("Expected
+   * document.currentScript to be a <script> element"), which leaves the app's
+   * HTML on screen but never hydrated. A frame that has loaded without saying
+   * it's ready is reloaded, at most twice. Production builds don't hit this.
+   */
+  const frameReloads = useRef(0);
+  const readyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(readyTimer.current), []);
+
+  const reloadIfStuck = useEffectEvent(() => {
+    if (frameReady || frameReloads.current >= 2) return;
+    frameReloads.current += 1;
+    appFrame.current?.contentWindow?.location.reload();
+  });
+
+  const onFrameLoad = () => {
+    window.clearTimeout(readyTimer.current);
+    readyTimer.current = window.setTimeout(() => reloadIfStuck(), FRAME_READY_TIMEOUT);
+  };
+
   useEffect(() => {
     const listener = (event: MessageEvent) => onFrameMessage(event);
     window.addEventListener("message", listener);
@@ -235,19 +263,22 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     appFrame.current?.contentWindow?.focus();
   };
 
-  if (!frame || !inputs) return <UnknownState id={sv} flow={frames.find((candidate) => candidate.item.id === sv)?.item.title} step={step} />;
+  if (!frame || !inputs) {
+    const flow = frames.find((candidate) => candidate.item.id === query.sv)?.item.title;
+    return <UnknownState id={query.sv} flow={flow} step={query.step} hubHref={hubHref} />;
+  }
 
   const copyComments = () => {
     void navigator.clipboard
       .writeText(formatState(manifest, frame, annotations))
-      .then(() => toast.success("Comments copied with this state’s URL and inputs"))
-      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+      .then(() => notify.success("Comments copied with this state’s URL and inputs"))
+      .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
 
   const deleteComments = () => {
     const deleted = annotations;
     for (const annotation of deleted) review.deleteAnnotation(annotation.id);
-    toast.success(`Deleted ${deleted.length} ${deleted.length === 1 ? "comment" : "comments"}`, {
+    notify.success(`Deleted ${deleted.length} ${deleted.length === 1 ? "comment" : "comments"}`, {
       action: {
         label: "Undo",
         onClick: () => {
@@ -259,12 +290,11 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
 
   const setInput = (id: keyof T & string, value: string) => {
     // Only differences from the state are kept in the URL; setting a value back to the state's own clears it.
-    void setOverrides({ [id]: value === frame.inputs[id] ? null : value });
+    replaceParams({ [id]: value === frame.inputs[id] ? null : value });
   };
 
   return (
     <>
-      <title>{`${frame.item.title} · Stateview`}</title>
       <ThemeScope className="dark">
         <a
           href={`#${APP_FRAME_ID}`}
@@ -278,7 +308,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         frame={frame}
         position={index + 1}
         total={frames.length}
-        hubHref={HUB_HREF}
+        hubHref={hubHref}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
         strip={{ id: stripId, open: stripOpen, onToggle: toggleStrip }}
@@ -311,7 +341,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         }}
         viewed={review.viewed}
         commentsOn={commentsOn}
-        render={render}
+        render={thumbnails === "live" ? render : null}
         // On a phone the strip covers the app, so picking a state puts it away.
         onPick={() => {
           if (!wide) closeStrip();
@@ -342,13 +372,14 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
             data-ready={frameReady ? "" : undefined}
             title={manifest.screen}
             src={frameSrc}
+            onLoad={onFrameLoad}
             className="size-full"
           />
         </DeviceFrame>
       </ThemeScope>
       <StatePanel
         id={panelId}
-        ref={panelRef}
+        onElement={setPanelElement}
         open={panel !== "closed"}
         manifest={manifest}
         inputs={inputs}
@@ -356,6 +387,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         onClose={closePanel}
         focusOnOpen={panel === "keyboard"}
       />
+      <StateviewToaster />
     </>
   );
 }
@@ -364,23 +396,23 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
 function copyLink() {
   void navigator.clipboard
     .writeText(window.location.href)
-    .then(() => toast.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
-    .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+    .then(() => notify.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
+    .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
 }
 
 /** A link to a state that isn't in the review, or to a step past the end of a flow that is (`flow` is its title). */
-function UnknownState({ id, flow, step }: { id: string | null; flow?: string; step: number | null }) {
+function UnknownState({ id, flow, step, hubHref }: { id: string | null; flow?: string; step: number | null; hubHref: string }) {
+  // Pages set their own titles (app/layout.tsx), so this one needs its own too.
+  useDocumentTitle("Stateview");
   const title = flow ? `“${flow}” has no step ${step}` : id ? `There’s no state called “${id}” in this review` : "Choose a state to review";
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
-      {/* Pages set their own titles (app/layout.tsx), so this one needs its own too. */}
-      <title>Stateview</title>
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
           {title}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
-        <Link href={HUB_HREF} scroll={false} className={buttonVariants({ className: "w-fit" })}>
+        <Link href={hubHref} scroll={false} className={buttonVariants({ className: "w-fit" })}>
           See all states
         </Link>
       </div>

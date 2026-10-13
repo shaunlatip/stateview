@@ -1,23 +1,26 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { formatReview } from "./agent-export";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
+import { cn } from "./cn";
 import { Logo } from "./logo";
 import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { NightSky } from "./night-sky";
 import { useReview } from "./store";
-import { Thumbnail } from "./thumbnail";
+import { InputsThumbnail, Thumbnail, inputChanges } from "./thumbnail";
+import { StateviewToaster, notify } from "./toast";
 import { Button, ThemeScope } from "./ui";
 
 type HubProps<T extends Inputs> = {
   manifest: Manifest<T>;
-  /** A rendered screen for each item id (first step for sequences). */
+  /**
+   * A rendered screen for each item id (first step for sequences). Items
+   * without one show the inputs they change instead, for screens that can't
+   * render many live copies at once (WebGL maps, video).
+   */
   thumbnails: Record<string, ReactNode>;
 };
 
@@ -94,6 +97,18 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
     annotations.filter((a) => a.status === "open" && (a.stateId === item.id || a.stateId.startsWith(`${item.id}/`))).length;
   const current = useCurrentSection(manifest.sections.map((section) => section.id));
 
+  const previewOf = (item: Item<T>) => {
+    const inputs = firstFrameOf(item).inputs;
+    const className = "transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover";
+    return item.id in thumbnails ? (
+      <Thumbnail viewport={viewportOf(manifest, inputs)} size="fluid" className={className}>
+        {thumbnails[item.id]}
+      </Thumbnail>
+    ) : (
+      <InputsThumbnail size="fluid" className={className} changes={inputChanges(manifest, inputs)} />
+    );
+  };
+
   return (
     <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
       <NightSky />
@@ -124,7 +139,8 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
               <h1 className="flex min-w-0 gui-control items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
                 {/* The app's own favicon, decorative beside its repo name. */}
                 {manifest.scope.icon ? (
-                  <Image src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
+                  // oxlint-disable-next-line nextjs/no-img-element -- the engine is vendored into apps whose next/image config (loader, basePath, export) it can't know; a 20 px favicon gains nothing from optimization
+                  <img src={manifest.scope.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-gui-xs" />
                 ) : null}
                 {manifest.scope.repo}
               </h1>
@@ -152,16 +168,16 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
                   key={item.id}
                   item={item}
                   href={frameHref(manifest, firstFrameOf(item))}
-                  viewport={viewportOf(manifest, firstFrameOf(item).inputs)}
                   comments={commentsOn(item)}
                   viewed={viewed.includes(item.id)}
-                  thumbnail={thumbnails[item.id]}
+                  preview={previewOf(item)}
                 />
               ))}
             </SectionBlock>
           ))}
         </div>
       </main>
+      <StateviewToaster />
     </ThemeScope>
   );
 }
@@ -204,11 +220,11 @@ function CopyComments<T extends Inputs>({ manifest }: { manifest: Manifest<T> })
     void navigator.clipboard
       .writeText(formatReview(manifest, annotations))
       .then(() =>
-        toast.success(`Copied ${open.length} ${open.length === 1 ? "comment" : "comments"} from ${states} ${states === 1 ? "state" : "states"}`, {
+        notify.success(`Copied ${open.length} ${open.length === 1 ? "comment" : "comments"} from ${states} ${states === 1 ? "state" : "states"}`, {
           description: "Each with its state’s URL and inputs, ready to paste to your agent.",
         }),
       )
-      .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
+      .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
   };
   return (
     <Button focusableWhenDisabled disabled={open.length === 0} onClick={copy}>
@@ -260,17 +276,16 @@ function SectionBlock({ id, title, why, children }: Pick<Section, "id" | "title"
 function StateCard<T extends Inputs>({
   item,
   href,
-  viewport,
   comments,
   viewed,
-  thumbnail,
+  preview,
 }: {
   item: Item<T>;
   href: string;
-  viewport: "desktop" | "mobile";
   comments: number;
   viewed: boolean;
-  thumbnail: ReactNode;
+  /** The live thumbnail, or the inputs it changes. */
+  preview: ReactNode;
 }) {
   const details = chipText(item, viewed);
   return (
@@ -285,13 +300,7 @@ function StateCard<T extends Inputs>({
       >
         {/* The scale sits on the link, so a flow's stacked cards grow and shrink with its first screen as one object. */}
         {item.kind === "sequence" ? <FlowStack steps={item.steps.length} /> : null}
-        <Thumbnail
-          viewport={viewport}
-          size="fluid"
-          className="transition-shadow duration-gui ease-gui group-hover:shadow-gui-card-hover"
-        >
-          {thumbnail}
-        </Thumbnail>
+        {preview}
         <CornerChips comments={comments} viewed={viewed} />
         <FooterChips item={item} />
       </Link>

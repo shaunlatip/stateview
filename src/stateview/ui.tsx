@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps, ElementType, ReactElement, ReactNode } from "react";
+import { forwardRef, type ComponentProps, type ComponentPropsWithoutRef, type ElementType, type ReactElement, type ReactNode, type Ref } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { Radio } from "@base-ui/react/radio";
@@ -9,10 +9,9 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
 import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
-import { CaretUpDownIcon, CheckCircleIcon, CheckIcon, IconContext, InfoIcon, SpinnerGapIcon, WarningCircleIcon, WarningIcon, type IconProps } from "@phosphor-icons/react";
+import { CaretUpDownIcon, CheckIcon, IconContext, type IconProps } from "@phosphor-icons/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Toaster as Sonner } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 
 /**
  * Stateview's own primitives, styled from the Graphical "Stateview" theme
@@ -24,19 +23,22 @@ import { cn } from "@/lib/utils";
 // The context replaces Phosphor's defaults wholesale, so restate them alongside the theme's weight.
 const iconDefaults: IconProps = { size: "1em", color: "currentColor", mirrored: false, weight: "light" };
 
-/** Root of any Stateview surface: theme tokens, base typography and icon weight. */
-export function ThemeScope<T extends ElementType = "div">({
-  as,
-  className,
-  ...props
-}: { as?: T } & ComponentProps<T>) {
+/**
+ * Root of any Stateview surface: theme tokens, base typography and icon weight.
+ * Wrapped in forwardRef so a ref reaches the element on React 18 too, where a
+ * ref isn't an ordinary prop; the cast restores the generic `as` signature.
+ */
+export const ThemeScope = forwardRef(function ThemeScope(
+  { as, className, ...props }: { as?: ElementType; className?: string },
+  ref: Ref<Element>,
+) {
   const Tag: ElementType = as ?? "div";
   return (
     <IconContext.Provider value={iconDefaults}>
-      <Tag className={cn("stateview-theme", className)} {...props} />
+      <Tag ref={ref} className={cn("stateview-theme", className)} {...props} />
     </IconContext.Provider>
   );
-}
+}) as <T extends ElementType = "div">(props: { as?: T } & ComponentProps<T>) => ReactElement;
 
 /**
  * Graphical Button (primary, outline, ghost) and Toolbar control. Disabled
@@ -72,9 +74,13 @@ export const buttonVariants = cva(
   },
 );
 
-export function Button({ className, variant, size, ...props }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return <ButtonPrimitive className={cn(buttonVariants({ variant, size }), className)} {...props} />;
-}
+// forwardRef for React 18: a Tooltip trigger passes its ref to the button it wraps.
+export const Button = forwardRef(function Button(
+  { className, variant, size, ...props }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>,
+  ref: Ref<HTMLElement>,
+) {
+  return <ButtonPrimitive ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+});
 
 // Sized to sit beside S text without outweighing it: one XS line, XXS side padding.
 const badgeVariants = cva(
@@ -167,7 +173,7 @@ export function Select({
   scheme,
   className,
   ...props
-}: Omit<ComponentProps<"button">, "value"> & {
+}: Omit<ComponentPropsWithoutRef<"button">, "value"> & {
   value: string;
   onValueChange: (value: string) => void;
   options: ControlOption[];
@@ -257,43 +263,6 @@ export function Tooltip({
         </TooltipPrimitive.Positioner>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
-  );
-}
-
-/**
- * Stateview's toasts, at the bottom right in the light scheme. Unstyled, so
- * Sonner's own colours don't apply: they follow the OS scheme, which in dark
- * mode set the description near-white on the white toast. The list carries
- * the theme scope itself, since it renders outside any themed subtree.
- */
-export function Toaster() {
-  return (
-    <IconContext.Provider value={iconDefaults}>
-      <Sonner
-        theme="light"
-        position="bottom-right"
-        className="stateview-theme"
-        icons={{
-          success: <CheckCircleIcon aria-hidden />,
-          info: <InfoIcon aria-hidden />,
-          warning: <WarningIcon aria-hidden />,
-          error: <WarningCircleIcon aria-hidden />,
-          loading: <SpinnerGapIcon aria-hidden className="motion-safe:animate-spin" />,
-        }}
-        toastOptions={{
-          unstyled: true,
-          classNames: {
-            toast:
-              "flex w-full items-center gap-gui-s rounded-gui-m bg-gui-neutral-1 p-gui-s font-gui-ui text-gui-m text-gui-neutral-10 shadow-gui-m ring-1 ring-gui-border outline-none focus-visible:gui-focus-ring",
-            icon: "flex shrink-0 self-start py-gui-xxs text-gui-m",
-            content: "flex min-w-0 flex-1 flex-col",
-            title: "font-gui-medium",
-            description: "text-gui-s text-gui-neutral-7",
-            actionButton: buttonVariants({ variant: "outline", size: "bar-text" }),
-          },
-        }}
-      />
-    </IconContext.Provider>
   );
 }
 

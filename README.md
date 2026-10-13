@@ -28,14 +28,39 @@ npm run lint       # Oxlint: React (incl. React Compiler rules), jsx-a11y, Next.
 npm run typecheck  # tsc --noEmit (strict)
 npm run test:a11y  # Playwright + axe: WCAG A/AA, visible focus on the first tab stop, no sideways scroll at 375px
 npm run test:e2e   # the above, plus focus and keys across the app's frame and media queries inside it, in Chromium, WebKit and Firefox (`npx playwright install` first)
+npm run check:states  # the sample manifest against the composition rules (--strict: warnings fail too)
+npm run test:skill    # tests for the skill's manifest checker
 npm run build
 ```
 
-CI runs lint, typecheck and build on every push (`.github/workflows/ci.yml`).
+CI runs lint, typecheck, the manifest check, the checker's tests and the build on every push (`.github/workflows/ci.yml`).
+
+## Use it on your own app: the `/stateview` skill
+
+The sample screen's review is written by hand. The `/stateview` skill (`skills/stateview/`) has a coding agent write one for any Next.js app with Tailwind v4, on the App Router (Next 15+) or the Pages Router (Next 13.4+), React 18 or 19: it reads the branch's diff, finds the inputs the changed screen reads, gives the screen one boundary where a state can be injected, writes the manifest, checks it, and wires the review routes.
+
+To make it available to Claude Code, link the folder into your skills directory, then run `/stateview` in the app's repo:
+
+```sh
+ln -s "$PWD/skills/stateview" ~/.claude/skills/stateview
+```
+
+What runs, in order (the skill's `SKILL.md` has the full procedure):
+
+| Step | Who | What |
+|---|---|---|
+| `scripts/install.mjs` | script | Copies the engine (`src/stateview/`) into the app, imports its theme into the Tailwind stylesheet, writes `/stateview` routes and an empty review registry, and lists missing packages |
+| `scripts/new-review.mjs <id>` | script | Reads the branch, base and changed files from git, writes a manifest skeleton and a render stub, and registers the review |
+| Inputs and boundary | agent | Finds what the screen reads and makes it renderable from a state's inputs, without changing production behavior (`references/boundary.md`) |
+| Manifest | agent | Chooses 8–15 states in sections by the composition rules (`references/composition.md`) |
+| `scripts/check.mjs` | script | Validates the manifest: shape and values (errors), and the composition rules a script can test (warnings) |
+| `scripts/verify.mjs <id>` | script | Opens the hub and every state in a headless browser, reports page errors, console errors and failed requests, and saves a screenshot of each |
+
+In the app, the review lives at `/stateview/<review>` (hub) and `/stateview/<review>/state?sv=<state>` (one state). The routes are served in development and on preview deployments, and return 404 on a Vercel production deployment unless `STATEVIEW=1`. The manifest is JSON so the checker, CI and an agent can all read and rewrite it without a TypeScript toolchain; `defineReview` pairs it with the render function.
 
 ## Stack
 
-Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · nuqs · Phosphor icons (Stateview) · Lucide icons (the sample app)
+Next.js (App Router, React Compiler) · React · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui (Base UI) · Geist · Phosphor icons (Stateview) · Lucide icons (the sample app)
 
 ## Design language
 
@@ -45,8 +70,9 @@ Stateview's own UI (hub, viewer bar, filmstrip, state panel, toasts) uses the Gr
 
 ## Where to look
 
-- `src/stateview/` — the review layer. `manifest.ts` (state types and helpers), `hub.tsx` and `focus-view.tsx` (the two screens), `embedded-screen.tsx` and `frame-protocol.ts` (the app alone, as the viewer's iframe loads it, and the messages between them), `overrides.ts` (inputs changed in the state panel, kept in the URL), `focus-bar.tsx`, `filmstrip.tsx` and `state-panel.tsx` (the viewer's bar, state list and input panel), `thumbnail.tsx` and `card-chips.tsx` (state cards), `logo.tsx`, `agent-export.ts` (comments as Markdown for an agent), `store.ts` (comments and opened states in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer) and `describe-element.ts` (an element's name, selector, HTML and React components).
-- `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `manifest.ts` lists the states for this change.
+- `src/stateview/` — the review layer, and the engine the skill copies into other apps. It imports nothing from the app it's in. `manifest.ts` (state types and helpers), `hub.tsx` and `focus-view.tsx` (the two screens), `embedded-screen.tsx` and `frame-protocol.ts` (the app alone, as the viewer's iframe loads it, and the messages between them), `overrides.ts` (inputs changed in the state panel, kept in the URL), `focus-bar.tsx`, `filmstrip.tsx` and `state-panel.tsx` (the viewer's bar, state list and input panel), `thumbnail.tsx` and `card-chips.tsx` (state cards), `logo.tsx`, `agent-export.ts` (comments as Markdown for an agent), `store.ts` (comments and opened states in localStorage), `annotations.ts` (the comment interface), `comment-layer.tsx` (the comment engine behind it: picking, pins, composer), `describe-element.ts` (an element's name, selector, HTML and React components), `review.tsx` and `review-focus.tsx` (`defineReview` and the entry points the generated routes use), `use-frame-query.ts` (the state in the URL), `toast.tsx` (Stateview's own toasts) and `cn.ts` (class merging that knows the theme's utilities).
+- `src/sample-app/` — the screen under review. `members-screen.tsx` renders entirely from the `MembersState` object in `state.ts`, `fixtures.ts` holds the canned data, and `review.json` lists the states for this change (typed in `manifest.ts`).
+- `skills/stateview/` — the `/stateview` skill: `SKILL.md`, `references/` (composition rules, boundary patterns) and `scripts/` (install, new-review, check, verify).
 - `src/app/` — routes: `/` (hub) and `/app/members?sv=<state>` (one state). The same route with `&embed=1` renders the screen alone; it's what the viewer's iframe loads.
 
 ## How a state reaches the screen
@@ -56,7 +82,7 @@ The Team members screen takes all of its state through one object (`MembersState
 ## Dependencies worth naming
 
 - **Comments** are Stateview's own engine (`src/stateview/comment-layer.tsx`), written from scratch. Everything else depends on the `AnnotationLayer` interface in `src/stateview/annotations.ts`, so the engine could be swapped for another one by changing one file. React component names come from React's development build, so production builds show the selector and HTML without them.
-- **nuqs** keeps the current state (`?sv=`, `?step=`) in the URL, so every state has a link and the back button steps back.
+- The current state (`?sv=`, `?step=`, and any input changed in the state panel) lives in the URL, so every state has a link and the back button steps back. It's read and written through the History API (`src/stateview/use-frame-query.ts`) rather than a router library, so the same engine runs under the App Router and the Pages Router.
 
 ## Credits
 
@@ -75,11 +101,12 @@ The sample screen's layout follows the Team Settings page of Vercel's [Next.js S
 A running list of interaction and visual details, kept while building.
 
 - Thumbnails are the real screen rendered at 1088 px and scaled down to the card, so they always match the build. They are inert and hidden from assistive tech, animations inside them are off (a loading skeleton doesn't pulse in every card), and `content-visibility: auto` skips the ones far off screen.
-- The viewer shows the app in a same-origin iframe, so the app has a window of its own. Media queries, viewport units, `innerWidth` and `matchMedia` measure the frame (393 px in the phone state), fixed elements stay inside it, and its focus and keys are its own: Escape or an arrow key in the app never steps the review, and when the app drops focus (removing a member drops it to the page body), that stays the app's bug to see rather than handing the keyboard to Stateview. After the first load the viewer sends each state by message, so stepping doesn't reload the frame. The comment engine runs inside the frame and shares comments with the viewer through localStorage.
+- A review of a WebGL or video screen turns live thumbnails off (browsers cap active WebGL contexts at about 16); its cards and filmstrip show the inputs each state changes from the baseline instead, in the same frame.
+- The viewer shows the app in a same-origin iframe, so the app has a window of its own. Media queries, viewport units, `innerWidth` and `matchMedia` measure the frame (a resizable 393 × 852 px phone frame in the phone state on wide screens), fixed elements stay inside it, and its focus and keys are its own: Escape or an arrow key in the app never steps the review, and when the app drops focus (removing a member drops it to the page body), that stays the app's bug to see rather than handing the keyboard to Stateview. After the first load the viewer sends each state by message, so stepping doesn't reload the frame. The comment engine runs inside the frame and shares comments with the viewer through localStorage.
 - Thumbnails stay inline renders rather than iframes, so a phone-state thumbnail of an app that uses media queries shows its desktop layout. The sample screen uses container queries, so its thumbnails reflow correctly.
 - A state card has one keyboard stop: its title, a link described by the why line and chips. The screen above it links to the same state for the pointer but is out of the tab order and hidden from assistive tech, so element pickers and screen readers each get one clear target.
 - Each section is a band: its title and why line, then its cards in one row that scrolls sideways rather than wrapping. The index marks the section at the top of the window.
-- A card shows a dot until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards with its step count.
+- A card shows a dot until its state has been opened, and a comment count when it has open comments. A flow shows as a stack of cards, one per further step up to three, with its step count.
 - Coming back to the hub (Escape, the logo or the back button) returns to where the reviewer was, so stepping into a state and out again doesn't lose their place.
 - The viewer bar runs across the top, ruled off from the app, so it reads as Stateview's frame around it. The filmstrip takes its own column on wide screens, so the app moves over rather than sliding under it, and the app scrolls inside its own frame, so its fixed sidebars stay beside the filmstrip. The strip scrolls to the state on screen without `scrollIntoView`, which in Chrome would also move the Tab starting point into the strip. Its right edge drags (or takes arrow keys) to resize it between 112 and 320 px thumbnails, and the width is remembered. On phones the filmstrip starts closed and covers the app when opened.
 - The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".

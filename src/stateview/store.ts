@@ -64,7 +64,8 @@ function write(key: string, update: (record: ReviewRecord) => ReviewRecord) {
   } catch {
     // Storage full or blocked: progress won't persist, but the review keeps working.
   }
-  for (const listener of listeners) listener();
+  // forEach rather than for…of: apps that target es5 can't iterate a Set.
+  listeners.forEach((listener) => listener());
 }
 
 function subscribe(listener: () => void) {

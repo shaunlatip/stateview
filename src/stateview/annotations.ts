@@ -2,9 +2,9 @@ import type { ComponentType } from "react";
 import type { Inputs } from "./manifest";
 
 /**
- * Stateview's own comment interface. Everything outside an adapter depends on
- * these types only, so the engine behind them can be swapped without touching
- * the rest of the app.
+ * Stateview's own comment interface. Everything outside the comment engine
+ * (comment-layer.tsx) depends on these types only, so the engine can be
+ * swapped without touching the rest of the app.
  */
 
 export type AnnotationStatus = "open" | "resolved";

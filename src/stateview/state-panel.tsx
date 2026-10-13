@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowsDownUpIcon, CursorClickIcon, DatabaseIcon, DeviceMobileIcon, DevicesIcon, MonitorIcon, ToggleLeftIcon, UserIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import { valueLabel, type Input, type InputClass, type Inputs, type Manifest } from "./manifest";
 import { SegmentedControl, Select, Switch, ThemeScope, type ControlOption } from "./ui";
 
@@ -35,7 +35,8 @@ function controlFor(values: readonly string[], labels: string[]) {
 
 type StatePanelProps<T extends Inputs> = {
   id: string;
-  ref: Ref<HTMLElement>;
+  /** The panel's element, for returning focus. A callback rather than `ref`, which React 18 doesn't pass to a function component. */
+  onElement: (node: HTMLElement | null) => void;
   open: boolean;
   manifest: Manifest<T>;
   /** The inputs the screen is rendering now: the state's own, plus any the reviewer changed. */
@@ -56,8 +57,8 @@ type StatePanelProps<T extends Inputs> = {
  * menu, a short fade and scale from the corner under its button, rather than
  * a long slide. With reduced motion it only fades.
  */
-export function StatePanel<T extends Inputs>({ id, ref, open, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
-  const localRef = useRef<HTMLElement>(null);
+export function StatePanel<T extends Inputs>({ id, onElement, open, manifest, inputs, onChange, onClose, focusOnOpen }: StatePanelProps<T>) {
+  const localRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (open && focusOnOpen) localRef.current?.focus();
@@ -65,8 +66,7 @@ export function StatePanel<T extends Inputs>({ id, ref, open, manifest, inputs, 
 
   const setRefs = (node: HTMLElement | null) => {
     localRef.current = node;
-    if (typeof ref === "function") ref(node);
-    else if (ref) ref.current = node;
+    onElement(node);
   };
 
   const onKeyDown = (event: KeyboardEvent) => {

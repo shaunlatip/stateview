@@ -52,7 +52,7 @@ export async function open(page: Page, route: string, { viewer = true }: { viewe
   await page.addStyleTag({ content: `${DEV_CHROME.join(",")}{display:none!important}` });
   if (!viewer) return;
 
-  // The frame loads on its own schedule. data-state is server-rendered, so it shows before hydration;
+  // The frame loads on its own schedule. data-state shows once the frame has read its URL and rendered;
   // data-ready on the iframe means both documents are listening, so keys pressed from here aren't lost.
   const frame = app(page);
   await expect(frame.locator("[data-stateview-screen][data-state]")).toBeAttached({ timeout: 10_000 });

@@ -203,6 +203,23 @@
     color: var(--neutral-10);
     text-wrap: pretty;
   }
+
+  /*
+   * Stateview's own elements against the host's element rules (a portfolio's
+   * `ul { padding-left: 20px }` or `p { font-size: 16px }` in its base layer):
+   * the class makes this outrank a bare element selector there, and utilities
+   * still win. The app inside a host-frame keeps its own styles.
+   */
+  .stateview-theme :where(h1, h2, h3, h4, h5, h6, p, ul, ol, li, dl, dt, dd, figure, blockquote):not(.host-frame *) {
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  .stateview-theme :where(ul, ol):not(.host-frame *) {
+    list-style: none;
+  }
 }
 
 .dark .stateview-theme,
@@ -492,6 +509,12 @@
 @utility gui-divider-vertical {
   width: var(--border-s);
   box-shadow: inset var(--border-s) 0 0 0 var(--neutral-4);
+}
+
+/* Skip layout and paint for off-screen hub thumbnails until they scroll near. */
+@utility content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 12.5rem;
 }
 
 /* App content embedded in Stateview UI (hub thumbnails) starts from the host app's own defaults. */
