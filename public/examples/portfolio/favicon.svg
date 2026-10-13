@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+  <!-- Circuit-trace glyph in white on a black tile. The 24×24 source glyph is
+       inset by 3 on every side (translate 3,3) inside a 30×30 box, giving a
+       padded mark with a very light corner radius (rx 3). Square line caps and
+       2px stroke match the source. PNG + ICO raster fallbacks are drawn to
+       match by /tmp/gen_favicons.py (Pillow); apple-touch + maskable variants
+       are full-bleed black squares (no rounded corners) for OS masking. -->
+  <rect width="30" height="30" rx="3" fill="#000000"/>
+  <g transform="translate(3 3)" stroke="#ffffff" stroke-width="2" stroke-linecap="square" fill="none">
+    <path d="M18 3L21 3L21 6"/>
+    <path d="M19 8L19 11"/>
+    <path d="M16 5L13 5"/>
+    <path d="M11 7L8 7"/>
+    <path d="M9 13L5 13"/>
+    <path d="M6 9L3 9L3 11"/>
+    <path d="M17 13L17 16"/>
+    <path d="M11 15L11 19"/>
+    <path d="M15 18L15 21H13"/>
+  </g>
+</svg>
