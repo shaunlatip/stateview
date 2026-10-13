@@ -95,14 +95,20 @@ export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationL
 
   return (
     <>
-      <div data-pin-layer="" className="relative grid flex-1">
-        {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
+      <div data-pin-layer="" className="relative flex-1">
+        {/*
+         * Keyed by state and inputs so the screen starts fresh from its inputs every time.
+         * Block, and exactly as tall as the frame, like an app's own `html, body { height: 100% }`:
+         * a root with `mx-auto` keeps its full width (a grid or flex parent would shrink it to its
+         * content), a root with `h-full` fills the frame, and a longer page overflows and scrolls
+         * the frame as it would the window.
+         */}
         <div
           key={`${stateId}:${inputsKey(manifest, inputs)}`}
           ref={setScreen}
           data-stateview-screen=""
           data-state={stateId}
-          className={cn("host-frame grid", commenting && "cursor-crosshair **:cursor-crosshair")}
+          className={cn("host-frame h-dvh", commenting && "cursor-crosshair **:cursor-crosshair")}
         >
           {render(inputs)}
         </div>
