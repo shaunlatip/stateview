@@ -103,7 +103,9 @@ function StripSections<T extends Inputs>({
                         viewport={viewportOf(manifest, first.inputs)}
                         size="strip"
                         className={cn(
-                          "transition-shadow duration-gui ease-gui motion-reduce:transition-none",
+                          // Only hover fades the ring in. Stepping with J/K moves the current ring at once, so there's never more than one on screen.
+                          // transition-none, not just no transition class: duration-gui sets a duration, and with no property named every property would ease.
+                          "transition-none duration-gui ease-gui group-hover:transition-shadow motion-reduce:transition-none",
                           current ? "ring-2 ring-gui-neutral-10" : "group-hover:ring-gui-neutral-6",
                         )}
                       >

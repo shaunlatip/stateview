@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { ArrowsDownUpIcon, CursorClickIcon, DatabaseIcon, DeviceMobileIcon, DevicesIcon, MonitorIcon, ToggleLeftIcon, UserIcon } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { valueLabel, type Input, type InputClass, type Inputs, type Manifest } from "./manifest";
 import { SegmentedControl, Select, Switch, ThemeScope, type ControlOption } from "./ui";
 
@@ -77,8 +78,12 @@ export function StatePanel<T extends Inputs>({ id, ref, manifest, inputs, onChan
       aria-label="State"
       data-state-panel=""
       onKeyDown={onKeyDown}
-      // 336px: the longest label (Members request), M between, and the widest control (three segments) fit side by side.
-      className="fixed top-(--viewer-bar) right-gui-s z-40 mt-gui-xs flex w-84 gui-panel-height flex-col rounded-gui-s bg-gui-toolbar shadow-gui-m ring-1 ring-gui-border outline-none max-sm:left-gui-s max-sm:w-auto motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-gui-large motion-safe:ease-gui-large"
+      className={cn(
+        // 336px: the longest label (Members request), M between, and the widest control (three segments) fit side by side.
+        "fixed top-(--viewer-bar) right-gui-s z-40 mt-gui-xs flex w-84 gui-panel-height flex-col rounded-gui-s bg-gui-toolbar shadow-gui-m ring-1 ring-gui-border outline-none max-sm:left-gui-s max-sm:w-auto",
+        // Opened with a click, it drops from the button. Opened from the keyboard (S, or Enter on the button), it's there at once: a key pressed over and over shouldn't wait on an entrance.
+        !focusOnOpen && "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-gui-large motion-safe:ease-gui-large",
+      )}
     >
       <div className="@container min-h-0 overflow-y-auto overscroll-contain p-gui-m">
         <div className="gui-panel-grid gap-y-gui-s">

@@ -324,6 +324,11 @@
   transition-duration: var(--motion-large-duration);
 }
 
+/* The app's frame eases its left edge as the filmstrip opens and closes, and nothing else. */
+@utility gui-transition-left {
+  transition-property: left;
+}
+
 @utility gui-press {
   translate: 0 var(--motion-press-distance);
 }

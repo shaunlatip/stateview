@@ -113,8 +113,8 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     setStripChoice(false);
   };
   const stripWidth = useStripWidth();
-  // While the strip is dragged the app's edge follows the pointer instead of easing after it.
-  const [stripResizing, setStripResizing] = useState(false);
+  // The app's edge eases only when the strip opens or closes; any resize (drag or arrow keys) and the first paint snap.
+  const [stripSnap, setStripSnap] = useState(true);
   // Every surface that reads the strip's width re-declares the theme, so each one gets it.
   const stripWidthStyle = { "--thumb-strip-chosen": stripWidth } as CSSProperties;
 
@@ -270,7 +270,15 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         hubHref={HUB_HREF}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
-        strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
+        strip={{
+          id: stripId,
+          open: stripOpen,
+          // Dropping the snap in the same render as the new edge still animates: a transition starts from the after-change style.
+          onToggle: () => {
+            setStripSnap(false);
+            setStripChoice(!stripOpen);
+          },
+        }}
         stripTriggerRef={stripTriggerRef}
         commenting={commenting}
         onToggleCommenting={toggleCommenting}
@@ -295,7 +303,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         auto={stripChoice === null}
         width={stripWidth}
         onResize={(width, settled) => {
-          setStripResizing(!settled);
+          setStripSnap(true);
           setStripWidth(width, settled);
         }}
         viewed={review.viewed}
@@ -316,9 +324,9 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
       <ThemeScope
         style={stripWidthStyle}
         className={cn(
-          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center transition-all duration-gui-large ease-gui-large motion-reduce:transition-none",
+          "fixed top-(--viewer-bar) right-0 bottom-0 left-0 flex justify-center",
           stripOpen && "md:left-(--viewer-strip)",
-          stripResizing && "transition-none",
+          stripSnap ? "transition-none" : "gui-transition-left duration-gui-large ease-gui-large motion-reduce:transition-none",
         )}
       >
         {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
