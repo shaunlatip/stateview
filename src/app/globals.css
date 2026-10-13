@@ -3,6 +3,9 @@
 @import "shadcn/tailwind.css";
 @import "../stateview/theme.css";
 @import "../sample-app/halcyon.css";
+@import "../examples/portfolio/portfolio.css";
+@import "../examples/ai-gateway/ai-gateway.css";
+@import "../examples/shader-lab/shader-lab.css";
 
 @custom-variant dark (&:is(.dark *));
 

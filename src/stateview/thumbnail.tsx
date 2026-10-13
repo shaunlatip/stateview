@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { InThumbnail } from "./in-thumbnail";
 
 /**
  * A live, scaled-down render of the real screen. Inert and hidden from
@@ -42,7 +43,7 @@ export function Thumbnail({
             : [fluid ? "gui-thumb-fluid-desktop" : "gui-thumb-desktop", "left-0 origin-top-left"],
         )}
       >
-        {children}
+        <InThumbnail>{children}</InThumbnail>
       </div>
     </div>
   );

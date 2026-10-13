@@ -61,6 +61,8 @@ export type Manifest<T extends Inputs = Inputs> = {
   version: number;
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
+  /** The hub's route: every state for this review. */
+  hub: string;
   screen: string;
   /** The repo and branch under review; `icon` is the app's own favicon. */
   scope: { repo: string; icon: string; branch: string; base: string };

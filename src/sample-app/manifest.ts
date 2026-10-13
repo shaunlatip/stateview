@@ -11,6 +11,7 @@ export const membersManifest: Manifest<MembersState> = {
   id: "team-members",
   version: 1,
   route: "/app/members",
+  hub: "/",
   screen: "Team settings › Members",
   scope: { repo: "halcyon-web", icon: "/halcyon/favicon.svg", branch: "feat/member-management", base: "main" },
   baseline: {

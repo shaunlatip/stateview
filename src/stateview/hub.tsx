@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { CopyIcon, GitBranchIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -12,13 +13,18 @@ import { Logo } from "./logo";
 import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section } from "./manifest";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
-import { Button, ThemeScope } from "./ui";
+import { Button, Select, ThemeScope } from "./ui";
 
 type HubProps<T extends Inputs> = {
   manifest: Manifest<T>;
   /** A rendered screen for each item id (first step for sequences). */
   thumbnails: Record<string, ReactNode>;
+  /** Every review in this deployment, for the switcher at the foot of the index. */
+  reviews: ReviewLink[];
 };
+
+/** Another review the switcher can open: its manifest id, a label and its hub route. */
+export type ReviewLink = { id: string; label: string; hub: string };
 
 /*
  * Where the reviewer was on the hub, so coming back from a state lands on the
@@ -26,21 +32,23 @@ type HubProps<T extends Inputs> = {
  * catch the jump to the top during navigation) and restored on the way back,
  * retrying for a few frames until the page is tall enough to reach it.
  */
-const SCROLL_KEY = "stateview:hub-scroll";
+function scrollKey(reviewId: string) {
+  return `stateview:hub-scroll:${reviewId}`;
+}
 
-function rememberScroll() {
+function rememberScroll(reviewId: string) {
   try {
-    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    sessionStorage.setItem(scrollKey(reviewId), String(window.scrollY));
   } catch {
     // Storage blocked: nothing to remember.
   }
 }
 
-function useRestoredScroll() {
+function useRestoredScroll(reviewId: string) {
   useEffect(() => {
     let saved = 0;
     try {
-      saved = Number(sessionStorage.getItem(SCROLL_KEY)) || 0;
+      saved = Number(sessionStorage.getItem(scrollKey(reviewId))) || 0;
     } catch {
       // Storage blocked: start at the top.
     }
@@ -51,7 +59,7 @@ function useRestoredScroll() {
       if (Math.abs(window.scrollY - saved) > 1 && ++tries < 10) frame = requestAnimationFrame(restore);
     });
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [reviewId]);
 }
 
 // A section is current once its top is this close to the top of the window.
@@ -130,8 +138,8 @@ function useIndexAlignment() {
   return { root, header, main, index };
 }
 
-export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
-  useRestoredScroll();
+export function Hub<T extends Inputs>({ manifest, thumbnails, reviews }: HubProps<T>) {
+  useRestoredScroll(manifest.id);
   const { root, header, main, index } = useIndexAlignment();
   const { annotations, viewed } = useReview(manifest);
   const frames = listFrames(manifest);
@@ -154,6 +162,8 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
             </IndexLink>
           ))}
         </ul>
+        {/* Pinned to the foot of the index, below the sections, for switching between the example apps. */}
+        <ReviewSwitcher reviews={reviews} current={manifest.id} className="sticky bottom-0 mt-auto bg-gui-neutral-2 py-gui-m" />
       </nav>
 
       <main ref={main} className="flex min-w-0 flex-1 flex-col">
@@ -163,8 +173,11 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
           className="flex flex-wrap items-center justify-between gap-x-gui-l gap-y-gui-s bg-gui-neutral-2 px-gui-xl py-gui-l gui-divider-bottom"
         >
           <div className="flex min-w-0 flex-col gap-gui-s">
-            {/* Below md the index is hidden, so the brand moves here. */}
-            <Brand className="md:hidden" />
+            {/* Below md the index is hidden, so the brand and the switcher move here. */}
+            <div className="flex flex-wrap items-center justify-between gap-gui-s md:hidden">
+              <Brand />
+              <ReviewSwitcher reviews={reviews} current={manifest.id} />
+            </div>
             <div className="flex min-w-0 flex-wrap items-center gap-x-gui-l gap-y-gui-xs">
               {/* One control tall, like Copy comments and the brand beside it, so all three share a centre line. */}
               <h1 className="flex min-w-0 gui-control items-center gap-gui-xs text-gui-m font-gui-medium wrap-anywhere">
@@ -196,6 +209,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
                   comments={commentsOn(item)}
                   viewed={viewed.includes(item.id)}
                   thumbnail={thumbnails[item.id]}
+                  onOpen={() => rememberScroll(manifest.id)}
                 />
               ))}
             </SectionBlock>
@@ -213,6 +227,34 @@ function Brand({ className }: { className?: string }) {
       <Logo className="h-4 w-auto" />
       Stateview
     </p>
+  );
+}
+
+/**
+ * Picks which review the hub shows, as a small select like the state panel's.
+ * Each review has its own hub route, so switching is a navigation.
+ */
+function ReviewSwitcher({ reviews, current, className }: { reviews: ReviewLink[]; current: string; className?: string }) {
+  const router = useRouter();
+  const labelId = useId();
+  if (reviews.length < 2) return null;
+  const open = (id: string) => {
+    const review = reviews.find((r) => r.id === id);
+    if (review && review.id !== current) router.push(review.hub);
+  };
+  return (
+    <div className={cn("flex flex-col gap-gui-xxs", className)}>
+      <span id={labelId} className="px-gui-xs text-gui-xs text-gui-neutral-7">
+        Example app
+      </span>
+      <Select
+        aria-labelledby={labelId}
+        value={current}
+        onValueChange={open}
+        options={reviews.map((review) => ({ value: review.id, label: review.label }))}
+        scheme="light"
+      />
+    </div>
   );
 }
 
@@ -304,6 +346,7 @@ function StateCard<T extends Inputs>({
   comments,
   viewed,
   thumbnail,
+  onOpen,
 }: {
   item: Item<T>;
   href: string;
@@ -311,6 +354,7 @@ function StateCard<T extends Inputs>({
   comments: number;
   viewed: boolean;
   thumbnail: ReactNode;
+  onOpen: () => void;
 }) {
   const details = chipText(item, viewed);
   return (
@@ -320,7 +364,7 @@ function StateCard<T extends Inputs>({
         href={href}
         tabIndex={-1}
         aria-hidden
-        onClick={rememberScroll}
+        onClick={onOpen}
         className="group relative block rounded-gui-s outline-none transition-transform duration-gui ease-gui active:gui-press-scale motion-reduce:transition-none"
       >
         {item.kind === "sequence" ? <FlowStack /> : null}
@@ -339,7 +383,7 @@ function StateCard<T extends Inputs>({
           <Link
             href={href}
             aria-describedby={`card-${item.id}-details`}
-            onClick={rememberScroll}
+            onClick={onOpen}
             className="rounded-gui-xs underline-offset-2 outline-none hover:underline focus-visible:gui-focus-ring"
           >
             {item.title}

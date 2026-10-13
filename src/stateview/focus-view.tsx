@@ -19,9 +19,6 @@ import { useReview } from "./store";
 import { setStripWidth, useStripWidth } from "./strip-width";
 import { ThemeScope, buttonVariants } from "./ui";
 
-// Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
-const HUB_HREF = "/";
-
 // The app's frame, and where the skip link sends focus.
 const APP_FRAME_ID = "app";
 
@@ -169,7 +166,8 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
       case "Escape":
         // Escape first ends comment mode; only a second Escape leaves the state.
         if (commenting) setCommenting(false);
-        else router.push(HUB_HREF, { scroll: false });
+        // scroll={false}: the hub restores the reviewer's own position.
+        else router.push(manifest.hub, { scroll: false });
         break;
     }
   });
@@ -216,7 +214,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
     appFrame.current?.contentWindow?.focus();
   };
 
-  if (!frame || !inputs) return <UnknownState id={sv} />;
+  if (!frame || !inputs) return <UnknownState id={sv} hub={manifest.hub} />;
 
   const copyComments = () => {
     void navigator.clipboard
@@ -259,7 +257,7 @@ function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
         frame={frame}
         position={index + 1}
         total={frames.length}
-        hubHref={HUB_HREF}
+        hubHref={manifest.hub}
         onPrevious={index > 0 ? () => goTo(index - 1) : null}
         onNext={index < frames.length - 1 ? () => goTo(index + 1) : null}
         strip={{ id: stripId, open: stripOpen, onToggle: () => setStripChoice(!stripOpen) }}
@@ -334,7 +332,7 @@ function copyLink() {
     .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
 }
 
-function UnknownState({ id }: { id: string | null }) {
+function UnknownState({ id, hub }: { id: string | null; hub: string }) {
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
       {/* Pages set their own titles (app/layout.tsx), so this one needs its own too. */}
@@ -344,7 +342,7 @@ function UnknownState({ id }: { id: string | null }) {
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
         </h1>
         <p className="text-gui-neutral-7">The review may have changed since this link was made.</p>
-        <Link href={HUB_HREF} scroll={false} className={buttonVariants({ className: "w-fit" })}>
+        <Link href={hub} scroll={false} className={buttonVariants({ className: "w-fit" })}>
           See all states
         </Link>
       </div>
