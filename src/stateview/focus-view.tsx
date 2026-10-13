@@ -337,6 +337,8 @@ function copyLink() {
 function UnknownState({ id }: { id: string | null }) {
   return (
     <ThemeScope as="main" className="flex flex-1 bg-gui-neutral-1">
+      {/* Pages set their own titles (app/layout.tsx), so this one needs its own too. */}
+      <title>Stateview</title>
       <div className="mx-auto flex max-w-prose flex-col justify-center gap-gui-s px-gui-l">
         <h1 className="font-gui-brand text-gui-l font-gui-brand-heavy text-balance">
           {id ? `There’s no state called “${id}” in this review` : "Choose a state to review"}
