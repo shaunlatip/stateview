@@ -114,6 +114,6 @@ A running list of interaction and visual details, kept while building.
 - The bar shows the state's title on one line; a step in a flow adds "· 3/4 Submitting".
 - Bar controls are icon-only; the label and shortcut appear in a tooltip. Previous and Next stay focusable at the ends of the list, so keyboard focus is never dropped.
 - Step changes are announced to screen readers ("Roles: Viewer checking who's on the team."), and the page title follows the state.
-- Shortcuts don't fire inside the app, while typing, or inside a radio group or menu in Stateview's own controls. Escape first ends comment mode; only a second Escape leaves the state.
+- Shortcuts don't fire while typing or inside a radio group or menu in Stateview's own controls; inside the app only the letter shortcuts (C, J, K, S, F) reach Stateview, and only outside the app's text fields and menus, so Escape and the arrows stay with the app. Escape first ends comment mode; only a second Escape leaves the state.
 - Comments copied from the toolbar are prefixed with the state's title, URL and inputs, so an agent can open exactly what the reviewer saw.
 - Component edges are inset or outset box shadows, never native borders, so adding an edge never shifts layout.

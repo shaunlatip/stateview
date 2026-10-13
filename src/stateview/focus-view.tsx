@@ -31,8 +31,9 @@ const FRAME_READY_TIMEOUT = 3000;
 
 /*
  * Keys typed into Stateview's own controls that belong to those controls.
- * Keys typed in the app never reach these shortcuts: the app is in its own
- * document, so its keys, including Escape and the arrows, stay with it.
+ * The app is in its own document, so its keys, including Escape and the
+ * arrows, stay with it; only the letter shortcuts pressed outside its text
+ * fields and menus are passed up by the frame (FRAME_SHORTCUTS).
  */
 const OWNS_KEYS = [
   "input",
@@ -264,6 +265,8 @@ function Viewer<T extends Inputs>({
       setFrameReady(true);
       sendState();
     } else if (message?.type === "commenting") setCommenting(message.value);
+    // A shortcut pressed with focus in the app: handled as if pressed here.
+    else if (message?.type === "key") onKeyDown(new KeyboardEvent("keydown", { key: message.key, cancelable: true }));
   });
 
   /*

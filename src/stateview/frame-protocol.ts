@@ -25,7 +25,16 @@ export type FrameEvent =
   /** Loaded (or reloaded) and listening: the viewer sends the current state. */
   | { type: "ready" }
   /** Comment mode ended inside the frame (Escape there). */
-  | { type: "commenting"; value: boolean };
+  | { type: "commenting"; value: boolean }
+  /** One of the viewer's letter shortcuts, pressed inside the frame on something that isn't a text field. */
+  | { type: "key"; key: FrameShortcut };
+
+/**
+ * The viewer's letter shortcuts, which the frame passes up so they work while
+ * focus is in the app. Not Escape or the arrows: the app owns those.
+ */
+export const FRAME_SHORTCUTS = ["c", "j", "k", "s", "f"] as const;
+export type FrameShortcut = (typeof FRAME_SHORTCUTS)[number];
 
 type Envelope<T> = T & { source: "stateview" };
 
