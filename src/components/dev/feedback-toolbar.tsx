@@ -12,7 +12,8 @@ export function FeedbackToolbar() {
   const [Toolbar, setToolbar] = useState<ComponentType<AgentationProps> | null>(null);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
+    // Not inside the viewer's app frame: the viewer around it already has one.
+    if (process.env.NODE_ENV !== "development" || window.self !== window.top) return;
     let active = true;
     void import("agentation").then((engine) => {
       if (active) setToolbar(() => engine.Agentation);

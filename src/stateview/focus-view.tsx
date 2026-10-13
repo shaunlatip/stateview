@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { stateContext } from "./agent-export";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
+import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
+import { EMBED_PARAM, post, receive, type FrameEvent, type FrameState } from "./frame-protocol";
 import { findFrameIndex, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
+import { inputParsers, withOverrides } from "./overrides";
 import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
 import { setStripWidth, useStripWidth } from "./strip-width";
@@ -19,7 +22,14 @@ import { ThemeScope, buttonVariants } from "./ui";
 // Links back to the hub pass scroll={false}: the hub restores the reviewer's own position.
 const HUB_HREF = "/";
 
-// Keys typed here belong to the page or to the comment engine, not to Stateview's shortcuts.
+// The app's frame, and where the skip link sends focus.
+const APP_FRAME_ID = "app";
+
+/*
+ * Keys typed into Stateview's own controls that belong to those controls.
+ * Keys typed in the app never reach these shortcuts: the app is in its own
+ * document, so its keys, including Escape and the arrows, stay with it.
+ */
 const OWNS_KEYS = [
   "input",
   "textarea",
@@ -48,16 +58,32 @@ function subscribeWide(onChange: () => void) {
   return () => query.removeEventListener("change", onChange);
 }
 
+/**
+ * A review route. In the browser tab it's the viewer; loaded with `?embed`
+ * inside the viewer's iframe, it's the screen alone.
+ */
+export function FocusView<T extends Inputs>(props: FocusViewProps<T>) {
+  const embedded = useSearchParams().has(EMBED_PARAM);
+  return embedded ? <EmbeddedScreen {...props} /> : <Viewer {...props} />;
+}
+
 /** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
-export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer }: FocusViewProps<T>) {
+function Viewer<T extends Inputs>({ manifest, render }: FocusViewProps<T>) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [{ sv, step }, setQuery] = useQueryStates({ sv: parseAsString, step: parseAsInteger }, { history: "push" });
   // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
   const [overrides, setOverrides] = useQueryStates(inputParsers(manifest), { history: "replace" });
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);
   const [pinsVisible, setPinsVisible] = useState(true);
-  const [screen, setScreen] = useState<HTMLDivElement | null>(null);
+  const appFrame = useRef<HTMLIFrameElement>(null);
+  // The frame loads once, at the state in the URL; after that, states arrive by message, without a reload.
+  const [frameSrc] = useState(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set(EMBED_PARAM, "1");
+    return `${manifest.route}?${params}`;
+  });
   const frames = listFrames(manifest);
   const index = findFrameIndex(frames, sv, step);
   const frame = index === -1 ? null : frames[index];
@@ -141,7 +167,9 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         else closePanel();
         break;
       case "Escape":
-        router.push(HUB_HREF, { scroll: false });
+        // Escape first ends comment mode; only a second Escape leaves the state.
+        if (commenting) setCommenting(false);
+        else router.push(HUB_HREF, { scroll: false });
         break;
     }
   });
@@ -151,6 +179,42 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, []);
+
+  // --- The app's frame: told the state and review tools by message ------------------------
+
+  // Serialized, so the frame is told only when something in it changes (postMessage copies it anyway).
+  const frameState = frame && inputs ? JSON.stringify({ type: "state", stateId: frame.key, inputs, commenting, pinsVisible } satisfies FrameState) : null;
+
+  useEffect(() => {
+    if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
+  }, [frameState]);
+
+  const sendState = useEffectEvent(() => {
+    if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
+  });
+
+  // The frame has loaded and both sides are listening (also what tests wait for).
+  const [frameReady, setFrameReady] = useState(false);
+
+  const onFrameMessage = useEffectEvent((event: MessageEvent) => {
+    const message = receive<FrameEvent>(event, appFrame.current?.contentWindow);
+    if (message?.type === "ready") {
+      setFrameReady(true);
+      sendState();
+    } else if (message?.type === "commenting") setCommenting(message.value);
+  });
+
+  useEffect(() => {
+    const listener = (event: MessageEvent) => onFrameMessage(event);
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, []);
+
+  // The skip link puts focus in the app's document, so the next Tab is the app's first stop, as on a fresh load.
+  const skipToApp = (event: MouseEvent) => {
+    event.preventDefault();
+    appFrame.current?.contentWindow?.focus();
+  };
 
   if (!frame || !inputs) return <UnknownState id={sv} />;
 
@@ -182,6 +246,15 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   return (
     <>
       <title>{`${frame.item.title} · Stateview`}</title>
+      <ThemeScope className="dark">
+        <a
+          href={`#${APP_FRAME_ID}`}
+          onClick={skipToApp}
+          className={cn(buttonVariants({ size: "toolbar" }), "fixed top-gui-xxs left-gui-xxs z-50 not-focus-visible:sr-only")}
+        >
+          Skip to app
+        </a>
+      </ThemeScope>
       <FocusBar
         frame={frame}
         position={index + 1}
@@ -222,9 +295,10 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
       />
       {/*
        * The app's window: below the bar and, on wide screens, beside the open
-       * filmstrip. The transform makes this box the app's viewport for fixed
-       * elements (a fixed sidebar stays beside the filmstrip, not under it),
-       * and the app scrolls inside it rather than the page.
+       * filmstrip. An iframe, so the app gets a window of its own: media
+       * queries, viewport units and `innerWidth` measure the frame, fixed
+       * elements stay inside it, and its focus and keys are its own. The
+       * comment engine runs inside it (EmbeddedScreen).
        */}
       <ThemeScope
         style={stripWidthStyle}
@@ -234,36 +308,20 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
           stripResizing && "transition-none",
         )}
       >
-        <div className={cn("w-full transform-gpu overflow-hidden", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}>
-          <div data-pin-layer="" className="relative grid h-full overflow-y-auto overscroll-contain">
-            {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
-            <div
-              key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
-              ref={setScreen}
-              className={cn("host-frame grid", commenting && "cursor-crosshair **:cursor-crosshair")}
-            >
-              {render(inputs)}
-            </div>
-          </div>
-        </div>
+        {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
+        <iframe
+          ref={appFrame}
+          id={APP_FRAME_ID}
+          data-stateview-frame=""
+          data-ready={frameReady ? "" : undefined}
+          title={manifest.screen}
+          src={frameSrc}
+          className={cn("h-full w-full", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}
+        />
       </ThemeScope>
       {panel !== "closed" ? (
         <StatePanel id={panelId} ref={panelRef} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
       ) : null}
-      {/* Keyed by state so a half-written comment never carries over to another state. */}
-      <Layer
-        key={frame.key}
-        stateId={frame.key}
-        inputs={inputs}
-        annotations={annotations}
-        root={screen}
-        active={commenting}
-        onActiveChange={setCommenting}
-        pinsVisible={pinsVisible}
-        onAdd={review.addAnnotation}
-        onUpdate={review.updateAnnotation}
-        onDelete={review.deleteAnnotation}
-      />
     </>
   );
 }
@@ -274,17 +332,6 @@ function copyLink() {
     .writeText(window.location.href)
     .then(() => toast.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
     .catch(() => toast.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
-}
-
-/** One URL parser per input, accepting only that input's values. */
-function inputParsers<T extends Inputs>(manifest: Manifest<T>) {
-  return Object.fromEntries(manifest.inputs.map((input) => [input.id, parseAsStringLiteral(input.values as readonly string[])]));
-}
-
-/** A state's inputs with the reviewer's changes on top. */
-function withOverrides<T extends Inputs>(inputs: T, overrides: Record<string, string | null>): T {
-  const set = Object.entries(overrides).filter(([id, value]) => value !== null && id in inputs);
-  return { ...inputs, ...Object.fromEntries(set) };
 }
 
 function UnknownState({ id }: { id: string | null }) {
