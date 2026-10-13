@@ -29,8 +29,8 @@ export function agentBrief<T extends Inputs>(manifest: Manifest<T>, statusPath?:
     "",
     "For each comment:",
     "1. Find the code. Start with the component names, then the element's text. Labels are often built from variables (`Remove ${name}`), so search for a fixed part of them. The selector only works inside the rendered screen, so use it in the browser, not to search files.",
-    "2. Make the change the comment asks for. If the comment is a question, answer it, and change the code only if the answer is yes.",
-    "3. Check it. If you can open a browser, open the state's URL and confirm the change shows there. A change to a shared component shows in other states too, so look at those as well.",
+    "2. Make the change the comment asks for, and no more. If the screen already does what it asks, leave the code and say where (`wontfix`). If the comment is a question, answer it, and change the code only if the answer is yes. If your change also affects something the comment didn't name (another control that shares the same check, say), keep it only if it follows from the comment, and mention it in your note.",
+    "3. Check it. If you can open a browser, open the state's screen URL: that's the screen alone, as the reviewer saw it. (The state URL opens Stateview around it, with every other state as thumbnails and the screen in an iframe, so a count of elements on that page includes the thumbnails.) A change to a shared component shows in other states too, so look at those as well.",
     "",
     ...report,
     "",
@@ -45,15 +45,18 @@ export function agentBrief<T extends Inputs>(manifest: Manifest<T>, statusPath?:
  */
 export function stateContext<T extends Inputs>(manifest: Manifest<T>, frame: Frame<T>, inputs: T = frame.inputs) {
   const changed = new Set<string>(changedInputs(manifest, inputs));
+  // A changed input names the baseline's value too, so a comment about how two states differ can be read from the inputs alone.
   const list = manifest.inputs
-    .map((input) => `${input.id}=${inputs[input.id]}${changed.has(input.id) ? " (changed)" : ""}`)
+    .map((input) => `${input.id}=${inputs[input.id]}${changed.has(input.id) ? ` (baseline: ${manifest.baseline[input.id]})` : ""}`)
     .join(", ");
+  const href = frameHref(manifest, frame, inputs);
   const step = frame.step ? ` · step ${frame.step} of ${frame.stepCount}: ${frame.stepTitle}` : "";
   const edited = manifest.inputs.some((input) => inputs[input.id] !== frame.inputs[input.id]);
   return [
     `## State: ${frame.section.title} › ${frame.item.title}${step}${edited ? " (inputs changed by the reviewer)" : ""}`,
-    // The state's link, plus any inputs changed in the state panel.
-    `URL: ${window.location.origin}${frameHref(manifest, frame, inputs)}`,
+    // The state's link, plus any inputs changed in the state panel; `embed=1` is the screen alone, as the viewer's frame loads it.
+    `State URL: ${window.location.origin}${href}`,
+    `Screen URL: ${window.location.origin}${href}&embed=1`,
     `Inputs: ${list}`,
     "",
     "",

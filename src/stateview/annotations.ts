@@ -84,8 +84,9 @@ export function formatAnnotations(annotations: Annotation[], include: (annotatio
         `### ${index + 1}. ${element.title ?? element.label}`,
         `Id: \`${annotation.id}\``,
         `Element: \`${element.label}\``,
-        `Selector: \`${element.selector}\``,
       ];
+      // A selector made only of positions (`div:nth-of-type(3) > button`) matches too much to help; the components and HTML say more.
+      if (/[#[]/.test(element.selector) || !/:nth-/.test(element.selector)) lines.push(`Selector: \`${element.selector}\``);
       if (element.components.length > 0) lines.push(`Components: ${element.components.join(" › ")}`);
       lines.push("```html", element.html, "```", `Comment: ${annotation.note}`);
       const previous = agentStatus[annotation.id];
