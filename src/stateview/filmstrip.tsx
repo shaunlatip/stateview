@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
 import { cn } from "./cn";
@@ -9,6 +8,7 @@ import { ScrollArea } from "./scroll-area";
 import { STRIP_WIDTH } from "./strip-width";
 import { InputsThumbnail, Thumbnail, inputChanges } from "./thumbnail";
 import { ThemeScope } from "./ui";
+import { pushFrame } from "./use-frame-query";
 
 type FilmstripProps<T extends Inputs> = {
   id: string;
@@ -103,12 +103,19 @@ function StripSections<T extends Inputs>({
               );
               return (
                 <li key={item.id} className="flex">
-                  <Link
+                  <a
                     // Keep the state on screen in view as the reviewer steps through.
                     ref={current ? keepInView : undefined}
                     href={frameHref(manifest, first)}
                     aria-current={current ? "page" : undefined}
-                    onClick={onPick}
+                    onClick={(event) => {
+                      // A new tab or window opens the link as usual.
+                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                      // The viewer reads its state from the URL through pushFrame, as J and K do; a router navigation wouldn't tell it.
+                      event.preventDefault();
+                      onPick();
+                      pushFrame(event.currentTarget.getAttribute("href") ?? "");
+                    }}
                     className="group flex w-min flex-col gap-gui-xxs rounded-gui-s outline-offset-2 outline-none focus-visible:gui-focus-ring"
                   >
                     <div className="relative">
@@ -128,7 +135,7 @@ function StripSections<T extends Inputs>({
                       {comments > 0 ? <span className="sr-only">{`, ${comments} open ${comments === 1 ? "comment" : "comments"}`}</span> : null}
                       {details ? <span className="sr-only">{`, ${details}`}</span> : null}
                     </span>
-                  </Link>
+                  </a>
                 </li>
               );
             })}

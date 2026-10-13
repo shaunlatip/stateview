@@ -42,6 +42,14 @@ test("keys typed in the app stay in the app", async ({ page }) => {
   await expect(remove).toBeFocused();
 });
 
+test("picking a state in the filmstrip opens it", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, TYPICAL);
+  await page.getByRole("navigation", { name: "States" }).getByRole("link", { name: /^Viewer checking/ }).click();
+  await expectState(page, "viewer-view");
+  await expect(page).toHaveTitle(/^Viewer checking/);
+});
+
 test("Escape in the app doesn't leave the viewer", async ({ page }) => {
   await open(page, TYPICAL);
   await removePriya(page).focus();
