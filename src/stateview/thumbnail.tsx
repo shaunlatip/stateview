@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "./cn";
 import { changedInputs, valueLabel, type Inputs, type Manifest } from "./manifest";
 
@@ -26,6 +28,7 @@ export function Thumbnail({
   className?: string;
 }) {
   const fluid = size === "fluid";
+  const render = useFluidScale(viewport, fluid);
   return (
     <div
       aria-hidden
@@ -39,6 +42,7 @@ export function Thumbnail({
     >
       {/* A still picture: loading skeletons and the like don't loop in every thumbnail. */}
       <div
+        ref={render}
         className={cn(
           "host-frame pointer-events-none absolute top-0 h-200 bg-background select-none **:animate-none",
           viewport === "mobile"
@@ -50,6 +54,28 @@ export function Thumbnail({
       </div>
     </div>
   );
+}
+
+/**
+ * Scales a hub thumbnail's render to its card, measured. The CSS version
+ * (tan(atan2()) over container units, theme.css) draws the first paint, but
+ * iOS browsers left the hub's thumbnails blank with it alone.
+ */
+function useFluidScale(viewport: "desktop" | "mobile", fluid: boolean) {
+  const render = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const screen = render.current;
+    const box = screen?.parentElement;
+    if (!fluid || !screen || !box) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      // The same ratios as gui-thumb-fluid-desktop and -mobile: a desktop render fills the width, a phone render shows its top 400px.
+      screen.style.scale = String(viewport === "mobile" ? height / 400 : width / 1088);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [viewport, fluid]);
+  return render;
 }
 
 export function makeInert(element: HTMLElement | null) {
