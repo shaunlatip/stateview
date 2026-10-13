@@ -197,7 +197,7 @@ export const membersManifest: Manifest<MembersState> = {
           kind: "state",
           id: "mobile",
           title: "Typical team on a phone",
-          why: "An owner checking pending invites from their phone, at 375 px.",
+          why: "An owner checking pending invites from their phone, at 393 px.",
           set: { breakpoint: "mobile" },
           origin: "design",
         },

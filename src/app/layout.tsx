@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
  * viewer renders itself (FocusView's <title>).
  */
 export const metadata: Metadata = {
-  description: "",
+  description: "Review every state of a UI change in one place: the happy path, edge cases and errors, rendered live with comments an agent can act on.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
