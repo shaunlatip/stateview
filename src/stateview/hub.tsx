@@ -10,6 +10,7 @@ import { formatReview } from "./agent-export";
 import { CornerChips, FooterChips, chipText } from "./card-chips";
 import { Logo } from "./logo";
 import { frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest, type Section, type Uncovered } from "./manifest";
+import { NightSky } from "./night-sky";
 import { useReview } from "./store";
 import { Thumbnail } from "./thumbnail";
 import { Button, ThemeScope } from "./ui";
@@ -98,6 +99,7 @@ export function Hub<T extends Inputs>({ manifest, thumbnails }: HubProps<T>) {
 
   return (
     <ThemeScope className="flex min-h-dvh flex-1 bg-gui-neutral-1">
+      <NightSky />
       <nav aria-label="Sections" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-gui-l overflow-y-auto bg-gui-neutral-2 px-gui-m py-gui-l gui-divider-end md:flex">
         <Brand className="px-gui-xs" />
         <ul className="flex flex-col">
