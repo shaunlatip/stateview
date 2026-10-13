@@ -18,13 +18,13 @@ export function CornerChips({ comments, fixed = 0, viewed }: { comments: number;
   return (
     <span aria-hidden className="absolute top-gui-xs right-gui-xs flex items-center gap-gui-xxs">
       {comments > 0 ? (
-        <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", DARK_CHIP)}>
+        <span className={cn("flex h-5 shrink-0 items-center whitespace-nowrap gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", DARK_CHIP)}>
           <ChatCircleIcon />
           {comments}
         </span>
       ) : null}
       {fixed > 0 ? (
-        <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", LIGHT_CHIP)}>
+        <span className={cn("flex h-5 shrink-0 items-center whitespace-nowrap gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs font-gui-data text-gui-xs tabular-nums", LIGHT_CHIP)}>
           <CheckIcon weight="bold" />
           {fixed}
         </span>
@@ -41,12 +41,12 @@ export function CornerChips({ comments, fixed = 0, viewed }: { comments: number;
 export function FooterChips<T extends Record<string, string>>({ item }: { item: Item<T> }) {
   if (item.kind !== "sequence" && item.origin !== "code-only") return null;
   return (
-    <span aria-hidden className="absolute bottom-gui-xs left-gui-xs flex items-center gap-gui-xxs">
+    <span aria-hidden className="absolute right-gui-xs bottom-gui-xs left-gui-xs flex items-center gap-gui-xxs overflow-hidden">
       {item.kind === "sequence" ? (
-        <span className={cn("flex h-5 items-center rounded-full px-gui-xs font-gui-data text-gui-xs", DARK_CHIP)}>{item.steps.length} steps</span>
+        <span className={cn("flex h-5 shrink-0 items-center whitespace-nowrap rounded-full px-gui-xs font-gui-data text-gui-xs", DARK_CHIP)}>{item.steps.length} steps</span>
       ) : null}
       {item.origin === "code-only" ? (
-        <span className={cn("flex h-5 items-center gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs text-gui-xs", LIGHT_CHIP)}>
+        <span className={cn("flex h-5 shrink-0 items-center whitespace-nowrap gap-gui-xxs rounded-full ps-gui-xxs pe-gui-xs text-gui-xs", LIGHT_CHIP)}>
           <CodeIcon />
           Code only
         </span>
