@@ -230,7 +230,10 @@ function ReviewSwitcher({
   if (reviews.length < 2) return null;
   const open = (id: string) => {
     const review = reviews.find((r) => r.id === id);
-    if (review && review.id !== current) router.push(review.hub);
+    if (!review || review.id === current) return;
+    // A review another app serves (its own dev server, say) is a full page load, not a route in this one.
+    if (/^https?:\/\//.test(review.hub)) window.location.assign(review.hub);
+    else router.push(review.hub);
   };
   return (
     <div className={cn("flex flex-col gap-gui-xxs", className)}>
