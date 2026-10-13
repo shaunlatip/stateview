@@ -192,11 +192,10 @@ Review pages are server-rendered like any other route. A moment that renders dif
 
 ## 7. Environment
 
-When the environment input's value is `mobile`, the viewer narrows the frame to 375 px. The browser window stays desktop-sized, so everything that measures the window still reports desktop: CSS media queries (Tailwind's `sm:`, `md:` and so on), `100vw`, `window.matchMedia`, `window.innerWidth`/`innerHeight`, and hooks and helpers built on them. Search the changed files for all of these before writing the mobile state.
+The viewer renders the app in an iframe below its bar (and beside the filmstrip on wide screens), loading the review route with `&embed=1`. The frame is a window of its own, so everything that measures the window measures the frame: CSS media queries (Tailwind's `sm:`, `md:` and so on), `100vw`, `dvh` and `vh`, `window.matchMedia`, `window.innerWidth`/`innerHeight`, scroll position, and hooks built on them. When the environment input's value is `mobile`, the viewer narrows the frame to 375 px, and the screen reflows the way it does on a phone with no change at the boundary.
 
-- **Prefer container queries.** Layout written with `@container` (Tailwind `@container` on the screen's root, then `@md:`, `@min-[40rem]:`) reflows inside the narrow frame and in a narrow window. The sample screen does this. When the changed files use viewport breakpoints, convert those classes: put `@container` on the screen's root element and replace `sm:` with `@min-[40rem]:` (Tailwind's `sm` is 40rem), and `100vw` with `100cqw`. In the real app the root usually spans the window, so production behavior is unchanged. List these edits in your report; they're usually the largest part of the boundary diff.
-- **Check that the root is as wide as the window before converting.** A space-taking scrollbar (`scrollbar-gutter: stable`, or classic scrollbars), padding on an ancestor, or a root font size that changes with the window all make the container narrower than the viewport, so a converted breakpoint flips at a different width in production. Measure the root against `window.innerWidth` at each breakpoint first. If they differ, keep the viewport classes and gate them instead: `lg:@min-[600px]:…` keeps desktop exactly as it was, and an `@max-[600px]:` twin carries each phone value into the frame. That's more classes, so do it only for the changed elements; list the rest under `uncovered`.
-- **Otherwise add an override at the boundary.** Give the viewport hook an override, or the screen an optional `isMobile` prop that defaults to the hook. This covers JavaScript checks only; CSS media queries still need the conversion above.
+- **The render function doesn't need to read the environment input.** The viewer reads it to size the frame. Leave the screen's breakpoint classes and viewport hooks as they are; don't convert them to container queries for the review.
+- **Thumbnails are the exception.** Hub cards and the filmstrip render each state inline, scaled into the card, not in a frame. A mobile state's thumbnail of a screen that uses media queries shows the desktop layout squeezed into a phone-sized card. That's expected, and the state itself opens correctly, so don't edit production CSS to fix a thumbnail. If the screen branches in JavaScript on a viewport hook, an optional `isMobile` prop that defaults to the hook makes its thumbnail right too, and costs little:
 
 ```tsx
 export function MapScreen({ isMobile: isMobileOverride, ...props }: MapScreenProps & { isMobile?: boolean }) {
@@ -208,15 +207,13 @@ export function MapScreen({ isMobile: isMobileOverride, ...props }: MapScreenPro
 
 The render function passes `isMobile={inputs.breakpoint === "mobile"}`.
 
-**Theme is an environment input too.** Theme libraries like `next-themes` set one class or attribute on `<html>` and ignore nested providers, so a dark state can't set the theme for its frame through them. Set the app's own theme selector (`class="dark"` or `data-theme="dark"`, whichever its CSS keys off) on a wrapper in the render function, and pass the theme as a prop to anything that reads it in JavaScript.
+**Theme is an environment input too.** Theme libraries like `next-themes` set one class or attribute on `<html>` from the user's saved choice and ignore nested providers, so a dark state can't set the theme for its frame through them. Set the app's own theme selector (`class="dark"` or `data-theme="dark"`, whichever its CSS keys off) on a wrapper in the render function, and pass the theme as a prop to anything that reads it in JavaScript.
 
-Measurements that read the window directly (a map fitting its zoom to `window.innerWidth`, a popover placed against the window) stay desktop-sized in the frame. Pass the size in where it's cheap; otherwise list the affected combination under `uncovered`.
+### The frame is a page of its own
 
-### Fixed-position elements and full-height screens
-
-- **`position: fixed` escapes the frame.** A sheet, scrim or toast that's fixed to the viewport spans the whole window, not the 375 px frame. Wrap the mobile render in an element with `contain: layout paint` (Tailwind `[contain:layout_paint]`), which makes it the containing block for fixed descendants and clips them to the frame (a closed side sheet parked off-screen otherwise paints beside it).
-- **The screen scrolls inside the frame, not the window.** The frame sits below the viewer bar and scrolls on its own, so code that reads or sets `window.scrollY` sees 0. A state that starts scrolled to a section scrolls there itself with `scrollIntoView` (an effect in the render function).
-- **The frame is shorter than the window by the viewer bar.** A full-height screen (`h-dvh`, `h-screen`, a map or editor) overflows it by the bar's height. In the render function, let the screen's root fill the frame with `h-full` (an optional `className` prop on the screen, or `[&>main]:h-full` on the wrapper).
+- **Fixed-position elements, full-height screens and window scrolling behave as they do in the app.** A fixed sheet or toast stays in the frame, `h-dvh` fills it, and `window.scrollTo` scrolls it. A state that starts scrolled to a section scrolls there itself, in an effect in the render function.
+- **The frame loads the app's shell too.** The review route renders inside the app's root layout (or `_app.tsx`), in the viewer and again in the frame. Skip the shell's global nav, analytics and dev toolbars under `/stateview`, or they show inside the frame above the screen.
+- **Focus and keys inside the frame are the app's.** Stateview's shortcuts don't fire while focus is in the app, so a screen's own Escape or arrow-key handling works as it does in production.
 
 ## 8. Determinism
 
@@ -240,12 +237,12 @@ The hub then shows each state's changed inputs in place of the thumbnail. Focus 
 
 ## 10. Before moving on
 
-- [ ] Every input in the manifest is read by `render`, and every key the parser reads is an input in the manifest.
+- [ ] Every input in the manifest except the environment input is read by `render`, and every key the parser reads is an input in the manifest.
 - [ ] Every value of every input produces a visibly different screen. Drop values that don't.
 - [ ] Every new prop, context and override is optional and defaults to today's behavior; production code paths are unchanged.
 - [ ] No review state calls a real API, writes data, patches `fetch` or reads secrets.
 - [ ] Loading never resolves, errors reject, and actions answer from canned responses after a short delay.
-- [ ] The mobile state reflows inside the 375 px frame: no media-query classes or window measurements left on the changed screen's path, and fixed elements stay in the frame.
-- [ ] A full-height screen fits the frame below the viewer bar, with its bottom edge showing.
+- [ ] The mobile state shows the phone layout in the 375 px frame (open the state; its thumbnail may still show desktop).
+- [ ] The app's shell (nav, analytics, dev toolbars) doesn't render under `/stateview`.
 - [ ] Opening the same state twice renders the same screen.
 - [ ] The app's typecheck passes (its `typecheck` script, or `tsc --noEmit` from its own `node_modules` if it has none), and its lint, if it has one.

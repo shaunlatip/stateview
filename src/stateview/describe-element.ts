@@ -12,7 +12,7 @@ const FORM_TAGS = new Set(["input", "select", "textarea"]);
 const GENERATED_ID = /^_r_|[:«»]/i;
 const FRAMEWORK_NAME = /^(Inner|Outer|Render|Hot|Error|Redirect|HTTPAccess|Loading|Scroll|Layout|Server|Client|Router|App|Root|Suspense|Template)|^Head$|(Provider|Context)$/;
 const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]{2,}$/;
-const STATEVIEW_WRAPPERS = new Set(["FocusView", "ThemeScope", "Hub", "MembersReview"]);
+const STATEVIEW_WRAPPERS = new Set(["FocusView", "EmbeddedScreen", "ThemeScope", "Hub", "MembersReview"]);
 const MAX_COMPONENTS = 4;
 
 type Fiber = { type: unknown; return: Fiber | null };

@@ -324,7 +324,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
               side="bottom"
               align="start"
               sideOffset={draft ? 22 : 8}
-              collisionPadding={BAR_CLEARANCE}
+              collisionPadding={EDGE_CLEARANCE}
               className="z-50"
             >
               <Popover.Popup
@@ -392,8 +392,8 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
   );
 }
 
-// Keeps the composer clear of the viewport edges and of the viewer bar along the top (45px tall).
-const BAR_CLEARANCE = { top: 56, right: 11, left: 11, bottom: 11 };
+// Keeps the composer clear of the frame's edges. The engine runs inside the app's frame, below the viewer bar.
+const EDGE_CLEARANCE = 11;
 
 const DOCK_INSET = 22;
 const DOCK_GAP = 36;

@@ -34,6 +34,9 @@ export function useFrameQuery() {
   return { sv: params.get("sv"), step: Number.isInteger(step) && step > 0 ? step : null, params };
 }
 
+/** The review's place in the URL, once it's known. */
+export type FrameQuery = NonNullable<ReturnType<typeof useFrameQuery>>;
+
 /** Moves to another frame's URL as a new history entry, so Back steps back. */
 export function pushFrame(href: string) {
   // No state of our own: each router fills in its own on pushState or on the next popstate.

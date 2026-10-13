@@ -2,22 +2,35 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { stateContext } from "./agent-export";
 import { formatAnnotations, type AnnotationLayer } from "./annotations";
 import { cn } from "./cn";
+import { EmbeddedScreen } from "./embedded-screen";
 import { Filmstrip } from "./filmstrip";
 import { FocusBar } from "./focus-bar";
+import { EMBED_PARAM, post, receive, type FrameEvent, type FrameState } from "./frame-protocol";
 import { findFrameIndex, frameHref, listFrames, viewportOf, type Inputs, type Item, type Manifest } from "./manifest";
+import { withOverrides } from "./overrides";
 import { StatePanel } from "./state-panel";
 import { useReview } from "./store";
 import { setStripWidth, useStripWidth } from "./strip-width";
 import { StateviewToaster, notify } from "./toast";
 import { ThemeScope, buttonVariants } from "./ui";
 import { useEffectEvent } from "./use-effect-event";
-import { pushFrame, replaceParams, useFrameQuery } from "./use-frame-query";
+import { pushFrame, replaceParams, useFrameQuery, type FrameQuery } from "./use-frame-query";
 
-// Keys typed here belong to the page or to the comment engine, not to Stateview's shortcuts.
+// The app's frame, and where the skip link sends focus.
+const APP_FRAME_ID = "app";
+
+// How long after its load event the frame has to say it's ready before it's reloaded.
+const FRAME_READY_TIMEOUT = 3000;
+
+/*
+ * Keys typed into Stateview's own controls that belong to those controls.
+ * Keys typed in the app never reach these shortcuts: the app is in its own
+ * document, so its keys, including Escape and the arrows, stay with it.
+ */
 const OWNS_KEYS = [
   "input",
   "textarea",
@@ -49,20 +62,35 @@ function subscribeWide(onChange: () => void) {
   query.addEventListener("change", onChange);
   return () => query.removeEventListener("change", onChange);
 }
+/**
+ * A review route. In the browser tab it's the viewer; loaded with `?embed`
+ * inside the viewer's iframe, it's the screen alone.
+ */
+export function FocusView<T extends Inputs>(props: FocusViewProps<T>) {
+  const query = useFrameQuery();
+  // The URL is only known once the page is in the browser.
+  if (!query) return null;
+  return query.params.has(EMBED_PARAM) ? <EmbeddedScreen {...props} query={query} /> : <Viewer {...props} query={query} />;
+}
 
 /** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
-export function FocusView<T extends Inputs>({ manifest, render, annotationLayer: Layer, hubHref = "/", thumbnails = "live" }: FocusViewProps<T>) {
+function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails = "live", query }: FocusViewProps<T> & { query: FrameQuery }) {
   const router = useRouter();
-  const query = useFrameQuery();
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);
   const [pinsVisible, setPinsVisible] = useState(true);
-  const [screen, setScreen] = useState<HTMLDivElement | null>(null);
+  const appFrame = useRef<HTMLIFrameElement>(null);
+  // The frame loads once, at the state in the URL; after that, states arrive by message, without a reload.
+  const [frameSrc] = useState(() => {
+    const params = new URLSearchParams(query.params);
+    params.set(EMBED_PARAM, "1");
+    return `${manifest.route}?${params}`;
+  });
   const frames = listFrames(manifest);
-  const index = query ? findFrameIndex(frames, query.sv, query.step) : -1;
+  const index = findFrameIndex(frames, query.sv, query.step);
   const frame = index === -1 ? null : frames[index];
   // Inputs the reviewer changed in the state panel, one URL param each, so a copied link opens the same combination.
-  const inputs = frame && query ? withOverrides(manifest, frame.inputs, query.params) : null;
+  const inputs = frame ? withOverrides(manifest, frame.inputs, query.params) : null;
   const annotations = frame ? review.annotations.filter((a) => a.stateId === frame.key) : [];
   const openCount = annotations.filter((a) => a.status === "open").length;
 
@@ -141,7 +169,9 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
         else closePanel();
         break;
       case "Escape":
-        router.push(hubHref, { scroll: false });
+        // Escape first ends comment mode; only a second Escape leaves the state.
+        if (commenting) setCommenting(false);
+        else router.push(hubHref, { scroll: false });
         break;
     }
   });
@@ -153,7 +183,7 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
   }, []);
 
   // Set in an effect rather than with <title>, which React 18 doesn't hoist into
-  // <head>. The screen under review may set its own title (next/head applies it
+  // <head>. The app's shell may set its own title here too (next/head applies it
   // after this effect runs), so put the state's title back whenever <head> changes.
   const title = frame ? `${frame.item.title} · Stateview` : null;
   useEffect(() => {
@@ -167,8 +197,65 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
     return () => observer.disconnect();
   }, [title]);
 
-  // The URL is only known once the page is in the browser.
-  if (!query) return null;
+  // --- The app's frame: told the state and review tools by message ------------------------
+
+  const frameMessage: FrameState | null = frame && inputs ? { type: "state", stateId: frame.key, inputs, commenting, pinsVisible } : null;
+  // Serialized, so the frame is told only when something in it changes (postMessage copies it anyway).
+  const frameState = frameMessage ? JSON.stringify(frameMessage) : null;
+
+  useEffect(() => {
+    if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
+  }, [frameState]);
+
+  const sendState = useEffectEvent(() => {
+    if (frameState) post(appFrame.current?.contentWindow, JSON.parse(frameState) as FrameState);
+  });
+
+  // The frame has loaded and both sides are listening (also what tests wait for).
+  const [frameReady, setFrameReady] = useState(false);
+
+  const onFrameMessage = useEffectEvent((event: MessageEvent) => {
+    const message = receive<FrameEvent>(event, appFrame.current?.contentWindow);
+    if (message?.type === "ready") {
+      setFrameReady(true);
+      sendState();
+    } else if (message?.type === "commenting") setCommenting(message.value);
+  });
+
+  /*
+   * Under `next dev`, Turbopack's client sometimes fails to start in a frame
+   * inserted while the viewer's own scripts are still running ("Expected
+   * document.currentScript to be a <script> element"), which leaves the app's
+   * HTML on screen but never hydrated. A frame that has loaded without saying
+   * it's ready is reloaded, at most twice. Production builds don't hit this.
+   */
+  const frameReloads = useRef(0);
+  const readyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(readyTimer.current), []);
+
+  const reloadIfStuck = useEffectEvent(() => {
+    if (frameReady || frameReloads.current >= 2) return;
+    frameReloads.current += 1;
+    appFrame.current?.contentWindow?.location.reload();
+  });
+
+  const onFrameLoad = () => {
+    window.clearTimeout(readyTimer.current);
+    readyTimer.current = window.setTimeout(() => reloadIfStuck(), FRAME_READY_TIMEOUT);
+  };
+
+  useEffect(() => {
+    const listener = (event: MessageEvent) => onFrameMessage(event);
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, []);
+
+  // The skip link puts focus in the app's document, so the next Tab is the app's first stop, as on a fresh load.
+  const skipToApp = (event: MouseEvent) => {
+    event.preventDefault();
+    appFrame.current?.contentWindow?.focus();
+  };
+
   if (!frame || !inputs) return <UnknownState id={query.sv} hubHref={hubHref} />;
 
   const copyComments = () => {
@@ -198,6 +285,15 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
 
   return (
     <>
+      <ThemeScope className="dark">
+        <a
+          href={`#${APP_FRAME_ID}`}
+          onClick={skipToApp}
+          className={cn(buttonVariants({ size: "toolbar" }), "fixed top-gui-xxs left-gui-xxs z-50 not-focus-visible:sr-only")}
+        >
+          Skip to app
+        </a>
+      </ThemeScope>
       <FocusBar
         frame={frame}
         position={index + 1}
@@ -238,9 +334,10 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
       />
       {/*
        * The app's window: below the bar and, on wide screens, beside the open
-       * filmstrip. The transform makes this box the app's viewport for fixed
-       * elements (a fixed sidebar stays beside the filmstrip, not under it),
-       * and the app scrolls inside it rather than the page.
+       * filmstrip. An iframe, so the app gets a window of its own: media
+       * queries, viewport units and `innerWidth` measure the frame, fixed
+       * elements stay inside it, and its focus and keys are its own. The
+       * comment engine runs inside it (EmbeddedScreen).
        */}
       <ThemeScope
         style={stripWidthStyle}
@@ -250,36 +347,21 @@ export function FocusView<T extends Inputs>({ manifest, render, annotationLayer:
           stripResizing && "transition-none",
         )}
       >
-        <div className={cn("w-full transform-gpu overflow-hidden", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}>
-          <div data-pin-layer="" className="relative grid h-full overflow-y-auto overscroll-contain">
-            {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
-            <div
-              key={`${frame.key}:${manifest.inputs.map((input) => inputs[input.id]).join("|")}`}
-              ref={setScreen}
-              className={cn("host-frame grid", commenting && "cursor-crosshair **:cursor-crosshair")}
-            >
-              {render(inputs)}
-            </div>
-          </div>
-        </div>
+        {/* oxlint-disable-next-line react/iframe-missing-sandbox -- the frame is this app's own route and needs scripts, storage and same-origin access, which a sandbox can't restrict. */}
+        <iframe
+          ref={appFrame}
+          id={APP_FRAME_ID}
+          data-stateview-frame=""
+          data-ready={frameReady ? "" : undefined}
+          title={manifest.screen}
+          src={frameSrc}
+          onLoad={onFrameLoad}
+          className={cn("h-full w-full", viewportOf(manifest, inputs) === "mobile" && "max-w-93.75 ring-1 ring-gui-border")}
+        />
       </ThemeScope>
       {panel !== "closed" ? (
         <StatePanel id={panelId} onElement={setPanelElement} manifest={manifest} inputs={inputs} onChange={setInput} onClose={closePanel} focusOnOpen={panel === "keyboard"} />
       ) : null}
-      {/* Keyed by state so a half-written comment never carries over to another state. */}
-      <Layer
-        key={frame.key}
-        stateId={frame.key}
-        inputs={inputs}
-        annotations={annotations}
-        root={screen}
-        active={commenting}
-        onActiveChange={setCommenting}
-        pinsVisible={pinsVisible}
-        onAdd={review.addAnnotation}
-        onUpdate={review.updateAnnotation}
-        onDelete={review.deleteAnnotation}
-      />
       <StateviewToaster />
     </>
   );
@@ -291,15 +373,6 @@ function copyLink() {
     .writeText(window.location.href)
     .then(() => notify.success("Link copied", { description: "It opens this state with the inputs set as they are now." }))
     .catch(() => notify.error("Couldn’t copy. Allow clipboard access for this site in your browser, then copy again."));
-}
-
-/** A state's inputs with the reviewer's changes from the URL on top, keeping only values the input allows. */
-function withOverrides<T extends Inputs>(manifest: Manifest<T>, inputs: T, params: URLSearchParams): T {
-  const set = manifest.inputs.flatMap((input) => {
-    const value = params.get(input.id);
-    return value !== null && (input.values as readonly string[]).includes(value) ? [[input.id, value]] : [];
-  });
-  return { ...inputs, ...Object.fromEntries(set) };
 }
 
 function UnknownState({ id, hubHref }: { id: string | null; hubHref: string }) {

@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "check:states": "node skills/stateview/scripts/check.mjs --strict src/sample-app/review.json",
     "test:skill": "node --test \"skills/stateview/scripts/*.test.mjs\"",
-    "test:a11y": "playwright test e2e/a11y.spec.ts"
+    "test:a11y": "playwright test e2e/a11y.spec.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

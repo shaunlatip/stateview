@@ -99,6 +99,13 @@ async function visit({ key, href }) {
     if (!response?.ok()) problems.push(`HTTP ${response?.status() ?? "no response"}`);
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
     if (await page.getByText(/There’s no state called/).count()) problems.push("the review has no state with this id");
+    // A state renders in the viewer's iframe, which marks itself ready once it has the state.
+    else if (key !== "hub") {
+      await page
+        .locator("iframe[data-stateview-frame][data-ready]")
+        .waitFor({ state: "attached", timeout: 15000 })
+        .catch(() => problems.push("the app's frame never reported ready"));
+    }
     await page.screenshot({ path: join(shots, `${key.replace("/", "--")}.png`) });
   } catch (error) {
     problems.push(`couldn't load: ${error.message.split("\n")[0]}`);
