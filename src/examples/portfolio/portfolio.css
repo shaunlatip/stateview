@@ -1,0 +1,2145 @@
+/*
+ * Shaun's portfolio home (latip.me, PR #73), rebuilt as a Stateview screen.
+ * Every token and rule is scoped to `.portfolio`; values are copied from the
+ * portfolio's styles/globals.css and the home's TSX on main.
+ *
+ * Window units. The original sizes the hero off `vw`/`svh`. Here the screen's
+ * window is a size container (`pf-window`, named `pf`), and `.pf-page`
+ * resolves 1cqw / 1cqh into two registered lengths, --pf-vw and --pf-vh,
+ * that every descendant inherits. They measure the same thing in the
+ * viewer's iframe, in a 1088 x 800 hub thumbnail and in the 560px "short
+ * window" state, and nested containers (the rail) can't change them.
+ * Breakpoints are container queries on `pf` at the original's 768 (md) and
+ * 1024 (lg). On windows up to 640px the original drops the root font-size to
+ * 13.6px, which scales every rem spacing by 0.85; --pf-rem carries that.
+ */
+
+@property --pf-vw {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --pf-vh {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+.portfolio {
+  --pf-shade-1: oklch(0.145 0 0);
+  --pf-shade-2: oklch(0.205 0 0);
+  --pf-shade-3: oklch(0.269 0 0);
+  --pf-shade-4: oklch(0.371 0 0);
+  --pf-shade-5: oklch(0.439 0 0);
+  --pf-shade-6: oklch(0.556 0 0);
+  --pf-shade-7: oklch(0.708 0 0);
+  --pf-shade-8: oklch(0.87 0 0);
+  --pf-shade-9: oklch(0.922 0 0);
+  --pf-shade-10: oklch(0.97 0 0);
+  --pf-shade-11: oklch(0.985 0 0);
+
+  --pf-canvas: #ffffff;
+  --pf-elevated: var(--pf-shade-10);
+  --pf-inverted: var(--pf-shade-1);
+  --pf-ink: var(--pf-shade-1);
+  --pf-ink-2: var(--pf-shade-6);
+  --pf-inverse: var(--pf-shade-11);
+  --pf-border: var(--pf-shade-9);
+  --pf-border-strong: var(--pf-shade-8);
+  /* Carousel arrows' "near" fill (main after #74: shade-10 light / shade-2 dark). */
+  --pf-arrow-near: var(--pf-shade-10);
+  /* Cover and peek heroes sit a shade lighter than the sheet in dark mode. */
+  --pf-hero-raised: var(--pf-canvas);
+  /* Collapsed nav button: solid ink in light, shade-9 in dark. */
+  --pf-menu-fill: var(--pf-ink);
+  --pf-print-ring: rgb(0 0 0 / 0.1);
+  --pf-glass-alpha: 65%;
+  --pf-nav-tint-alpha: 55%;
+  --pf-backdrop: var(--pf-shade-9);
+
+  --pf-nameplate-bg: linear-gradient(180deg, #161616, #0a0a0a 55%);
+  --pf-nameplate-text: #f5f5f5;
+  --pf-nameplate-border: rgb(255 255 255 / 0.1);
+  --pf-nameplate-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.24), 0 12px 28px -10px rgb(0 0 0 / 0.32),
+    0 32px 64px -18px rgb(0 0 0 / 0.34);
+  --pf-glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 8px 32px -12px rgb(0 0 0 / 0.12);
+  --pf-sheet-shadow: 0 -1px 2px rgb(0 0 0 / 0.04), 0 -4px 10px -2px rgb(0 0 0 / 0.05), 0 -16px 40px -8px rgb(0 0 0 / 0.08);
+  --pf-media-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.04);
+  --pf-shadow-3: 0 10px 20px rgb(0 0 0 / 0.15), 0 3px 6px rgb(0 0 0 / 0.1);
+  --pf-dot: #3db0c7;
+
+  /* Background patterns per theme (lib/homeExplore.ts defaults). */
+  --pf-grid-ink: color-mix(in srgb, var(--pf-ink) 3.6%, transparent);
+  --pf-lane-line: color-mix(in srgb, var(--pf-ink) 7.5%, transparent);
+  --pf-lane-fill: color-mix(in srgb, var(--pf-ink) 1%, transparent);
+
+  --pf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --pf-ease-card: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: light;
+}
+
+.portfolio[data-pf-theme="dark"] {
+  --pf-canvas: var(--pf-shade-1);
+  --pf-elevated: var(--pf-shade-2);
+  --pf-inverted: var(--pf-shade-11);
+  --pf-ink: var(--pf-shade-11);
+  --pf-ink-2: var(--pf-shade-7);
+  --pf-inverse: var(--pf-shade-1);
+  --pf-border: var(--pf-shade-4);
+  --pf-border-strong: var(--pf-shade-5);
+  --pf-arrow-near: var(--pf-shade-2);
+  --pf-hero-raised: var(--pf-shade-2);
+  --pf-menu-fill: var(--pf-shade-9);
+  --pf-print-ring: rgb(255 255 255 / 0.1);
+  --pf-glass-alpha: 85%;
+  --pf-nav-tint-alpha: 80%;
+  --pf-backdrop: var(--pf-shade-3);
+
+  --pf-nameplate-bg: linear-gradient(180deg, #fcfcfc, #ececec 60%);
+  --pf-nameplate-text: #0a0a0a;
+  --pf-nameplate-border: rgb(0 0 0 / 0.08);
+  --pf-nameplate-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 28px -10px rgb(0 0 0 / 0.5),
+    0 32px 64px -18px rgb(0 0 0 / 0.55);
+  --pf-glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 8px 32px -12px rgb(0 0 0 / 0.6);
+  --pf-sheet-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 -1px 2px rgb(0 0 0 / 0.3), 0 -8px 24px -6px rgb(0 0 0 / 0.35);
+  --pf-grid-ink: color-mix(in srgb, var(--pf-ink) 3.2%, transparent);
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-pf-canvas: var(--pf-canvas);
+  --color-pf-elevated: var(--pf-elevated);
+  --color-pf-inverted: var(--pf-inverted);
+  --color-pf-ink: var(--pf-ink);
+  --color-pf-ink-2: var(--pf-ink-2);
+  --color-pf-inverse: var(--pf-inverse);
+  --color-pf-border: var(--pf-border);
+  --font-pf-sans: var(--pf-font-manrope), system-ui, sans-serif;
+  --font-pf-heading: var(--pf-font-host), system-ui, sans-serif;
+  --font-pf-pixel: var(--pf-font-pixel), ui-monospace, monospace;
+}
+
+/* ─── Frame, window, page ─────────────────────────────────────────────── */
+
+/* The screen's root: as tall as its frame. A short window sits on a neutral backdrop. */
+@utility pf-frame {
+  display: block;
+  height: 100%;
+  min-height: 100svh;
+
+  &[data-pf-thumb] {
+    min-height: 0;
+  }
+
+  &[data-pf-window="short"] {
+    background: var(--pf-backdrop);
+  }
+}
+
+/*
+ * The browser window the page lives in. Tall: the whole window, the page
+ * overflowing it so the document scrolls. Live, the screen is the only thing
+ * in its document (the viewer's iframe), so the window is the small viewport;
+ * in a thumbnail it's the thumbnail's fixed 800px frame. Short: 560px,
+ * scrolling on its own.
+ */
+@utility pf-window {
+  container: pf / size;
+  height: 100svh;
+
+  [data-pf-thumb] & {
+    height: 100%;
+  }
+
+  &[data-short] {
+    height: 560px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-shadow: 0 1px 0 var(--pf-border-strong);
+  }
+}
+
+@utility pf-page {
+  --pf-vw: 1cqw;
+  --pf-vh: 1cqh;
+  --pf-rem: 16px;
+  /* EDGE: px-10, max-lg:px-8, max-md:px-6. */
+  --pf-edge: calc(var(--pf-rem) * 1.5);
+  position: relative;
+  min-height: 100%;
+  background: var(--pf-canvas);
+  color: var(--pf-ink);
+  font-family: var(--pf-font-manrope), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-synthesis: none;
+
+  & p {
+    text-wrap: pretty;
+  }
+
+  & h2,
+  & h3 {
+    text-wrap: balance;
+  }
+
+  @container pf (width <= 640px) {
+    --pf-rem: 13.6px;
+  }
+
+  @container pf (width >= 768px) {
+    --pf-edge: calc(var(--pf-rem) * 2);
+  }
+
+  @container pf (width >= 1024px) {
+    --pf-edge: calc(var(--pf-rem) * 2.5);
+  }
+}
+
+@utility pf-edge {
+  padding-inline: var(--pf-edge);
+}
+
+/* Shared focus ring: ring-2 ring-text-primary ring-offset-{n} ring-offset-canvas. */
+@utility pf-focus {
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--pf-canvas),
+      0 0 0 4px var(--pf-ink);
+  }
+}
+
+@utility pf-focus-wide {
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 4px var(--pf-canvas),
+      0 0 0 6px var(--pf-ink);
+  }
+}
+
+/* ─── Desktop nav (NavCollapse) ───────────────────────────────────────── */
+
+/* Sticky and zero-height, so the bar rides the window without taking room (the hero keeps its own 80px slot). */
+@utility pf-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 0;
+  display: none;
+
+  @container pf (width >= 768px) {
+    display: block;
+  }
+}
+
+@utility pf-nav-bar {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: calc(var(--pf-rem) * 5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: var(--pf-edge);
+
+  [data-collapsed] & {
+    pointer-events: none;
+  }
+}
+
+@utility pf-nav-brand {
+  transition:
+    translate 0.4s var(--pf-ease-out),
+    opacity 0.4s var(--pf-ease-out),
+    filter 0.4s var(--pf-ease-out);
+
+  [data-collapsed] & {
+    translate: -24px 0;
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@utility pf-nav-links {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pf-rem) * 0.25);
+  transform-origin: right center;
+  transition:
+    scale 0.42s var(--pf-ease-out),
+    opacity 0.42s var(--pf-ease-out);
+
+  [data-collapsed] & {
+    scale: 0.3;
+    opacity: 0;
+  }
+}
+
+/* BrandButton: "By Shaun" → "Shaun Latip" on hover. */
+@utility pf-brand {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--pf-ink);
+  color: var(--pf-canvas);
+  padding: calc(var(--pf-rem) * 0.5) calc(var(--pf-rem) * 0.75);
+  transition: scale 150ms ease-out;
+
+  &:active {
+    scale: 0.96;
+  }
+}
+
+@utility pf-brand-word {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* A segment that collapses (glyph, "By ") or expands (" Latip") by animating its grid track to its own width. */
+@utility pf-brand-seg {
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  transition:
+    grid-template-columns 0.5s cubic-bezier(0.65, 0.05, 0, 1),
+    opacity 0.175s ease-out;
+
+  & > * {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &[data-seg="expand"] {
+    grid-template-columns: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-columns 0.5s cubic-bezier(0.65, 0.05, 0, 1),
+      opacity 0.5s cubic-bezier(0.65, 0.05, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pf-brand:hover &[data-seg="collapse"] {
+      grid-template-columns: 0fr;
+      opacity: 0;
+    }
+
+    .pf-brand:hover &[data-seg="expand"] {
+      grid-template-columns: 1fr;
+      opacity: 1;
+    }
+  }
+}
+
+@utility pf-brand-glyph {
+  display: flex;
+  padding-right: calc(var(--pf-rem) * 0.5);
+}
+
+/* SlidingChips (hoverOnly): every label at full ink; a pill under the hovered chip. */
+@utility pf-nav-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding-inline: 12px;
+  border-radius: 8px;
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--pf-ink);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: color-mix(in oklab, var(--pf-ink) 8%, transparent);
+    opacity: 0;
+    scale: 0.94;
+    transition:
+      opacity 0.15s ease-out,
+      scale 0.15s ease-out;
+  }
+
+  &:hover::before {
+    opacity: 1;
+    scale: 1;
+  }
+
+  &:active::before {
+    scale: 0.96;
+  }
+}
+
+/* ThemeToggle: the filled 16px disc in a 32px button (40px hit area). */
+@utility pf-theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: calc(var(--pf-rem) * 0.5);
+  border-radius: 9999px;
+  color: var(--pf-ink-2);
+  transition:
+    color 150ms ease-out,
+    scale 150ms ease-out;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    translate: -50% -50%;
+  }
+
+  &:hover {
+    color: var(--pf-ink);
+  }
+
+  &:active {
+    scale: 0.96;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 2px;
+  }
+
+  & > span {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: currentColor;
+    transition: scale 200ms ease-out;
+  }
+
+  &:hover > span {
+    scale: 1.1;
+  }
+}
+
+/* The collapsed cluster: one round button at the content edge, 20px down. */
+/* The cluster itself never takes the pointer: only the visible button and the open panel do. */
+@utility pf-menu {
+  position: absolute;
+  top: 20px;
+  right: var(--pf-edge);
+  pointer-events: none;
+}
+
+@utility pf-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border-radius: 9999px;
+  background: var(--pf-menu-fill);
+  color: var(--pf-canvas);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  opacity: 0;
+  scale: 0.7;
+  pointer-events: none;
+  transition:
+    opacity 0.35s var(--pf-ease-out),
+    scale 0.35s var(--pf-ease-out),
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+
+  [data-collapsed] & {
+    opacity: 1;
+    scale: 1;
+    pointer-events: auto;
+  }
+
+  [data-collapsed] &:hover {
+    scale: 1.05;
+  }
+
+  [data-collapsed] &:active {
+    scale: 0.97;
+  }
+
+  &[aria-expanded="true"] {
+    background: var(--pf-canvas);
+    color: var(--pf-ink);
+    box-shadow:
+      inset 0 0 0 1px var(--pf-border),
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+@utility pf-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 240px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--pf-canvas);
+  box-shadow:
+    inset 0 0 0 1px var(--pf-border),
+    0 25px 50px -12px rgb(0 0 0 / 0.25);
+  transform-origin: top right;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pf-menu-in 0.22s var(--pf-ease-out);
+  }
+}
+
+@utility pf-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--pf-ink);
+  text-align: left;
+  transition: background-color 200ms ease-out;
+
+  &:hover {
+    background: color-mix(in oklab, var(--pf-elevated) 60%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--pf-ink);
+  }
+}
+
+@utility pf-menu-disc {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--pf-ink);
+}
+
+/* Two-line hamburger that morphs to an X. */
+@utility pf-burger {
+  position: relative;
+  display: block;
+  width: calc(var(--pf-rem) * 1);
+  height: calc(var(--pf-rem) * 1);
+
+  & > span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1.5px;
+    margin-top: -0.75px;
+    border-radius: 9999px;
+    background: currentColor;
+    transition: transform 0.22s cubic-bezier(0.22, 0.9, 0.3, 1);
+  }
+
+  & > span:first-child {
+    transform: translateY(-3px);
+  }
+
+  & > span:last-child {
+    transform: translateY(3px);
+  }
+
+  [aria-expanded="true"] & > span:first-child {
+    transform: rotate(45deg);
+  }
+
+  [aria-expanded="true"] & > span:last-child {
+    transform: rotate(-45deg);
+  }
+}
+
+/* ─── Mobile nav (Mobile1A side sheet + MobileTopBar) ────────────────── */
+
+@utility pf-mnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 0;
+
+  @container pf (width >= 768px) {
+    display: none;
+  }
+}
+
+/* The 80px progressive-blur band behind the bar, tinted with the canvas. */
+@utility pf-mnav-band {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 80px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--pf-canvas) var(--pf-nav-tint-alpha), transparent),
+    transparent
+  );
+  backdrop-filter: blur(6px);
+  mask-image: linear-gradient(to bottom, black 55%, transparent);
+}
+
+@utility pf-mnav-row {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(var(--pf-rem) * 1);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--pf-rem) * 0.75);
+  height: calc(var(--pf-rem) * 2.75);
+  padding-inline: calc(var(--pf-rem) * 0.75);
+}
+
+@utility pf-glass-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--pf-rem) * 2.75);
+  height: calc(var(--pf-rem) * 2.75);
+  border-radius: 9999px;
+  color: var(--pf-ink);
+  background: color-mix(in oklab, var(--pf-canvas) var(--pf-glass-alpha), transparent);
+  backdrop-filter: blur(40px) saturate(1.5);
+  box-shadow:
+    inset 0 0 0 1px var(--pf-border),
+    var(--pf-glass-shadow);
+  transition: scale 200ms ease-out;
+
+  &:hover {
+    scale: 1.05;
+  }
+
+  &:active {
+    scale: 0.95;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 2px;
+  }
+}
+
+@utility pf-wordmark {
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--pf-ink);
+  transition: opacity 200ms;
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 2px;
+  }
+
+  [data-open] & {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@utility pf-mtoggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--pf-rem) * 2.75);
+  height: calc(var(--pf-rem) * 2.75);
+  border-radius: 9999px;
+  color: var(--pf-ink-2);
+  transition: color 150ms;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: calc(var(--pf-rem) * 1.5);
+    height: calc(var(--pf-rem) * 1.5);
+    border-radius: 9999px;
+    background: var(--pf-elevated);
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+  }
+
+  &:hover {
+    color: var(--pf-ink);
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 2px;
+  }
+
+  & > span {
+    position: relative;
+    display: block;
+    width: calc(var(--pf-rem) * 1);
+    height: calc(var(--pf-rem) * 1);
+    border-radius: 9999px;
+    background: currentColor;
+  }
+}
+
+@utility pf-sheet-scrim {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 30;
+  height: calc(var(--pf-vh) * 100);
+  background: color-mix(in oklab, var(--pf-shade-1) 35%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+@utility pf-sheet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: 85%;
+  max-width: 360px;
+  height: calc(var(--pf-vh) * 100);
+  padding: 80px 12px 0;
+  gap: 4px;
+  background: var(--pf-canvas);
+  box-shadow: inset -1px 0 0 var(--pf-border);
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pf-sheet-in 0.3s var(--pf-ease-out);
+  }
+}
+
+@utility pf-sheet-row {
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--pf-ink);
+
+  &:hover {
+    background: var(--pf-elevated);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--pf-ink);
+  }
+}
+
+/* ─── Hero ────────────────────────────────────────────────────────────── */
+
+/*
+ * The hero's scale. Cover and peek use the original's per-axis clamps; the
+ * one-pane hero (data-mode="flat") derives every lockup dimension from one
+ * length, --pf-copy = clamp(17px, min(8px + 0.85vw, 2.6svh), 24px), at lg+.
+ */
+@utility pf-hero {
+  --pf-copy: clamp(20px, calc(var(--pf-vw) * 1.67), 24px);
+  --pf-clock: clamp(17px, calc(var(--pf-vw) * 1.39), 20px);
+  --pf-gap-x: clamp(64px, calc(var(--pf-vw) * 9), 200px);
+  --pf-measure: clamp(480px, calc(var(--pf-vw) * 38.9), 660px);
+  --pf-stack: clamp(26px, calc(var(--pf-vw) * 2.22), 40px);
+  --pf-para: clamp(14px, calc(var(--pf-vw) * 1.11), 20px);
+  --pf-fig: min(clamp(350px, calc(var(--pf-vw) * 29.9), 532px), calc(var(--pf-vh) * 62));
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--pf-canvas);
+
+  &:not([data-mode="flat"]) {
+    background: var(--pf-hero-raised);
+  }
+
+  &[data-mode="cover"] {
+    min-height: calc(var(--pf-vh) * 100);
+  }
+
+  @container pf (width < 768px) {
+    padding-top: calc(var(--pf-rem) * 5 + 16px);
+
+    &[data-mode="cover"] {
+      min-height: calc(var(--pf-vh) * 100 + var(--pf-rem) * 5);
+    }
+  }
+
+  @container pf (width >= 1024px) {
+    &[data-mode="peek"] {
+      min-height: calc(var(--pf-vh) * 100 - 176px);
+    }
+
+    &[data-mode="flat"] {
+      --pf-copy: clamp(17px, min(calc(8px + var(--pf-vw) * 0.85), calc(var(--pf-vh) * 2.6)), 24px);
+      --pf-fig-bonus: clamp(
+        0px,
+        min(calc((var(--pf-vw) * 100 - 1440px) * 0.2), calc((var(--pf-vh) * 100 - 800px) * 0.5)),
+        108px
+      );
+      --pf-fig: calc(var(--pf-copy) * 17.5 + var(--pf-fig-bonus));
+      --pf-gap-x: clamp(calc(var(--pf-copy) * 3.5), calc(var(--pf-vw) * 6), calc(var(--pf-copy) * 6));
+      --pf-measure: calc(var(--pf-copy) * 24);
+      --pf-clock: calc(var(--pf-copy) * 0.833);
+      --pf-stack: calc(var(--pf-copy) * 1.33);
+      --pf-para: calc(var(--pf-copy) * 0.75);
+      min-height: calc(var(--pf-vh) * 100 - 136px);
+    }
+
+    /* Peek hero while the intro fits: the figure keeps ~40px clear of the nav and the sheet. */
+    [data-peek-active] &[data-mode="peek"] {
+      --pf-fig: min(clamp(350px, calc(var(--pf-vw) * 29.9), 532px), calc(var(--pf-vh) * 100 - 336px));
+    }
+
+    /* Cover and peek pin behind the page sheet on lg+, unless motion is reduced. */
+    @media (prefers-reduced-motion: no-preference) {
+      &[data-mode="cover"],
+      &[data-mode="peek"] {
+        position: sticky;
+        top: 0;
+        height: calc(var(--pf-vh) * 100);
+      }
+
+      [data-cover-hidden] &[data-mode="cover"],
+      [data-cover-hidden] &[data-mode="peek"] {
+        visibility: hidden;
+      }
+    }
+  }
+}
+
+/* The in-flow 80px nav slot: the fixed bar sits over it. */
+@utility pf-hero-slot {
+  height: calc(var(--pf-rem) * 5);
+  flex-shrink: 0;
+
+  @container pf (width < 768px) {
+    display: none;
+  }
+}
+
+/* The lockup band: centers figure + copy as one unit. */
+@utility pf-lockup {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  padding-bottom: calc(var(--pf-rem) * 2.5 + var(--pf-vh) * 4);
+
+  @container pf (width >= 768px) {
+    padding-bottom: calc(var(--pf-rem) * 5 + var(--pf-vh) * 4);
+  }
+
+  &[data-mode="flat"] {
+    padding-bottom: 0;
+  }
+
+  @container pf (width >= 1024px) {
+    &[data-mode="peek"] {
+      padding-bottom: 0;
+    }
+
+    [data-peek-active] &[data-mode="peek"] {
+      padding-bottom: 176px;
+    }
+
+    &[data-mode="flat"] {
+      padding-block: 40px;
+    }
+
+    /* Cover scroll treatment: the lockup shifts up 44px and fades as the sheet arrives. */
+    @media (prefers-reduced-motion: no-preference) {
+      &[data-mode="cover"],
+      &[data-mode="peek"] {
+        opacity: calc(1 - var(--pf-cover-p, 0));
+        translate: 0 calc(var(--pf-cover-p, 0) * -44px);
+      }
+    }
+  }
+}
+
+@utility pf-lockup-row {
+  display: flex;
+  width: 100%;
+  padding-inline: var(--pf-edge);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  row-gap: calc(var(--pf-rem) * 2.25);
+  padding-block: calc(var(--pf-rem) * 3.5);
+
+  @container pf (width >= 1024px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    column-gap: var(--pf-gap-x);
+    padding-block: 0;
+  }
+}
+
+@utility pf-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: black;
+  opacity: 0;
+
+  @container pf (width >= 1024px) {
+    @media (prefers-reduced-motion: no-preference) {
+      opacity: calc(var(--pf-cover-p, 0) * 0.06);
+    }
+  }
+}
+
+/* The figure's box: the pile + nameplate are transform-scaled into it (lg+ only). */
+@utility pf-figure-box {
+  position: relative;
+  display: none;
+  flex-shrink: 0;
+  width: var(--pf-fig);
+  /* The scaled figure's measured height, 430px until it's measured. */
+  height: var(--pf-fig-h, 430px);
+
+  @container pf (width >= 1024px) {
+    display: block;
+  }
+}
+
+@utility pf-figure {
+  position: absolute;
+  left: var(--pf-fig-x, 0px);
+  top: var(--pf-fig-y, 0px);
+  width: fit-content;
+  transform: scale(var(--pf-fig-s, 1));
+  transform-origin: top left;
+  opacity: 0;
+  filter: blur(6px);
+
+  &[data-ready] {
+    opacity: 1;
+    filter: none;
+    transition:
+      opacity 0.5s var(--pf-ease-out),
+      filter 0.5s var(--pf-ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    filter: none;
+  }
+}
+
+/* PrintStack: five prints in a loosely squared pile (SLOTS). */
+@utility pf-prints {
+  position: relative;
+  display: block;
+  width: 408px;
+  height: 481px;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 8px;
+  }
+}
+
+@utility pf-print {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.6s cubic-bezier(0.34, 1.25, 0.64, 1);
+
+  &[data-depth="0"] {
+    z-index: 5;
+    transform: none;
+  }
+
+  &[data-depth="1"] {
+    z-index: 4;
+    transform: translate(24px, 7px) rotate(3.8deg) scale(0.99);
+  }
+
+  &[data-depth="2"] {
+    z-index: 3;
+    transform: translate(-22px, 12px) rotate(-3.1deg) scale(0.975);
+  }
+
+  &[data-depth="3"] {
+    z-index: 2;
+    transform: translate(15px, 16px) rotate(2deg) scale(0.965);
+  }
+
+  &[data-depth="4"] {
+    z-index: 1;
+    transform: translate(-9px, 19px) rotate(-1.4deg) scale(0.955);
+  }
+
+  &[data-dealing] {
+    z-index: 6;
+    transform: translateX(190px) rotate(3deg);
+    transition-duration: 0.25s;
+    transition-timing-function: var(--pf-ease-out);
+  }
+
+  & > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow:
+      0 0 0 1px var(--pf-print-ring),
+      var(--pf-shadow-3);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out;
+
+    &[data-dealing] {
+      transform: none;
+    }
+  }
+}
+
+/* NameplateBadge: the identity plate on the pile (-mt-57 ml-85 in the figure's natural layout). */
+@utility pf-nameplate-slot {
+  position: relative;
+  z-index: 20;
+  margin-top: -57px;
+  margin-left: 85px;
+}
+
+@utility pf-nameplate {
+  display: flex;
+  width: max-content;
+  max-width: 540px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px;
+  border-radius: 24px;
+  border: 1px solid var(--pf-nameplate-border);
+  color: var(--pf-nameplate-text);
+  background-image: var(--pf-nameplate-bg);
+  box-shadow: var(--pf-nameplate-shadow);
+}
+
+@utility pf-nameplate-name {
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 80px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+}
+
+@utility pf-nameplate-role {
+  font-size: 28px;
+  line-height: 1.32;
+  opacity: 0.9;
+}
+
+/* Below lg: the bare nameplate under a round portrait. */
+@utility pf-portrait-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--pf-rem) * 1.5);
+
+  @container pf (width >= 1024px) {
+    display: none;
+  }
+}
+
+@utility pf-portrait {
+  width: calc(var(--pf-rem) * 7);
+  height: calc(var(--pf-rem) * 7);
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 0 1px var(--pf-print-ring),
+    var(--pf-shadow-3);
+
+  & > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: 50% 28%;
+    scale: 1.42;
+  }
+}
+
+@utility pf-bare-plate {
+  display: flex;
+  width: max-content;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--pf-rem) * 0.75);
+  color: var(--pf-ink);
+}
+
+@utility pf-bare-name {
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+
+  @container pf (width <= 420px) {
+    font-size: 34px;
+  }
+}
+
+@utility pf-bare-role {
+  font-size: 22px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+}
+
+/* The role segment: rolls between two strings in a slot sized by the longer one. */
+@utility pf-roll {
+  display: inline-grid;
+  overflow: hidden;
+  vertical-align: bottom;
+
+  & > span {
+    grid-area: 1 / 1;
+  }
+
+  & > [data-roll="in"] {
+    animation: pf-roll-in 0.55s var(--pf-ease-card) both;
+  }
+
+  & > [data-roll="out"] {
+    animation: pf-roll-out 0.55s var(--pf-ease-card) both;
+  }
+}
+
+/* Hero copy column. */
+@utility pf-copy {
+  display: flex;
+  min-width: 0;
+  max-width: var(--pf-measure);
+  flex-direction: column;
+  gap: var(--pf-stack);
+}
+
+@utility pf-copy-paras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-para);
+}
+
+@utility pf-copy-text {
+  position: relative;
+  font-size: var(--pf-copy);
+  line-height: 1.32;
+  letter-spacing: -0.015em;
+  color: var(--pf-ink);
+
+  @container pf (width < 768px) {
+    font-size: 16px;
+  }
+}
+
+/* The teal way-finding dot at its rest anchor: 12px, 24px left of and 9px below the first line's box. */
+@utility pf-scroll-dot {
+  position: absolute;
+  left: -24px;
+  top: 9px;
+  display: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--pf-dot);
+
+  @container pf (width >= 1024px) {
+    display: block;
+  }
+}
+
+@utility pf-playlist {
+  margin-left: calc(var(--pf-rem) * 0.25);
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(var(--pf-rem) * 0.5);
+  border-radius: 4px;
+  transition: opacity 200ms;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  & > svg {
+    position: relative;
+    top: 0.08em;
+    width: 0.96em;
+    height: 0.75em;
+    flex-shrink: 0;
+  }
+
+  & > span {
+    font-weight: 500;
+  }
+}
+
+@utility pf-clock {
+  font-family: var(--pf-font-pixel), ui-monospace, monospace;
+  font-size: var(--pf-clock);
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  color: var(--pf-ink-2);
+
+  @container pf (width < 768px) {
+    font-size: 14px;
+  }
+}
+
+@utility pf-clock-slot {
+  position: relative;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+
+  & > [data-reserve] {
+    visibility: hidden;
+  }
+
+  & > [data-time] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    white-space: nowrap;
+  }
+}
+
+@utility pf-chips {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pf-rem) * 0.75);
+}
+
+/* HeroChip: a quiet pill; hover inverts and the label plays a split roll. */
+@utility pf-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pf-rem) * 0.5);
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--pf-border) 70%, transparent);
+  background: var(--pf-canvas);
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--pf-ink);
+  transition:
+    background-color 200ms ease-out,
+    border-color 200ms ease-out,
+    color 200ms ease-out,
+    scale 200ms ease-out;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block: -2px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: transparent;
+    background: var(--pf-inverted);
+    color: var(--pf-inverse);
+    outline: none;
+  }
+
+  &:active {
+    scale: 0.96;
+  }
+}
+
+/* SplitHoverText: each letter slides up out of its line box as its twin rolls in, 14ms apart. */
+@utility pf-split {
+  display: inline-flex;
+
+  & > span {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+  }
+
+  & > span > span {
+    display: block;
+    white-space: pre;
+    transition: transform 260ms var(--pf-ease-out);
+  }
+
+  & > span > span:last-child {
+    position: absolute;
+    inset: 0;
+    transform: translateY(100%);
+  }
+
+  & > span:nth-child(2) > span {
+    transition-delay: 14ms;
+  }
+
+  & > span:nth-child(3) > span {
+    transition-delay: 28ms;
+  }
+
+  & > span:nth-child(4) > span {
+    transition-delay: 42ms;
+  }
+
+  & > span:nth-child(5) > span {
+    transition-delay: 56ms;
+  }
+
+  & > span:nth-child(6) > span {
+    transition-delay: 70ms;
+  }
+
+  & > span:nth-child(7) > span {
+    transition-delay: 84ms;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pf-chip:hover & > span > span:first-child {
+      transform: translateY(-100%);
+    }
+
+    .pf-chip:hover & > span > span:last-child {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* The chip glyph swaps out of a 14px slot in its own direction as its twin steps in. */
+@utility pf-chip-glyph {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+
+  & > svg {
+    position: absolute;
+    inset: 0;
+    transition: transform 260ms var(--pf-ease-out);
+  }
+
+  &[data-glyph="route"] > svg:last-child {
+    transform: translate(-14px, 14px);
+  }
+
+  &[data-glyph="scroll"] > svg:last-child {
+    transform: translateY(-14px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pf-chip:hover &[data-glyph="route"] > svg:first-child {
+      transform: translate(14px, -14px);
+    }
+
+    .pf-chip:hover &[data-glyph="scroll"] > svg:first-child {
+      transform: translateY(14px);
+    }
+
+    .pf-chip:hover & > svg:last-child {
+      transform: none;
+    }
+  }
+}
+
+/* ─── Background patterns ─────────────────────────────────────────────── */
+
+@utility pf-pattern {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+
+  /* One pane: the grid holds through the lockup, then fades over its last ~4 rows into selected work. */
+  &[data-fade] {
+    mask-image: linear-gradient(to bottom, black calc(100% - 168px), transparent calc(100% - 8px));
+  }
+}
+
+@utility pf-pattern-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, var(--pf-grid-ink) 1px, transparent 1px),
+    linear-gradient(var(--pf-grid-ink) 1px, transparent 1px);
+  background-size: 40px 40px;
+  /* The measured radial clearings behind the copy (--pf-holes, set from the hero). */
+  -webkit-mask-image: var(--pf-holes, none);
+  mask-image: var(--pf-holes, none);
+  mask-composite: intersect;
+}
+
+/* The page's 12 columns as hairline lanes (dark theme, lg+ only). */
+@utility pf-pattern-columns {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  display: none;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  padding-inline: var(--pf-edge);
+  pointer-events: none;
+
+  & > div {
+    border-inline: 1px solid var(--pf-lane-line);
+    background: var(--pf-lane-fill);
+  }
+
+  @container pf (width >= 1024px) {
+    display: grid;
+  }
+}
+
+/* ─── Page sheet: selected work + experiments ─────────────────────────── */
+
+@utility pf-sheet-card {
+  position: relative;
+  z-index: 20;
+  overflow: hidden;
+  background: var(--pf-canvas);
+
+  &[data-mode="flat"] {
+    margin-top: -1px;
+  }
+
+  @container pf (width >= 1024px) {
+    @media (prefers-reduced-motion: no-preference) {
+      &:not([data-mode="flat"]) {
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        box-shadow: var(--pf-sheet-shadow);
+      }
+
+      [data-peek-active] &[data-mode="peek"] {
+        margin-top: -176px;
+      }
+    }
+  }
+}
+
+@utility pf-work {
+  --pf-band: 100px;
+  padding-inline: var(--pf-edge);
+  padding-top: calc(var(--pf-rem) * 2.5);
+  padding-bottom: calc(var(--pf-rem) * 4);
+
+  /* Mask at selected work: the page pattern stays clear behind the header, then fades back in. */
+  &[data-mask] {
+    background-image: linear-gradient(to bottom, var(--pf-canvas) var(--pf-band), transparent calc(var(--pf-band) + 48px));
+    background-repeat: no-repeat;
+  }
+
+  @container pf (width >= 1024px) {
+    &[data-mode="flat"] {
+      --pf-band: 60px;
+      padding-top: 0;
+    }
+  }
+}
+
+@utility pf-experiments {
+  padding-inline: var(--pf-edge);
+  padding-top: calc(var(--pf-rem) * 2);
+
+  @container pf (width < 768px) {
+    padding-top: calc(var(--pf-rem) * 1);
+  }
+}
+
+@utility pf-tail {
+  height: calc(var(--pf-rem) * 6);
+
+  @container pf (width < 768px) {
+    height: calc(var(--pf-rem) * 4);
+  }
+}
+
+/* Carousel zone: heading + track; the rail's 100cqw is the section's content width. */
+@utility pf-zone {
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+
+@utility pf-zone-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: calc(var(--pf-rem) * 1.5);
+}
+
+/* Section heading: Host Grotesk 30 / 600, lowercase. */
+@utility pf-heading {
+  font-family: var(--pf-font-host), system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: -0.01em;
+  color: var(--pf-ink);
+
+  @container pf (width < 768px) {
+    font-size: 24px;
+  }
+}
+
+/* CarouselNav: phones swipe, so the arrows only show from md. */
+@utility pf-arrows {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: calc(var(--pf-rem) * 0.5);
+
+  @container pf (width >= 768px) {
+    display: flex;
+  }
+}
+
+/*
+ * CarouselArrow, three steps of emphasis:
+ *   rest  — bare: no fill, secondary ink
+ *   near  — pointer within 40px of the section, or keyboard focus: the near fill and primary ink
+ *   hover — the button itself: the inverted fill
+ * A direction that can't move stays bare with its icon at 35%, and keeps its focus ring at full strength.
+ * data-near / data-hover / data-focus are the state's pointer moment; the real pointer and keyboard work too.
+ */
+@utility pf-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pf-ink-2);
+  transition:
+    background-color 200ms ease-out,
+    color 200ms ease-out,
+    opacity 200ms ease-out,
+    scale 200ms ease-out;
+
+  &:not([aria-disabled="true"]) {
+    &[data-near]:not(:hover, [data-hover]),
+    &:focus-visible:not(:hover, [data-hover]) {
+      background: var(--pf-arrow-near);
+      color: var(--pf-ink);
+    }
+
+    &:hover,
+    &[data-hover] {
+      background: var(--pf-inverted);
+      color: var(--pf-inverse);
+    }
+
+    &:active {
+      scale: 0.96;
+    }
+  }
+
+  &[aria-disabled="true"] {
+    cursor: default;
+
+    & > svg {
+      opacity: 0.35;
+    }
+  }
+
+  &:focus-visible,
+  &[data-focus] {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--pf-canvas),
+      0 0 0 4px var(--pf-ink);
+  }
+}
+
+/* The scroller: bleeds to the window edges so cards slide out under them; snaps stay on the content edge. */
+@utility pf-track {
+  position: relative;
+  margin-inline: calc(var(--pf-edge) * -1);
+  margin-top: calc(var(--pf-rem) * 0.75);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--pf-edge);
+  scrollbar-width: none;
+  cursor: grab;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &[data-dragging] {
+    cursor: grabbing;
+    user-select: none;
+
+    & * {
+      cursor: grabbing;
+    }
+  }
+}
+
+@utility pf-track-inner {
+  display: flex;
+  width: max-content;
+  align-items: flex-start;
+  gap: calc(var(--pf-rem) * 1.5);
+  padding: calc(var(--pf-rem) * 0.75) var(--pf-edge);
+}
+
+/* Rail card width: 4 grid columns floored at 400px, capped at 60svh and 640px (lg+); ~1.7 per view on tablets; 82vw on phones. */
+@utility pf-rail-item {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  width: calc(var(--pf-vw) * 82);
+
+  @container pf (width >= 768px) {
+    width: calc(var(--pf-vw) * 52);
+  }
+
+  @container pf (width >= 1024px) {
+    width: max(min(calc(100cqw / 3 - 16px), calc(var(--pf-vh) * 60), 640px), 400px);
+  }
+}
+
+/* Experiments: a scroller below lg, packed 12-column rows at lg+. */
+@utility pf-exp-track {
+  position: relative;
+  margin-inline: calc(var(--pf-edge) * -1);
+  margin-top: calc(var(--pf-rem) * 0.75);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--pf-edge);
+  scrollbar-width: none;
+  cursor: grab;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &[data-dragging] {
+    cursor: grabbing;
+    user-select: none;
+
+    & * {
+      cursor: grabbing;
+    }
+  }
+
+  @container pf (width >= 1024px) {
+    margin: 0;
+    overflow: visible;
+    cursor: auto;
+  }
+}
+
+@utility pf-exp-inner {
+  display: flex;
+  width: max-content;
+  align-items: flex-start;
+  gap: calc(var(--pf-rem) * 1.5);
+  padding: calc(var(--pf-rem) * 0.75) var(--pf-edge);
+
+  @container pf (width >= 1024px) {
+    width: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: calc(var(--pf-rem) * 3);
+    padding: calc(var(--pf-rem) * 1.5) 0 0;
+  }
+}
+
+@utility pf-exp-row {
+  display: contents;
+
+  @container pf (width >= 1024px) {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: start;
+    column-gap: 24px;
+    row-gap: 48px;
+  }
+}
+
+/* Scroller widths: 16vw per span on phones, 10vw on tablets; a span of the 12-column row at lg+. */
+@utility pf-exp-card {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  width: calc(var(--pf-vw) * 16 * var(--pf-span, 4));
+
+  &[data-span="2"] {
+    --pf-span: 2;
+  }
+
+  &[data-span="3"] {
+    --pf-span: 3;
+  }
+
+  &[data-span="4"] {
+    --pf-span: 4;
+  }
+
+  &[data-span="5"] {
+    --pf-span: 5;
+  }
+
+  @container pf (width >= 768px) {
+    width: calc(var(--pf-vw) * 10 * var(--pf-span, 4));
+  }
+
+  @container pf (width >= 1024px) {
+    width: auto;
+    grid-column: span var(--pf-span, 4) / span var(--pf-span, 4);
+  }
+}
+
+/* ─── Cards (HoverCard, Media, captions) ──────────────────────────────── */
+
+/* The hover group: the asset (plus a straddling secondary chip). Publishes the shrink as --pf-card-scale. */
+@utility pf-card-asset {
+  --pf-card-scale: 1;
+  position: relative;
+
+  &:hover,
+  &:has(:focus-visible) {
+    --pf-card-scale: 0.985;
+  }
+
+  &:active {
+    --pf-card-scale: 0.97;
+  }
+}
+
+@utility pf-card-link {
+  position: relative;
+  display: block;
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &[data-visit] {
+    cursor: alias;
+  }
+}
+
+/* The hover plate: 8px of breathing room around the card at 5% ink. */
+@utility pf-card-plate {
+  position: absolute;
+  inset: -8px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--pf-ink) 5%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease-out;
+
+  .pf-card-asset:hover > &,
+  .pf-card-asset:has(:focus-visible) > & {
+    opacity: 1;
+  }
+}
+
+@utility pf-card-shrink {
+  position: relative;
+  z-index: 1;
+  transition: scale 300ms var(--pf-ease-card);
+
+  @media (prefers-reduced-motion: no-preference) {
+    scale: var(--pf-card-scale);
+  }
+}
+
+/* The ↗ / new-tab chip in the asset's top-right corner. */
+@utility pf-card-chip {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--pf-inverted);
+  color: var(--pf-inverse);
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 300ms var(--pf-ease-card),
+    translate 300ms var(--pf-ease-card);
+
+  .pf-card-asset:hover &,
+  .pf-card-asset:has(:focus-visible) & {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pf-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* "Case study" chip straddling the frame's bottom-right corner, hover-only (always shown on touch). */
+@utility pf-secondary-chip {
+  position: absolute;
+  bottom: -16px;
+  right: -12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding-left: 12px;
+  padding-right: 8px;
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: var(--pf-inverted);
+  color: var(--pf-inverse);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.14),
+    0 6px 16px -6px rgb(0 0 0 / 0.28);
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 300ms var(--pf-ease-card) 40ms,
+    translate 300ms var(--pf-ease-card) 40ms,
+    scale 200ms ease-out;
+
+  .pf-card-asset:hover &,
+  .pf-card-asset:has(:focus-visible) & {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  &:active {
+    scale: 0.96;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--pf-canvas),
+      0 0 0 4px var(--pf-ink);
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Media: hairline ring + 8px radius, cover fill. */
+@utility pf-media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: var(--pf-aspect, auto);
+  border-radius: 8px;
+  background: var(--pf-elevated);
+  box-shadow: var(--pf-media-shadow);
+  isolation: isolate;
+
+  & > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* A painted backdrop that takes the reciprocal of the card's shrink, so only the UI layer moves. */
+@utility pf-media-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--pf-pos, 50% 50%);
+  transform-origin: center;
+  transition: scale 300ms var(--pf-ease-card);
+
+  @media (prefers-reduced-motion: no-preference) {
+    scale: calc(1 / var(--pf-card-scale, 1));
+  }
+}
+
+@utility pf-media-ui {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Onto: the alpha UI floats over the painting with a three-step lift. */
+@utility pf-media-float {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px oklch(0 0 0 / 0.08)) drop-shadow(0 12px 24px oklch(0 0 0 / 0.11))
+    drop-shadow(0 28px 48px oklch(0 0 0 / 0.08));
+}
+
+/* Shader Lab's wipe compare: the edited frame clipped from the left at --pf-split. */
+@utility pf-compare {
+  position: absolute;
+  inset: 0;
+
+  & > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  & > img[data-edited] {
+    clip-path: inset(0 0 0 var(--pf-split, 50%));
+  }
+}
+
+@utility pf-compare-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pf-split, 50%);
+  width: 1px;
+  background: rgb(255 255 255 / 0.85);
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    translate: -50% -50%;
+    border-radius: 9999px;
+    background: white;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+}
+
+@utility pf-compare-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+
+  &:focus-visible ~ .pf-compare-handle::after {
+    box-shadow:
+      0 0 0 2px var(--pf-canvas),
+      0 0 0 4px var(--pf-ink);
+  }
+}
+
+@utility pf-caption {
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(var(--pf-rem) * 1);
+
+  &[data-experiment] {
+    gap: calc(var(--pf-rem) * 0.25);
+  }
+}
+
+@utility pf-caption-link {
+  width: max-content;
+  max-width: 100%;
+  border-radius: 4px;
+  transition: opacity 200ms;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 4px var(--pf-canvas),
+      0 0 0 6px var(--pf-ink);
+  }
+}
+
+@utility pf-card-title {
+  font-family: var(--pf-font-manrope), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--pf-ink);
+}
+
+@utility pf-card-text {
+  font-size: 14px;
+  line-height: 1.62;
+  color: var(--pf-ink-2);
+}
+
+@utility pf-card-meta {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--pf-rem) * 0.5);
+  padding-top: calc(var(--pf-rem) * 0.5);
+  font-size: 14px;
+  line-height: 1.62;
+
+  & > :first-child {
+    font-weight: 500;
+    color: var(--pf-ink);
+  }
+
+  & > :last-child {
+    color: var(--pf-ink-2);
+  }
+}
+
+/* GlobeLink: an icon-only circle that grows into "Read article" on hover. */
+@utility pf-globe {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  margin-top: calc(var(--pf-rem) * 0.75);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--pf-border) 70%, transparent);
+  background: var(--pf-canvas);
+  color: var(--pf-ink-2);
+  cursor: alias;
+  transition:
+    width 200ms,
+    background-color 200ms,
+    border-color 200ms,
+    color 200ms,
+    padding 200ms;
+
+  & > span {
+    margin-left: 0;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+    opacity: 0;
+    transition:
+      max-width 200ms,
+      margin 200ms,
+      opacity 200ms;
+  }
+
+  @media (hover: hover) {
+    justify-content: flex-start;
+    padding-inline: 9px;
+  }
+
+  &:hover {
+    width: 132px;
+    border-color: transparent;
+    background: var(--pf-inverted);
+    color: var(--pf-inverse);
+  }
+
+  &:hover > span {
+    margin-left: 8px;
+    max-width: 84px;
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--pf-canvas),
+      0 0 0 4px var(--pf-ink);
+  }
+}
+
+@keyframes pf-roll-in {
+  from {
+    transform: translateY(115%);
+  }
+}
+
+@keyframes pf-roll-out {
+  to {
+    transform: translateY(-115%);
+  }
+}
+
+@keyframes pf-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+@keyframes pf-sheet-in {
+  from {
+    transform: translateX(-100%);
+  }
+}

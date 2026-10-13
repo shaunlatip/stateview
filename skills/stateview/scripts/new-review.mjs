@@ -28,7 +28,7 @@ const manifest = {
   version: 1,
   route: `/stateview/${id}/state`,
   screen: options.screen,
-  scope: { repo: repoName(), ...favicon(), branch: scope.branch, base: scope.base },
+  scope: { repo: repoName(), ...favicon(), branch: scope.branch, base: scope.base, ...(scope.diff ? { diff: scope.diff } : {}) },
   baseline: {},
   inputs: [],
   sections: [],
@@ -100,7 +100,15 @@ function branchScope() {
   const files = [...new Set(`${changed}\n${untracked}`.split("\n").filter(Boolean))]
     .filter((file) => !own.some((dir) => file.startsWith(dir)))
     .toSorted();
-  return { branch, base, files, found: true };
+  let additions = 0;
+  let deletions = 0;
+  for (const line of (git(appRoot, ["diff", "--numstat", mergeBase]) ?? "").split("\n")) {
+    const [added, removed, path] = line.split("\t");
+    if (!path || own.some((dir) => path.startsWith(dir))) continue;
+    additions += Number(added) || 0;
+    deletions += Number(removed) || 0;
+  }
+  return { branch, base, files, found: true, diff: { files: files.length, additions, deletions } };
 }
 
 /** Adds the review to the registry's imports and its `reviews` object. Returns false if it's already there. */

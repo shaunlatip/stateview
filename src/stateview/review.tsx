@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Hub } from "./hub";
+import { Hub, type ReviewLink } from "./hub";
 import { listFrames, listItems, type Inputs, type Manifest } from "./manifest";
 import { ThemeScope } from "./ui";
 
@@ -30,15 +30,26 @@ export function defineReview<T extends Inputs>(
   return { manifest: manifest as Manifest, render: render as Review["render"], thumbnails: options.thumbnails ?? "live" };
 }
 
-/** The hub for one review, with a live thumbnail per state unless the review turns them off. */
-export function ReviewHub({ review }: { review: Review }) {
+/**
+ * The hub for one review, with a live thumbnail per state unless the review
+ * turns them off. `scope` replaces the manifest's recorded one (`readScope`
+ * from `scope.ts` reads it from git), and `reviews` puts a switcher in the
+ * index when the app has more than one.
+ */
+export function ReviewHub({ review, scope, reviews }: { review: Review; scope?: Manifest["scope"]; reviews?: ReviewLink[] }) {
   const thumbnails: Record<string, ReactNode> = {};
   if (review.thumbnails === "live") {
     for (const frame of listFrames(review.manifest)) {
       thumbnails[frame.item.id] ??= review.render(frame.inputs);
     }
   }
-  return <Hub manifest={review.manifest} thumbnails={thumbnails} />;
+  const manifest = scope ? { ...review.manifest, scope } : review.manifest;
+  return <Hub manifest={manifest} thumbnails={thumbnails} reviews={reviews} />;
+}
+
+/** The switcher's entries for every review in a registry, each labelled with its screen. */
+export function reviewLinks(reviews: Record<string, Review>, basePath: string): ReviewLink[] {
+  return Object.values(reviews).map(({ manifest }) => ({ id: manifest.id, label: manifest.screen, hub: `${basePath}/${manifest.id}` }));
 }
 
 /** Every review in the app, for when a change touches more than one screen. */

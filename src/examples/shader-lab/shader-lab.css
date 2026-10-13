@@ -1,0 +1,285 @@
+/*
+ * Shader Lab, the image-effects editor under review, scoped to `.shader-lab`
+ * so none of it reaches Stateview or the other examples. Values are copied
+ * from shader-lab's globals.css at 2e0708c: the neutral oklch shade ramp, the
+ * semantic roles built on it (light and `[data-theme="dark"]`), the radius and
+ * shadow scales, and the type the PR refreshed (Hibana 45 SubMedium for the
+ * UI, Fontlab Font for the wordmark, Geist Mono for values). Tailwind names
+ * are all prefixed `sl-`, because `@theme` is global.
+ */
+
+@font-face {
+  font-family: "SL Hibana";
+  src: url("/examples/shader-lab/fonts/Hibana-45SubMedium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SL Fontlab";
+  src: url("/examples/shader-lab/fonts/FontlabFont-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.shader-lab {
+  color-scheme: light;
+
+  --sl-shade-1: oklch(0.145 0 0);
+  --sl-shade-2: oklch(0.205 0 0);
+  --sl-shade-3: oklch(0.269 0 0);
+  --sl-shade-4: oklch(0.371 0 0);
+  --sl-shade-5: oklch(0.439 0 0);
+  --sl-shade-6: oklch(0.556 0 0);
+  --sl-shade-7: oklch(0.708 0 0);
+  --sl-shade-8: oklch(0.87 0 0);
+  --sl-shade-9: oklch(0.922 0 0);
+  --sl-shade-10: oklch(0.97 0 0);
+  --sl-shade-11: oklch(0.985 0 0);
+
+  --sl-canvas: var(--sl-shade-11);
+  --sl-elevated: var(--sl-shade-10);
+  --sl-inverted: var(--sl-shade-1);
+  --sl-text: var(--sl-shade-1);
+  --sl-text-2: var(--sl-shade-6);
+  --sl-border: var(--sl-shade-9);
+  --sl-border-strong: var(--sl-shade-8);
+  --sl-hover: var(--sl-shade-10);
+  --sl-active: var(--sl-shade-9);
+  --sl-ring: var(--sl-shade-7);
+  /* The stage sits one step below the panels: shade-10 light, shade-1 dark. */
+  --sl-stage: var(--sl-shade-10);
+  /* Sonner's description grey (#3f3f3f light, hsl(0 0% 91%) dark). */
+  --sl-toast-text-2: #3f3f3f;
+
+  /* Fixed washes, the same in both themes (the app's black/15, black/45, black/[0.06], black/10). */
+  --sl-scrim: rgb(0 0 0 / 0.15);
+  --sl-dim: rgb(0 0 0 / 0.45);
+  --sl-hairline: rgb(0 0 0 / 0.06);
+  --sl-swatch-edge: rgb(0 0 0 / 0.1);
+
+  font-family: var(--font-sl-lab);
+  font-synthesis-weight: none;
+  background-color: var(--sl-canvas);
+  color: var(--sl-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.shader-lab[data-theme="dark"] {
+  color-scheme: dark;
+
+  --sl-canvas: oklch(0.19 0 0);
+  --sl-elevated: var(--sl-shade-3);
+  --sl-inverted: var(--sl-shade-11);
+  --sl-text: var(--sl-shade-11);
+  --sl-text-2: var(--sl-shade-7);
+  --sl-border: var(--sl-shade-4);
+  --sl-border-strong: var(--sl-shade-5);
+  --sl-hover: var(--sl-shade-3);
+  --sl-active: var(--sl-shade-4);
+  --sl-stage: var(--sl-shade-1);
+  --sl-toast-text-2: hsl(0 0% 91%);
+}
+
+/* Every bare `border` inside the lab is the semantic default, as the app's base rule sets it. */
+@layer base {
+  .shader-lab,
+  .shader-lab * {
+    border-color: var(--sl-border);
+  }
+
+  .shader-lab ::selection {
+    background: var(--sl-text);
+    color: var(--sl-canvas);
+  }
+}
+
+@theme inline {
+  --color-sl-canvas: var(--sl-canvas);
+  --color-sl-elevated: var(--sl-elevated);
+  --color-sl-inverted: var(--sl-inverted);
+  --color-sl-text: var(--sl-text);
+  --color-sl-text-2: var(--sl-text-2);
+  --color-sl-border: var(--sl-border);
+  --color-sl-border-strong: var(--sl-border-strong);
+  --color-sl-hover: var(--sl-hover);
+  --color-sl-active: var(--sl-active);
+  --color-sl-ring: var(--sl-ring);
+  --color-sl-stage: var(--sl-stage);
+  --color-sl-toast-text-2: var(--sl-toast-text-2);
+  --color-sl-scrim: var(--sl-scrim);
+  --color-sl-dim: var(--sl-dim);
+  --color-sl-hairline: var(--sl-hairline);
+  --color-sl-swatch-edge: var(--sl-swatch-edge);
+
+  --font-sl-lab: "SL Hibana", system-ui, sans-serif;
+  --font-sl-logo: "SL Fontlab", system-ui, sans-serif;
+}
+
+@theme {
+  /* control = inputs/buttons, card = popovers/cards, frame = the empty stage, item = menu rows, print = the canvas. */
+  --radius-sl-control: 8px;
+  --radius-sl-card: 10px;
+  --radius-sl-frame: 12px;
+  --radius-sl-item: 5px;
+  --radius-sl-swatch: 4px;
+  --radius-sl-print: 2px;
+  --radius-sl-toast: 8px;
+
+  --shadow-sl-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-sl-2: 0 3px 6px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-sl-3: 0 10px 20px rgba(0, 0, 0, 0.08), 0 3px 6px rgba(0, 0, 0, 0.05);
+  --shadow-sl-5: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.04);
+  --shadow-sl-toast: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  /* The app's text-xs / text-sm (12 and 14 at 1.5) and its one-off pixel sizes, which inherit line-height. */
+  --text-sl-xs: 12px;
+  --text-sl-xs--line-height: 1.5;
+  --text-sl-sm: 14px;
+  --text-sl-sm--line-height: 1.5;
+  --text-sl-10: 10px;
+  --text-sl-11: 11px;
+  --text-sl-12: 12px;
+  --text-sl-13: 13px;
+  --text-sl-15: 15px;
+}
+
+/* The header: wordmark | draft name | actions. Wide, 1fr/auto/1fr so the name is true-centred. */
+@utility sl-header-grid {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+@utility sl-header-grid-wide {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+/* The draft name sizes to its text, between 100px and 440px. */
+@utility sl-draft-name {
+  min-width: 100px;
+  max-width: min(440px, 100%);
+  field-sizing: content;
+}
+
+/* Effect controls: label | slider | value, and label | control. */
+@utility sl-control-row {
+  grid-template-columns: 84px 1fr 40px;
+}
+
+@utility sl-label-row {
+  grid-template-columns: 84px 1fr;
+}
+
+/* Export settings: a 52px label column. */
+@utility sl-export-row {
+  grid-template-columns: 52px 1fr;
+}
+
+/* Gradient stop rows: swatch | position | remove. */
+@utility sl-stop-row {
+  grid-template-columns: auto 1fr auto;
+}
+
+/* The add-effect dropdown hangs 4px under its field. */
+@utility sl-dropdown {
+  top: calc(100% + 4px);
+}
+
+/* Drawers leave a 48px strip of scrim to tap-close (the app's calc(100vw - 48px), sized off the frame). */
+@utility sl-drawer-max {
+  max-width: calc(100% - 48px);
+}
+
+/* The tour's highlight: a 2px ink ring, everything else dimmed. */
+@utility sl-tour-ring {
+  box-shadow:
+    0 0 0 2px var(--sl-text),
+    0 0 0 9999px var(--sl-dim);
+}
+
+@utility sl-no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* The theme toggle's half-filled disc. */
+@utility sl-half-disc {
+  border-width: 1.5px;
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+
+/* The examples strip fades out on whichever side has more to scroll. */
+@utility sl-fade-left {
+  mask-image: linear-gradient(to right, transparent, black 40px, black);
+}
+
+@utility sl-fade-right {
+  mask-image: linear-gradient(to right, black, black calc(100% - 40px), transparent);
+}
+
+@utility sl-fade-both {
+  mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+}
+
+/* Collapsible sections animate height with the 0fr ↔ 1fr grid trick. */
+@utility sl-collapse {
+  grid-template-rows: 0fr;
+}
+
+@utility sl-expand {
+  grid-template-rows: 1fr;
+}
+
+/* Measured geometry, set per element as custom properties (the artwork's fit and view, the tour's anchor, progress). */
+@utility sl-box-vars {
+  top: var(--sl-top);
+  left: var(--sl-left);
+  width: var(--sl-width);
+  height: var(--sl-height);
+}
+
+@utility sl-at-vars {
+  top: var(--sl-top);
+  left: var(--sl-left);
+}
+
+@utility sl-fit-vars {
+  width: var(--sl-width);
+  height: var(--sl-height);
+  transform: var(--sl-transform);
+}
+
+@utility sl-width-var {
+  width: var(--sl-width);
+}
+
+@utility sl-bg-var {
+  background: var(--sl-bg);
+}
+
+/* Toasts: sonner's default card, 356px wide. */
+@utility sl-toast-width {
+  width: 356px;
+  max-width: calc(100% - 32px);
+}
+
+@keyframes sl-toast-in {
+  from {
+    opacity: 0;
+    translate: 0 100%;
+  }
+}
+
+@utility sl-toast-in {
+  animation: sl-toast-in 400ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

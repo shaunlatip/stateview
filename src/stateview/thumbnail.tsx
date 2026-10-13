@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "./cn";
+import { InThumbnail } from "./in-thumbnail";
 import { changedInputs, valueLabel, type Inputs, type Manifest } from "./manifest";
 
 type Size = "fluid" | "strip";
@@ -50,7 +51,7 @@ export function Thumbnail({
             : [fluid ? "gui-thumb-fluid-desktop" : "gui-thumb-desktop", "left-0 origin-top-left"],
         )}
       >
-        {children}
+        <InThumbnail>{children}</InThumbnail>
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ export type StateItem<T extends Inputs = Inputs> = {
   why: string;
   set: Partial<T>;
   checks?: string[];
-  origin: Origin;
+  origin?: Origin;
 };
 
 export type SequenceItem<T extends Inputs = Inputs> = {
@@ -43,7 +43,7 @@ export type SequenceItem<T extends Inputs = Inputs> = {
   title: string;
   why: string;
   steps: { title: string; set: Partial<T> }[];
-  origin: Origin;
+  origin?: Origin;
 };
 
 export type Item<T extends Inputs = Inputs> = StateItem<T> | SequenceItem<T>;
@@ -61,6 +61,8 @@ export type Manifest<T extends Inputs = Inputs> = {
   version: number;
   /** The route that renders the screen; each state is this route plus `?sv=<id>`. */
   route: string;
+  /** The hub's route, where Escape and the logo go from a state. Defaults to the viewer's `hubHref`, or `/`. */
+  hub?: string;
   screen: string;
   /**
    * The repo and change under review, which the agent drafting the manifest
@@ -68,9 +70,11 @@ export type Manifest<T extends Inputs = Inputs> = {
    * `branch` from HEAD (a short SHA when detached), `base` from the branch the
    * change will merge into. `base` is left out when there's nothing to compare
    * against, such as uncommitted work on the default branch. `icon` is the
-   * app's own favicon, as a URL path, if it has one.
+   * app's own favicon, as a URL path, if it has one. `diff` counts the files
+   * and lines the branch changed against `base`, leaving out Stateview's own.
+   * The hub's server route can refresh all of it from git (`scope.ts`).
    */
-  scope: { repo: string; branch: string; base?: string; icon?: string };
+  scope: { repo: string; branch: string; base?: string; icon?: string; diff?: { files: number; additions: number; deletions: number } };
   baseline: T;
   inputs: Input<T>[];
   sections: Section<T>[];

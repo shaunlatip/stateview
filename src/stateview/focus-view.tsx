@@ -75,7 +75,7 @@ export function FocusView<T extends Inputs>(props: FocusViewProps<T>) {
 }
 
 /** The real screen in one state, framed by Stateview's bar along the top and the filmstrip down the left. */
-function Viewer<T extends Inputs>({ manifest, render, hubHref = "/", thumbnails = "live", query }: FocusViewProps<T> & { query: FrameQuery }) {
+function Viewer<T extends Inputs>({ manifest, render, hubHref = manifest.hub ?? "/", thumbnails = "live", query }: FocusViewProps<T> & { query: FrameQuery }) {
   const router = useRouter();
   const review = useReview(manifest);
   const [commenting, setCommenting] = useState(false);

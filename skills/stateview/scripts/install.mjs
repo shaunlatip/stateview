@@ -190,7 +190,8 @@ export default function StateviewIndexPage() {
 }
 `,
     [join(routeDir, "[review]", "page.tsx")]: (file) => `import { notFound } from "next/navigation";
-import { ReviewHub } from "${importPath(file, join(engineDir, "review"))}";
+import { ReviewHub, reviewLinks } from "${importPath(file, join(engineDir, "review"))}";
+import { readScope } from "${importPath(file, join(engineDir, "scope"))}";
 import { reviewParams, reviews } from "${importPath(file, reviewsDir)}";
 
 export const generateStaticParams = reviewParams;
@@ -199,7 +200,8 @@ export default async function ReviewHubPage({ params }: { params: Promise<{ revi
   const { review: id } = await params;
   const review = reviews[id];
   if (!review) notFound();
-  return <ReviewHub review={review} />;
+  // The repo, branch and diff as git has them now, not as they were when the review was written.
+  return <ReviewHub review={review} scope={readScope(review.manifest.scope)} reviews={reviewLinks(reviews, "/stateview")} />;
 }
 `,
     [join(routeDir, "[review]", "state", "page.tsx")]: (file) => `import { Suspense } from "react";
