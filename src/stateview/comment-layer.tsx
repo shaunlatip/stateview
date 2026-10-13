@@ -62,13 +62,14 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
     setComposer({ kind: "new", id: crypto.randomUUID(), element, anchor, described: describeElement(element, root), text: "" });
   };
 
-  /** A dirty composer shakes instead of losing what the reviewer typed. */
+  /** A dirty composer shakes instead of losing what the reviewer typed. Under reduced motion it dims for a moment instead. */
   const shake = () => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce) {
-      popup.current?.animate(
-        [0, -1, 1, -1, 1, 0].map((step) => ({ translate: `calc(${step} * var(--space-xxs)) 0` })),
-        { duration: 300, easing: "ease-out" },
+    if (popup.current) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const theme = getComputedStyle(popup.current);
+      popup.current.animate(
+        reduce ? [{ opacity: 1 }, { opacity: 0.6 }, { opacity: 1 }] : [0, -1, 1, -1, 1, 0].map((step) => ({ translate: `calc(${step} * var(--space-xxs)) 0` })),
+        { duration: parseFloat(theme.getPropertyValue("--motion-large-duration")), easing: theme.getPropertyValue("--motion-large-easing").trim() },
       );
     }
     textarea.current?.focus();
@@ -298,7 +299,7 @@ export function CommentLayer({ stateId, inputs, annotations, root, active, onAct
             if (node) pins.current.set(composer.id, node);
             else pins.current.delete(composer.id);
           }}
-          className={cn(pinClassName, activePin)}
+          className={cn(pinClassName, activePin, draftPinEntrance)}
           style={at(draftPosition.left, draftPosition.top)}
         >
           {number}
@@ -397,12 +398,17 @@ const EDGE_CLEARANCE = 11;
 const DOCK_INSET = 22;
 const DOCK_GAP = 36;
 
+// Saved pins appear with their state, without motion: stepping through states remounts every pin.
 const pinClassName =
-  "absolute top-(--y) left-(--x) z-30 inline-flex size-7 -translate-1/2 items-center justify-center rounded-full font-gui-data text-gui-xs font-gui-medium tabular-nums shadow-gui-s ring-2 ring-gui-neutral-1 select-none motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-50 motion-safe:duration-gui-large motion-safe:ease-gui-large";
+  "absolute top-(--y) left-(--x) z-30 inline-flex size-7 -translate-1/2 items-center justify-center rounded-full font-gui-data text-gui-xs font-gui-medium tabular-nums shadow-gui-s ring-2 ring-gui-neutral-1 select-none";
+
+// The new comment's pin arrives with the composer, at its speed; under reduced motion it only fades, as the composer does.
+const draftPinEntrance = "animate-in fade-in duration-gui ease-gui motion-safe:zoom-in-50";
 
 // The pin being written or edited: outlined rather than filled, so it stands apart from saved pins.
 const activePin = "bg-gui-neutral-1 text-gui-selection inset-ring-2 inset-ring-gui-selection";
 
+// No transition: the outline snaps to each element and stays locked to it while the page scrolls.
 function Highlight({ box }: { box: Box }) {
   // Above the element, or inside its top edge when there's no room above.
   const labelBelow = box.top < 30;
@@ -410,12 +416,12 @@ function Highlight({ box }: { box: Box }) {
     <>
       <div
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 z-30 h-(--h) w-(--w) translate-x-(--x) translate-y-(--y) rounded-gui-xs bg-gui-selection-fill ring-2 ring-gui-selection transition-all duration-gui ease-gui motion-reduce:transition-none"
+        className="pointer-events-none fixed top-0 left-0 z-30 h-(--h) w-(--w) translate-x-(--x) translate-y-(--y) rounded-gui-xs bg-gui-selection-fill ring-2 ring-gui-selection"
         style={{ ...at(box.left, box.top), "--w": `${box.width}px`, "--h": `${box.height}px` } as CSSProperties}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 z-30 max-w-xs translate-x-(--x) translate-y-(--y) truncate rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs font-gui-data text-gui-xs text-gui-neutral-1 shadow-gui-s transition duration-gui ease-gui motion-reduce:transition-none"
+        className="pointer-events-none fixed top-0 left-0 z-30 max-w-xs translate-x-(--x) translate-y-(--y) truncate rounded-gui-s bg-gui-neutral-10 px-gui-xs py-gui-xxs font-gui-data text-gui-xs text-gui-neutral-1 shadow-gui-s"
         style={at(Math.max(box.left, 0), labelBelow ? `calc(${box.top + box.height}px + var(--space-xxs))` : `calc(${box.top}px - 100% - var(--space-xxs))`)}
       >
         {box.label}
@@ -450,7 +456,7 @@ function Pin({ annotation, number, position, expanded, pinRef, onOpen }: PinProp
             onClick={onOpen}
             className={cn(
               pinClassName,
-              "cursor-pointer transition outline-offset-2 hover:scale-110 focus-visible:gui-focus-ring motion-reduce:hover:scale-100",
+              "cursor-pointer transition duration-gui ease-gui outline-offset-2 hover:scale-110 focus-visible:gui-focus-ring motion-reduce:hover:scale-100",
               expanded
                 ? activePin
                 : resolved
