@@ -34,7 +34,12 @@ function isObject(value: unknown) {
 }
 
 function read(key: string): ReviewRecord {
-  const raw = localStorage.getItem(key);
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    // Storage blocked (some privacy settings throw on access): review without saving.
+  }
   const cached = snapshots.get(key);
   if (cached && cached.raw === raw) return cached.record;
   let record = EMPTY;
