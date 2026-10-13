@@ -32,6 +32,7 @@ export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationL
   const frames = listFrames(manifest);
   const fromUrl = frames[findFrameIndex(frames, sv, step)];
   const stateId = sent?.stateId ?? fromUrl?.key;
+  const frame = frames.find((candidate) => candidate.key === stateId);
   const inputs = (sent?.inputs as T | undefined) ?? (fromUrl ? withOverrides(fromUrl.inputs, overrides) : null);
   const commenting = sent?.commenting ?? false;
   const pinsVisible = sent?.pinsVisible ?? true;
@@ -60,6 +61,8 @@ export function EmbeddedScreen<T extends Inputs>({ manifest, render, annotationL
 
   return (
     <>
+      {/* The frame is a document of its own, opened directly too, so it needs its own title. */}
+      <title>{frame ? `${frame.item.title} · ${manifest.screen}` : manifest.screen}</title>
       <div data-pin-layer="" className="relative grid flex-1">
         {/* Keyed by state and inputs so the screen starts fresh from its inputs every time. */}
         <div
